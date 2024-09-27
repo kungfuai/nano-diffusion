@@ -1,0 +1,43 @@
+# Additional info: https://docs.docker.com/engine/reference/builder/#/dockerignore-file
+**/*__pycache__*
+**/*.py[cod]
+**/*.pth
+**/*.pem
+**/*.ppk
+data/*
+Dockerfile
+
+# Virtual environment
+.venv/
+venv/*
+
+# PyCharm
+.idea
+
+# Python mode for VIM
+**/*.ropeproject
+
+# Vim swap files
+**/*.swp
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Git
+.git
+.gitignore
+
+# Docker
+compose.yaml
+compose.ci.yaml
+.docker
+.dockerignore
+
+# ML-specific
+lightning_logs/
+mlruns/

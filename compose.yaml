@@ -1,0 +1,40 @@
+version: "2.4"
+
+services:
+  app:
+    image: app:${SERVICE}
+    container_name: app_${SERVICE}
+    build:
+      dockerfile: services/app/Dockerfile
+      context: .
+    runtime: $DOCKER_RUNTIME
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONPATH=/workspace
+      - GIT_PYTHON_REFRESH=quiet
+      - MLFLOW_TRACKING_URI
+      - MLFLOW_ARTIFACT_ROOT
+    volumes:
+      - .:/workspace
+      - ./mlruns:/mlruns
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mlflow
+
+  mlflow:
+    image: mlflow:${SERVICE}
+    container_name: mlflow_${SERVICE}
+    build:
+      dockerfile: services/mlflow/Dockerfile
+      context: .
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MLFLOW_ARTIFACT_ROOT
+      - MLFLOW_BACKEND_STORE_URI
+    volumes:
+      - ./mlruns:/mlruns
+    ports:
+      - "50000:50000"

@@ -1,0 +1,12 @@
+black==22.12.0
+coverage==7.0.5
+flake8==6.0.0
+GitPython==3.1.30
+jupyterlab==3.5.2
+jupyter==1.0.0
+mlflow==2.1.1
+pre-commit==2.21.0
+protobuf==4.21.12
+pydantic==1.10.7
+pylint==2.15.10
+pytest==7.2.0
