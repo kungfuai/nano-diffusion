@@ -1,3 +1,8 @@
+# Machine learning
+data/
+wandb/
+logs/
+
 # Python bytecode files
 __pycache__/
 *.py[cod]

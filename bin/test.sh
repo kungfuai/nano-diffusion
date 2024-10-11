@@ -2,6 +2,8 @@
 #
 # Run unit tests
 
-source bin/setup_environment.sh
-
-docker compose run --rm --entrypoint python app -m pytest -p no:warnings "${@:-tests/}"
+docker run --runtime nvidia -it \
+	-v $(pwd):/workspace \
+	-v $(pwd)/data/container_cache:/root/.cache \
+	nanodiffusion \
+	python -m pytest -p no:warnings "${@:-tests/}"
