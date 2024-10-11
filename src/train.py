@@ -5,7 +5,6 @@ A minimal training pipeline diffusion.
 import argparse
 import os
 import tempfile
-import math
 import numpy as np
 from pathlib import Path
 import torch
@@ -15,7 +14,6 @@ from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, random_split
 from torch.nn import MSELoss
 from torchvision.utils import save_image, make_grid
-from torch.optim.lr_scheduler import LambdaLR
 
 try:
     import wandb
@@ -28,10 +26,10 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
-from src.models.dit import DiT
-# from diffusers import UNet2DModel
-from src.models.unets import UNetSmall
+from src.models.factory import create_model
 from src.models.ema import create_ema_model
+from src.utils.sample import threshold_sample, denoise_and_compare
+from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 
 
 def forward_diffusion(x_0, t, noise_schedule, noise=None):
@@ -42,40 +40,6 @@ def forward_diffusion(x_0, t, noise_schedule, noise=None):
     alpha_prod_t = noise_schedule["alphas_cumprod"][_ts]
     x_t = (alpha_prod_t ** 0.5) * x_0 + ((1 - alpha_prod_t) ** 0.5) * noise
     return x_t, noise
-
-
-def threshold_sample(sample: torch.Tensor, dynamic_thresholding_ratio=0.995, sample_max_value=1.0) -> torch.Tensor:
-    """
-    "Dynamic thresholding: At each sampling step we set s to a certain percentile absolute pixel value in xt0 (the
-    prediction of x_0 at timestep t), and if s > 1, then we threshold xt0 to the range [-s, s] and then divide by
-    s. Dynamic thresholding pushes saturated pixels (those near -1 and 1) inwards, thereby actively preventing
-    pixels from saturation at each step. We find that dynamic thresholding results in significantly better
-    photorealism as well as better image-text alignment, especially when using very large guidance weights."
-
-    https://arxiv.org/abs/2205.11487
-    """
-    dtype = sample.dtype
-    batch_size, channels, *remaining_dims = sample.shape
-
-    if dtype not in (torch.float32, torch.float64):
-        sample = sample.float()  # upcast for quantile calculation, and clamp not implemented for cpu half
-
-    # Flatten sample for doing quantile calculation along each image
-    sample = sample.reshape(batch_size, channels * np.prod(remaining_dims))
-
-    abs_sample = sample.abs()  # "a certain percentile absolute pixel value"
-
-    s = torch.quantile(abs_sample, dynamic_thresholding_ratio, dim=1)
-    s = torch.clamp(
-        s, min=1, max=sample_max_value
-    )  # When clamped to min=1, equivalent to standard clipping to [-1, 1]
-    s = s.unsqueeze(1)  # (batch_size, 1) because clamp will broadcast along dim=0
-    sample = torch.clamp(sample, -s, s) / s  # "we threshold xt0 to the range [-s, s] and then divide by s"
-
-    sample = sample.reshape(batch_size, channels, *remaining_dims)
-    sample = sample.to(dtype)
-
-    return sample
 
 
 def denoising_step(denoising_model, x_t, t, noise_schedule, thresholding=False, clip_sample=True, clip_sample_range=1.0):
@@ -221,38 +185,6 @@ def compute_validation_loss(model, val_dataloader, noise_schedule, n_T, device, 
         return total_loss / num_batches
 
 
-def denoise_and_compare(model, images, noise_schedule, n_T, device):
-    torch.manual_seed(10)
-    model.eval()
-    with torch.no_grad():
-        # Add noise to the images
-        t = torch.randint(0, n_T, (images.shape[0],), device=device)
-        x_t, _ = forward_diffusion(images, t, noise_schedule)
-        
-        # Denoise the images
-        pred_noise = model(x_t, t)
-        if hasattr(pred_noise, "sample"):
-            pred_noise = pred_noise.sample
-        pred_previous_images = denoising_step(model, x_t, t, noise_schedule)
-        # Compute the predicted original images using the correct formula
-        alpha_t = noise_schedule["alphas"][t][:, None, None, None]
-        alpha_t_cumprod = noise_schedule["alphas_cumprod"][t][:, None, None, None]
-        pred_original_images = (
-            x_t - ((1 - alpha_t) / (1 - alpha_t_cumprod).sqrt()) * pred_noise) / (alpha_t / (1 - alpha_t_cumprod).sqrt())
-    model.train()
-    return x_t, pred_original_images
-
-
-def save_comparison_grid(original, denoised, ema_denoised, step, prefix, output_dir):
-    # Combine images into a grid
-    grid_images = torch.cat([original, denoised], dim=0)
-    if ema_denoised is not None:
-        grid_images = torch.cat([grid_images, ema_denoised], dim=0)
-    
-    grid = make_grid(grid_images, nrow=original.shape[0], normalize=True, scale_each=True)
-    save_image(grid, output_dir / f"{prefix}_comparison_step{step}.png")
-
-
 def compute_fid(real_images, generated_images, device='cuda', regenerate_real_images=False):
     """Compute FID between real and generated images using clean-fid."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -292,7 +224,7 @@ def compute_fid(real_images, generated_images, device='cuda', regenerate_real_im
     return score
 
 
-def train_loop(denoising_model, train_dataloader, val_dataloader, optimizer, lr_scheduler, noise_schedule, n_T, total_steps, device, log_every=10, sample_every=100, save_every=5000, validate_every=1000, fid_every=10000, logger="none", max_grad_norm=1.0, use_loss_mean=True, use_ema=False, ema_beta=0.9999, num_examples_trained=0):
+def train_loop(denoising_model, train_dataloader, val_dataloader, optimizer, lr_scheduler, noise_schedule, n_T, total_steps, device, log_every=10, sample_every=100, save_every=5000, validate_every=1000, fid_every=10000, logger="none", max_grad_norm=1.0, use_loss_mean=True, use_ema=False, ema_beta=0.9999, num_examples_trained=0, checkpoint_dir="logs/train"):
     denoising_model.train()
     
     # Initialize EMA model if specified
@@ -329,6 +261,11 @@ def train_loop(denoising_model, train_dataloader, val_dataloader, optimizer, lr_
     step = 0
     criterion = MSELoss()
     # torch.manual_seed(0)
+
+    # Create checkpoint directory if it doesn't exist
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
     while step < total_steps:
         for x, y in train_dataloader:
             if step >= total_steps:
@@ -454,17 +391,17 @@ def train_loop(denoising_model, train_dataloader, val_dataloader, optimizer, lr_
                 denoising_model.train()
             
             if step % save_every == 0 and step > 0:
-                checkpoint_path = f"model_checkpoint_step_{step}.pth"
+                checkpoint_path = checkpoint_dir / f"model_checkpoint_step_{step}.pth"
                 torch.save(denoising_model.state_dict(), checkpoint_path)
                 print(f"Model saved at step {step}")
                 if logger == "wandb":
-                    wandb.save(checkpoint_path)
+                    wandb.save(str(checkpoint_path))
                 if use_ema:
-                    ema_checkpoint_path = f"ema_model_checkpoint_step_{step}.pth"
+                    ema_checkpoint_path = checkpoint_dir / f"ema_model_checkpoint_step_{step}.pth"
                     torch.save(ema_model.state_dict(), ema_checkpoint_path)
                     print(f"EMA Model saved at step {step}")
                     if logger == "wandb":
-                        wandb.save(ema_checkpoint_path)
+                        wandb.save(str(ema_checkpoint_path))
             
             if step % fid_every == 0 and step > 0:
                 denoising_model.eval()
@@ -499,182 +436,22 @@ def train_loop(denoising_model, train_dataloader, val_dataloader, optimizer, lr_
             step += 1
     
     # Save final model
-    if step > 100:
-        final_model_path = "final_model.pth"
+    min_steps_required_for_final_model = 100
+    if step > min_steps_required_for_final_model:
+        final_model_path = checkpoint_dir / "final_model.pth"
         torch.save(denoising_model.state_dict(), final_model_path)
         print("Final model saved")
         if logger == "wandb":
-            wandb.save(final_model_path)
+            wandb.save(str(final_model_path))
         if use_ema:
-            final_ema_model_path = "final_ema_model.pth"
+            final_ema_model_path = checkpoint_dir / "final_ema_model.pth"
             torch.save(ema_model.state_dict(), final_ema_model_path)
             print("Final EMA model saved")
             if logger == "wandb":
-                wandb.save(final_ema_model_path)
+                wandb.save(str(final_ema_model_path))
 
     return num_examples_trained  # Return this value in case you want to save it for resuming training later
 
-
-def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
-    if net == "dit_t0":
-        return DiT(
-            input_size=32,
-            patch_size=2,
-            in_channels=in_channels,
-            learn_sigma=False,
-            hidden_size=32,
-            mlp_ratio=2,
-            depth=3,
-            num_heads=1,
-            class_dropout_prob=0.1,
-        )
-    elif net == "dit_t1":
-        return DiT(
-            input_size=32,
-            patch_size=2,
-            in_channels=in_channels,
-            learn_sigma=False,
-            hidden_size=32 * 6,
-            mlp_ratio=2,
-            depth=3,
-            num_heads=6,
-            class_dropout_prob=0.1,
-        )
-    elif net == "dit_t2":
-        return DiT(
-            input_size=32,
-            patch_size=2,
-            in_channels=in_channels,
-            learn_sigma=False,
-            hidden_size=32,
-            mlp_ratio=2,
-            depth=12,
-            num_heads=1,
-            class_dropout_prob=0.1,
-        )
-    elif net == "dit_t3":
-        model = DiT(
-                input_size=32,
-                patch_size=2,
-                in_channels=in_channels,
-                learn_sigma=False,
-                hidden_size=32 * 6,
-                mlp_ratio=2,
-                depth=12,
-                num_heads=6,
-                class_dropout_prob=0.1,
-            )
-    elif net == "dit_s2":
-        model = DiT(
-                depth=12,
-                in_channels=in_channels,
-                hidden_size=384,
-                patch_size=2,
-                num_heads=6,
-                learn_sigma=False,
-            )
-    elif net == "dit_b2":
-        model = DiT(
-            depth=12,
-            in_channels=in_channels,
-            hidden_size=384,
-            patch_size=2,
-            num_heads=6,
-            learn_sigma=False,
-        )
-    elif net == "dit_b4":
-        model = DiT(
-            depth=12,
-            in_channels=in_channels,
-            hidden_size=384,
-            patch_size=4,
-            num_heads=6,
-            learn_sigma=False,
-        )
-    elif net == "dit_l2":
-        model = DiT(
-            depth=12,
-            in_channels=in_channels,
-            hidden_size=768,
-            patch_size=2,
-            num_heads=12,
-            learn_sigma=False,
-        )
-    elif net == "dit_l4":
-        model = DiT(
-            depth=12,
-            in_channels=in_channels,
-            hidden_size=768,
-            patch_size=4,
-            num_heads=12,
-            learn_sigma=False,
-        )
-    elif net == "unet":
-        model = UNetSmall(
-            image_size=resolution,
-        )
-        # model = UNet2DModel(
-        #     sample_size=resolution,
-        #     in_channels=3,
-        #     out_channels=3,
-        #     layers_per_block=2,
-        #     block_out_channels=(128, 128, 256, 256, 512, 512),
-        #     down_block_types=(
-        #         "DownBlock2D",
-        #         "DownBlock2D",
-        #         "DownBlock2D",
-        #         "DownBlock2D",
-        #         "AttnDownBlock2D",
-        #         "DownBlock2D",
-        #     ),
-        #     up_block_types=(
-        #         "UpBlock2D",
-        #         "AttnUpBlock2D",
-        #         "UpBlock2D",
-        #         "UpBlock2D",
-        #         "UpBlock2D",
-        #         "UpBlock2D",
-        #     ),
-        # )
-    else:
-        raise ValueError(f"Unsupported network architecture: {net}")
-    
-    print(f"model params: {sum(p.numel() for p in model.parameters()) / 1e6:.2f} M")
-    return model
-
-
-def get_cosine_schedule_with_warmup(
-    optimizer, num_warmup_steps: int, num_training_steps: int, num_cycles: float = 0.5, last_epoch: int = -1
-) -> LambdaLR:
-    """
-    Create a schedule with a learning rate that decreases following the values of the cosine function between the
-    initial lr set in the optimizer to 0, after a warmup period during which it increases linearly between 0 and the
-    initial lr set in the optimizer.
-
-    Args:
-        optimizer ([`~torch.optim.Optimizer`]):
-            The optimizer for which to schedule the learning rate.
-        num_warmup_steps (`int`):
-            The number of steps for the warmup phase.
-        num_training_steps (`int`):
-            The total number of training steps.
-        num_periods (`float`, *optional*, defaults to 0.5):
-            The number of periods of the cosine function in a schedule (the default is to just decrease from the max
-            value to 0 following a half-cosine).
-        last_epoch (`int`, *optional*, defaults to -1):
-            The index of the last epoch when resuming training.
-
-    Return:
-        `torch.optim.lr_scheduler.LambdaLR` with the appropriate schedule.
-    """
-
-    def lr_lambda(current_step):
-        if current_step < num_warmup_steps:
-            return float(current_step) / float(max(1, num_warmup_steps))
-        progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
-        return max(0.0, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
-
-    return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 
 def main():
@@ -705,9 +482,10 @@ def main():
     parser.add_argument("--use_loss_mean", action="store_true", help="Use loss.mean() instead of just loss")
     parser.add_argument("--watch_model", action="store_true", help="Use wandb to watch the model")
     parser.add_argument("--use_ema", action="store_true", help="Use Exponential Moving Average (EMA) for the model")
-    parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
+    parser.add_argument("--ema_beta", type=float, default=0.9999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
-    
+    parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Directory to save model checkpoints")
+
     args = parser.parse_args()
 
     # Use args to create config
@@ -813,6 +591,7 @@ def main():
         use_ema=config.use_ema,
         ema_beta=config.ema_beta,
         num_examples_trained=num_examples_trained,  # Add this line
+        checkpoint_dir=args.checkpoint_dir,  # Add this line
     )
 
     # You might want to save num_examples_trained to a checkpoint here for future resuming
