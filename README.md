@@ -17,10 +17,20 @@ bin/train.sh --logger wandb
 
 Use `--help` to see other options.
 
+## Conditional flow matching
+
+To train a conditional flow matching model, run:
+
+```bash
+bin/run.sh python -m src.train_cfm
+```
+
 ## Features
 
-- [ ] Datasets
+- Datasets
   - [x] CIFAR-10
+  - [ ] Flowers, CelebA-HQ
+  - [ ] Video frames from DeepMind Lab videos
   - [ ] Comics (TBD)
   - [ ] SAB
   - [ ] LAION-Aesthetics

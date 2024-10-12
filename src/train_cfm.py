@@ -613,7 +613,7 @@ def parse_arguments():
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
-    parser.add_argument("--total_steps", type=int, default=120000, help="Total number of training steps")
+    parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
     parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Initial learning rate")

@@ -196,7 +196,6 @@ def compute_fid(real_images: torch.Tensor, generated_images: torch.Tensor, devic
         real_path.mkdir(exist_ok=True)
         gen_path.mkdir(exist_ok=True)
 
-        
         for i, img in enumerate(generated_images):
             img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f'{i}.npy', img_np)
@@ -388,7 +387,7 @@ def update_ema_model(ema_model: Module, model: Module, ema_beta: float):
         ema_param.data.mul_(ema_beta).add_(param.data, alpha=1 - ema_beta)
 
 def save_checkpoints(model_components: DiffusionModelComponents, step: int, config: TrainingConfig):
-    save_model(model_components.denoising_model, Path(config.checkpoint_dir) + f"model_checkpoint_step_{step}.pth", config.logger)
+    save_model(model_components.denoising_model, Path(config.checkpoint_dir) / f"model_checkpoint_step_{step}.pth", config.logger)
     if config.use_ema:
         save_model(model_components.ema_model, Path(config.checkpoint_dir) / f"ema_model_checkpoint_step_{step}.pth", config.logger)
 
@@ -407,8 +406,8 @@ def log_training_step(step: int, num_examples_trained: int, loss: torch.Tensor, 
     lr = optimizer.param_groups[0]['lr']
     if logger == "wandb":
         wandb.log({
-            "step": step,
             "num_examples_trained": num_examples_trained,
+            "num_batches_trained": step,
             "loss": loss.item(),
             "learning_rate": lr
         })
@@ -565,8 +564,8 @@ def parse_arguments():
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
-    parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
-    parser.add_argument("--total_steps", type=int, default=120000, help="Total number of training steps")
+    parser.add_argument("--warmup_steps", type=int, default=1200, help="Number of warmup steps")
+    parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Initial learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-6, help="Weight decay")
@@ -622,6 +621,7 @@ def log_denoising_results(model_components: DiffusionModelComponents, config: Tr
         
         if config.logger == "wandb":
             wandb.log({
+                "num_batches_trained": step,
                 "ema_denoised_images": wandb.Image(ema_denoised_grid),
             })
         else:
