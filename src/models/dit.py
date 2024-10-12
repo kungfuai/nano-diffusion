@@ -230,11 +230,11 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    def forward(self, x, t, y=None):
+    def forward(self, t, x, y=None, *args, **kwargs):
         """
         Forward pass of DiT.
-        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
         t: (N,) tensor of diffusion timesteps
+        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
         y: (N,) tensor of class labels
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
@@ -251,7 +251,7 @@ class DiT(nn.Module):
         # return x
         return SimpleNamespace(sample=x)
 
-    def forward_with_cfg(self, x, t, y=None, cfg_scale=0.0):
+    def forward_with_cfg(self, t, x, y=None, cfg_scale=0.0):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
@@ -261,9 +261,9 @@ class DiT(nn.Module):
         
         # model_out = self.forward(combined, t, y)
         if y is not None:
-            model_out = self.forward(combined, t, y)
+            model_out = self.forward(t, combined, y)
         else:
-            model_out = self.forward(combined, t)
+            model_out = self.forward(t, combined)
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
