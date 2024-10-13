@@ -53,6 +53,7 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
+from src.plan.ot import OTPlanSampler
 from src.models.factory import create_model
 from src.models.ema import create_ema_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
@@ -265,6 +266,102 @@ class ConditionalFlowMatcher:
 
 
 
+class ExactOptimalTransportConditionalFlowMatcher(ConditionalFlowMatcher):
+    """Child class for optimal transport conditional flow matching method. This class implements
+    the OT-CFM methods from [1] and inherits the ConditionalFlowMatcher parent class.
+
+    It overrides the sample_location_and_conditional_flow.
+    """
+
+    def __init__(self, sigma: Union[float, int] = 0.0):
+        r"""Initialize the ConditionalFlowMatcher class. It requires the hyper-parameter $\sigma$.
+
+        Parameters
+        ----------
+        sigma : Union[float, int]
+        ot_sampler: exact OT method to draw couplings (x0, x1) (see Eq.(17) [1]).
+        """
+        super().__init__(sigma)
+        self.ot_sampler = OTPlanSampler(method="exact")
+
+    def sample_location_and_conditional_flow(self, x0, x1, t=None, return_noise=False):
+        r"""
+        Compute the sample xt (drawn from N(t * x1 + (1 - t) * x0, sigma))
+        and the conditional vector field ut(x1|x0) = x1 - x0, see Eq.(15) [1]
+        with respect to the minibatch OT plan $\Pi$.
+
+        Parameters
+        ----------
+        x0 : Tensor, shape (bs, *dim)
+            represents the source minibatch
+        x1 : Tensor, shape (bs, *dim)
+            represents the target minibatch
+        (optionally) t : Tensor, shape (bs)
+            represents the time levels
+            if None, drawn from uniform [0,1]
+        return_noise : bool
+            return the noise sample epsilon
+
+        Returns
+        -------
+        t : FloatTensor, shape (bs)
+        xt : Tensor, shape (bs, *dim)
+            represents the samples drawn from probability path pt
+        ut : conditional vector field ut(x1|x0) = x1 - x0
+        (optionally) epsilon : Tensor, shape (bs, *dim) such that xt = mu_t + sigma_t * epsilon
+
+        References
+        ----------
+        [1] Improving and Generalizing Flow-Based Generative Models with minibatch optimal transport, Preprint, Tong et al.
+        """
+        x0, x1 = self.ot_sampler.sample_plan(x0, x1)
+        return super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+
+    def guided_sample_location_and_conditional_flow(
+        self, x0, x1, y0=None, y1=None, t=None, return_noise=False
+    ):
+        r"""
+        Compute the sample xt (drawn from N(t * x1 + (1 - t) * x0, sigma))
+        and the conditional vector field ut(x1|x0) = x1 - x0, see Eq.(15) [1]
+        with respect to the minibatch OT plan $\Pi$.
+
+        Parameters
+        ----------
+        x0 : Tensor, shape (bs, *dim)
+            represents the source minibatch
+        x1 : Tensor, shape (bs, *dim)
+            represents the target minibatch
+        y0 : Tensor, shape (bs) (default: None)
+            represents the source label minibatch
+        y1 : Tensor, shape (bs) (default: None)
+            represents the target label minibatch
+        (optionally) t : Tensor, shape (bs)
+            represents the time levels
+            if None, drawn from uniform [0,1]
+        return_noise : bool
+            return the noise sample epsilon
+
+        Returns
+        -------
+        t : FloatTensor, shape (bs)
+        xt : Tensor, shape (bs, *dim)
+            represents the samples drawn from probability path pt
+        ut : conditional vector field ut(x1|x0) = x1 - x0
+        (optionally) epsilon : Tensor, shape (bs, *dim) such that xt = mu_t + sigma_t * epsilon
+
+        References
+        ----------
+        [1] Improving and Generalizing Flow-Based Generative Models with minibatch optimal transport, Preprint, Tong et al.
+        """
+        x0, x1, y0, y1 = self.ot_sampler.sample_plan_with_labels(x0, x1, y0, y1)
+        if return_noise:
+            t, xt, ut, eps = super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+            return t, xt, ut, y0, y1, eps
+        else:
+            t, xt, ut = super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+            return t, xt, ut, y0, y1
+
+
 def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, parallel: bool = False, seed: int = 0):
     """Generate samples.
 
@@ -327,6 +424,9 @@ class TrainingConfig:
     resolution: int # resolution of the image
     net: str # network architecture
     num_denoising_steps: int # number of timesteps
+    
+    # Flow plan algorithm
+    plan: str # flow matching plan
 
     # Training loop and optimizer
     total_steps: int  # total number of training steps
@@ -576,7 +676,12 @@ def create_flow_matching_model_components(config: TrainingConfig) -> FlowMatchin
     ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
     optimizer = optim.AdamW(denoising_model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup_steps, num_training_steps=config.total_steps, lr_min=config.lr_min)
-    FM = ConditionalFlowMatcher(sigma=0)
+    if config.plan == "ot":
+        FM = ExactOptimalTransportConditionalFlowMatcher(sigma=0)
+    elif config.plan == "simple":
+        FM = ConditionalFlowMatcher(sigma=0)
+    else:
+        raise ValueError(f"Unknown plan: {config.plan}")
 
     return FlowMatchingModelComponents(denoising_model, ema_model, optimizer, lr_scheduler, FM)
 
@@ -610,6 +715,7 @@ def parse_arguments():
         "dit_b2", "dit_b4", "dit_l2", "dit_l4",
         "unet_small", "unet", "unet_large",
     ], default="unet_small", help="Network architecture")
+    parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
