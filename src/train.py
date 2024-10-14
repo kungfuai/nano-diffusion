@@ -262,6 +262,8 @@ class TrainingConfig:
     checkpoint_dir: str = "logs/train" # checkpoint directory
     min_steps_for_final_save: int = 100 # minimum steps for final save
     watch_model: bool = False # watch the model with wandb
+    init_from_wandb_run_path: str = None # resume model from a wandb run path "user/project/run_id"
+    init_from_wandb_file: str = None # resume model from a wandb file "path/to/file"
 
     # Data augmentation
     random_flip: bool = False # randomly flip images horizontally
@@ -341,7 +343,7 @@ def training_loop(
                     validate_and_log(compute_validation_loss, model_components, val_dataloader, config)
                 
                 if step % config.sample_every == 0:
-                    generate_and_log_samples(model_components, config)
+                    generate_and_log_samples(model_components, config, step)
                     # log_denoising_results(model_components, config, step, train_dataloader)
                 
                 if step % config.save_every == 0 and step > 0:
@@ -451,8 +453,8 @@ def generate_and_log_samples(model_components: DiffusionModelComponents, config:
                 "test_samples": [wandb.Image(img) for img in images_processed],
             })
     else:
-        for i in range(sampled_images.shape[0]):
-            save_image(sampled_images[i], Path(config.checkpoint_dir) / f"generated_sample_{i}_step_{step}.png")
+        grid = make_grid(sampled_images, nrow=2, normalize=True, value_range=(-1, 1))
+        save_image(grid, Path(config.checkpoint_dir) / f"generated_sample_step_{step}.png")
 
     if config.use_ema:
         ema_sampled_images = generate_samples_by_denoising(ema_model, x, noise_schedule, config.num_denoising_steps, device)
@@ -465,8 +467,8 @@ def generate_and_log_samples(model_components: DiffusionModelComponents, config:
                     "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
                 })
         else:
-            for i in range(ema_images_processed.shape[0]):
-                save_image(ema_images_processed[i], Path(config.checkpoint_dir) / f"ema_generated_sample_{i}_step_{step}.png")
+            grid = make_grid(ema_sampled_images, nrow=2, normalize=True, value_range=(-1, 1))
+            save_image(grid, Path(config.checkpoint_dir) / f"ema_generated_sample_step_{step}.png")
 
 def compute_and_log_fid(model_components: DiffusionModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
     device = torch.device(config.device)
@@ -520,6 +522,14 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
 
     return train_dataloader, val_dataloader
 
+
+def load_model_from_wandb(model, run_path, file_name):
+    print(f"Restoring model from {run_path} and {file_name}")
+    model_to_resume_from = wandb.restore(file_name, run_path=run_path, replace=True)
+    model.load_state_dict(torch.load(model_to_resume_from.name, weights_only=True))
+    print(f"Model restored from {model_to_resume_from.name}")
+
+
 def create_diffusion_model_components(config: TrainingConfig) -> DiffusionModelComponents:
     device = torch.device(config.device)
     denoising_model = create_model(net=config.net, in_channels=config.in_channels, resolution=config.resolution)
@@ -528,6 +538,9 @@ def create_diffusion_model_components(config: TrainingConfig) -> DiffusionModelC
     optimizer = optim.AdamW(denoising_model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup_steps, num_training_steps=config.total_steps, lr_min=config.lr_min)
     noise_schedule = create_noise_schedule(config.num_denoising_steps, device)
+
+    if config.init_from_wandb_run_path and config.init_from_wandb_file:
+        load_model_from_wandb(denoising_model, config.init_from_wandb_run_path, config.init_from_wandb_file)
 
     return DiffusionModelComponents(denoising_model, ema_model, optimizer, lr_scheduler, noise_schedule)
 
@@ -583,7 +596,8 @@ def parse_arguments():
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
-    
+    parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Resume from a wandb run path")
+    parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Resume from a wandb file")
     args = parser.parse_args()
     return args
 

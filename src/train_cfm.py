@@ -59,7 +59,7 @@ from src.models.ema import create_ema_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from src.train import create_model, create_ema_model, log_training_step, \
     compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
-    save_checkpoints
+    save_checkpoints, load_model_from_wandb
 
 
 
@@ -458,6 +458,8 @@ class TrainingConfig:
     checkpoint_dir: str = "logs/train" # checkpoint directory
     min_steps_for_final_save: int = 100 # minimum steps for final save
     watch_model: bool = False # watch the model with wandb
+    init_from_wandb_run_path: str = None # initialize model from a wandb run path
+    init_from_wandb_file: str = None # initialize model from a wandb file
 
     # Data augmentation
     random_flip: bool = False # randomly flip images horizontally
@@ -532,7 +534,7 @@ def training_loop(
                     validate_and_log(compute_validation_loss, model_components, val_dataloader, config)
                 
                 if step % config.sample_every == 0:
-                    generate_and_log_samples(model_components, config, seed=0)
+                    generate_and_log_samples(model_components, config, seed=0, step=step)
                     # log_denoising_results(model_components, config, step, train_dataloader)
                 
                 if step % config.save_every == 0 and step > 0:
@@ -682,6 +684,9 @@ def create_flow_matching_model_components(config: TrainingConfig) -> FlowMatchin
         FM = ConditionalFlowMatcher(sigma=0)
     else:
         raise ValueError(f"Unknown plan: {config.plan}")
+    
+    if config.init_from_wandb_run_path and config.init_from_wandb_file:
+        load_model_from_wandb(denoising_model, config.init_from_wandb_run_path, config.init_from_wandb_file)
 
     return FlowMatchingModelComponents(denoising_model, ema_model, optimizer, lr_scheduler, FM)
 
@@ -738,7 +743,8 @@ def parse_arguments():
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
-    
+    parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Initialize model from a wandb run path")
+    parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Initialize model from a wandb file")
     args = parser.parse_args()
     return args
 
