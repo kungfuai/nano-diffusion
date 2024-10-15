@@ -55,9 +55,8 @@ except ImportError:
 
 from src.plan.ot import OTPlanSampler
 from src.models.factory import create_model
-from src.models.ema import create_ema_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.train import create_model, create_ema_model, log_training_step, \
+from src.train import create_model, log_training_step, \
     compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
     save_checkpoints, load_model_from_wandb
 

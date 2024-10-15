@@ -53,7 +53,6 @@ except ImportError:
 
 
 from src.models.factory import create_model
-from src.models.ema import create_ema_model
 from src.utils.sample import threshold_sample, denoise_and_compare
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 
@@ -254,6 +253,7 @@ class TrainingConfig:
     use_loss_mean: bool = False # use loss.mean() instead of just loss
     use_ema: bool = False # use EMA for the model
     ema_beta: float = 0.9999 # EMA decay factor
+    ema_start_step: int = 0  # step to start EMA update
 
     # Accelerator
     device: str = "cuda" # device to use for training
@@ -335,7 +335,10 @@ def training_loop(
             
             with torch.no_grad():
                 if config.use_ema:
-                    update_ema_model(ema_model, denoising_model, config.ema_beta)
+                    if step >= config.ema_start_step:
+                        update_ema_model(ema_model, denoising_model, config.ema_beta)
+                    else:
+                        ema_model.load_state_dict(denoising_model.state_dict())
             
                 if step % config.log_every == 0:
                     log_training_step(step, num_examples_trained, loss, optimizer, config.logger)
@@ -596,6 +599,7 @@ def parse_arguments():
     parser.add_argument("--watch_model", action="store_true", help="Use wandb to watch the model")
     parser.add_argument("--use_ema", action="store_true", help="Use Exponential Moving Average (EMA) for the model")
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
+    parser.add_argument("--ema_start_step", type=int, default=2000, help="Step to start EMA update")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
     parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Resume from a wandb run path")
