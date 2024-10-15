@@ -23,6 +23,7 @@ The variance β at each timestep defines how much noise to add. It can be a fixe
 
 import argparse
 import tempfile
+import copy
 from typing import Callable
 import numpy as np
 import os
@@ -453,7 +454,7 @@ def generate_and_log_samples(model_components: DiffusionModelComponents, config:
                 "test_samples": [wandb.Image(img) for img in images_processed],
             })
     else:
-        grid = make_grid(sampled_images, nrow=2, normalize=True, value_range=(-1, 1))
+        grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
         save_image(grid, Path(config.checkpoint_dir) / f"generated_sample_step_{step}.png")
 
     if config.use_ema:
@@ -467,7 +468,7 @@ def generate_and_log_samples(model_components: DiffusionModelComponents, config:
                     "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
                 })
         else:
-            grid = make_grid(ema_sampled_images, nrow=2, normalize=True, value_range=(-1, 1))
+            grid = make_grid(ema_sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
             save_image(grid, Path(config.checkpoint_dir) / f"ema_generated_sample_step_{step}.png")
 
 def compute_and_log_fid(model_components: DiffusionModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
@@ -534,7 +535,8 @@ def create_diffusion_model_components(config: TrainingConfig) -> DiffusionModelC
     device = torch.device(config.device)
     denoising_model = create_model(net=config.net, in_channels=config.in_channels, resolution=config.resolution)
     denoising_model = denoising_model.to(device)
-    ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    ema_model = copy.deepcopy(denoising_model) if config.use_ema else None
     optimizer = optim.AdamW(denoising_model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup_steps, num_training_steps=config.total_steps, lr_min=config.lr_min)
     noise_schedule = create_noise_schedule(config.num_denoising_steps, device)

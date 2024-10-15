@@ -25,8 +25,8 @@ The CFM implementation is based on https://github.com/atong01/conditional-flow-m
 """
 
 import argparse
-from typing import Callable
-from typing import Union
+import copy
+from typing import Callable, Union
 import os
 from pathlib import Path
 import torch
@@ -443,6 +443,7 @@ class TrainingConfig:
     validate_every: int # compute validation loss every N steps
     fid_every: int # compute FID every N steps
     num_samples_for_fid: int = 1000 # number of samples for FID
+    num_samples_for_logging: int = 16 # number of samples for logging
 
     # Regularization
     max_grad_norm: float = -1 # maximum norm for gradient clipping
@@ -599,7 +600,7 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
 
     # Generate random noise
     # TODO: make this a config parameter
-    n_samples = 8
+    n_samples = config.num_samples_for_logging
     # Sample using the main model
     sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, seed=seed)
     images_processed = (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
@@ -611,8 +612,8 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
                 "test_samples": [wandb.Image(img) for img in images_processed],
             })
     else:
-        for i in range(sampled_images.shape[0]):
-            save_image(sampled_images[i], Path(config.checkpoint_dir) / f"generated_sample_{i}_step_{step}.png")
+        grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
+        save_image(grid, Path(config.checkpoint_dir) / f"generated_samples_step_{step}.png")
 
     if config.use_ema:
         ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples)
@@ -625,8 +626,9 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
                     "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
                 })
         else:
-            for i in range(ema_images_processed.shape[0]):
-                save_image(ema_images_processed[i], Path(config.checkpoint_dir) / f"ema_generated_sample_{i}_step_{step}.png")
+            # make grid
+            grid = make_grid(ema_sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
+            save_image(grid, Path(config.checkpoint_dir) / f"ema_generated_samples_step_{step}.png")
 
 
 def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
@@ -675,7 +677,8 @@ def create_flow_matching_model_components(config: TrainingConfig) -> FlowMatchin
     device = torch.device(config.device)
     denoising_model = create_model(net=config.net, in_channels=config.in_channels, resolution=config.resolution)
     denoising_model = denoising_model.to(device)
-    ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    ema_model = copy.deepcopy(denoising_model) if config.use_ema else None
     optimizer = optim.AdamW(denoising_model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup_steps, num_training_steps=config.total_steps, lr_min=config.lr_min)
     if config.plan == "ot":
@@ -724,6 +727,8 @@ def parse_arguments():
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
+    parser.add_argument("--num_samples_for_logging", type=int, default=16, help="Number of samples for logging")
+    parser.add_argument("--num_samples_for_fid", type=int, default=1000, help="Number of samples for FID")
     parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
     parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
@@ -816,7 +821,7 @@ def log_denoising_results(model_components: FlowMatchingModelComponents, config:
             })
         else:
             save_image(ema_denoised_grid, Path(config.checkpoint_dir) / f"ema_denoised_images_step_{step}.png")
-            # You might want to save the EMA MSE list to a file here
+
 
 def main():
     args = parse_arguments()
@@ -828,6 +833,7 @@ def main():
     num_examples_trained = training_loop(model_components, train_dataloader, val_dataloader, config)
     
     print(f"Training completed. Total examples trained: {num_examples_trained}")
+
 
 if __name__ == "__main__":
     main()

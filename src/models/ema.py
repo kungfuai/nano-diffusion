@@ -30,5 +30,5 @@ class EMA:
 
 def create_ema_model(model, ema_beta):
     ema_model = copy.deepcopy(model)
-    ema = EMA(beta=ema_beta)
+    # ema = EMA(beta=ema_beta)
     return ema_model, ema
