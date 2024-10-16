@@ -577,7 +577,7 @@ def parse_arguments():
         "dit_t0", "dit_t1", "dit_t2", "dit_t3",
         "dit_s2", "dit_b2", "dit_b4", 
         "dit_b2", "dit_b4", "dit_l2", "dit_l4",
-        "unet_small", "unet", "unet_large",
+        "unet_small", "unet", "unet_big",
     ], default="unet_small", help="Network architecture")
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
