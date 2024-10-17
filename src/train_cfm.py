@@ -25,8 +25,8 @@ The CFM implementation is based on https://github.com/atong01/conditional-flow-m
 """
 
 import argparse
-from typing import Callable
-from typing import Union
+import copy
+from typing import Callable, Union
 import os
 from pathlib import Path
 import torch
@@ -53,12 +53,12 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
+from src.plan.ot import OTPlanSampler
 from src.models.factory import create_model
-from src.models.ema import create_ema_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.train import create_model, create_ema_model, log_training_step, \
+from src.train import create_model, log_training_step, \
     compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
-    save_checkpoints
+    save_checkpoints, load_model_from_wandb
 
 
 
@@ -265,6 +265,102 @@ class ConditionalFlowMatcher:
 
 
 
+class ExactOptimalTransportConditionalFlowMatcher(ConditionalFlowMatcher):
+    """Child class for optimal transport conditional flow matching method. This class implements
+    the OT-CFM methods from [1] and inherits the ConditionalFlowMatcher parent class.
+
+    It overrides the sample_location_and_conditional_flow.
+    """
+
+    def __init__(self, sigma: Union[float, int] = 0.0):
+        r"""Initialize the ConditionalFlowMatcher class. It requires the hyper-parameter $\sigma$.
+
+        Parameters
+        ----------
+        sigma : Union[float, int]
+        ot_sampler: exact OT method to draw couplings (x0, x1) (see Eq.(17) [1]).
+        """
+        super().__init__(sigma)
+        self.ot_sampler = OTPlanSampler(method="exact")
+
+    def sample_location_and_conditional_flow(self, x0, x1, t=None, return_noise=False):
+        r"""
+        Compute the sample xt (drawn from N(t * x1 + (1 - t) * x0, sigma))
+        and the conditional vector field ut(x1|x0) = x1 - x0, see Eq.(15) [1]
+        with respect to the minibatch OT plan $\Pi$.
+
+        Parameters
+        ----------
+        x0 : Tensor, shape (bs, *dim)
+            represents the source minibatch
+        x1 : Tensor, shape (bs, *dim)
+            represents the target minibatch
+        (optionally) t : Tensor, shape (bs)
+            represents the time levels
+            if None, drawn from uniform [0,1]
+        return_noise : bool
+            return the noise sample epsilon
+
+        Returns
+        -------
+        t : FloatTensor, shape (bs)
+        xt : Tensor, shape (bs, *dim)
+            represents the samples drawn from probability path pt
+        ut : conditional vector field ut(x1|x0) = x1 - x0
+        (optionally) epsilon : Tensor, shape (bs, *dim) such that xt = mu_t + sigma_t * epsilon
+
+        References
+        ----------
+        [1] Improving and Generalizing Flow-Based Generative Models with minibatch optimal transport, Preprint, Tong et al.
+        """
+        x0, x1 = self.ot_sampler.sample_plan(x0, x1)
+        return super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+
+    def guided_sample_location_and_conditional_flow(
+        self, x0, x1, y0=None, y1=None, t=None, return_noise=False
+    ):
+        r"""
+        Compute the sample xt (drawn from N(t * x1 + (1 - t) * x0, sigma))
+        and the conditional vector field ut(x1|x0) = x1 - x0, see Eq.(15) [1]
+        with respect to the minibatch OT plan $\Pi$.
+
+        Parameters
+        ----------
+        x0 : Tensor, shape (bs, *dim)
+            represents the source minibatch
+        x1 : Tensor, shape (bs, *dim)
+            represents the target minibatch
+        y0 : Tensor, shape (bs) (default: None)
+            represents the source label minibatch
+        y1 : Tensor, shape (bs) (default: None)
+            represents the target label minibatch
+        (optionally) t : Tensor, shape (bs)
+            represents the time levels
+            if None, drawn from uniform [0,1]
+        return_noise : bool
+            return the noise sample epsilon
+
+        Returns
+        -------
+        t : FloatTensor, shape (bs)
+        xt : Tensor, shape (bs, *dim)
+            represents the samples drawn from probability path pt
+        ut : conditional vector field ut(x1|x0) = x1 - x0
+        (optionally) epsilon : Tensor, shape (bs, *dim) such that xt = mu_t + sigma_t * epsilon
+
+        References
+        ----------
+        [1] Improving and Generalizing Flow-Based Generative Models with minibatch optimal transport, Preprint, Tong et al.
+        """
+        x0, x1, y0, y1 = self.ot_sampler.sample_plan_with_labels(x0, x1, y0, y1)
+        if return_noise:
+            t, xt, ut, eps = super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+            return t, xt, ut, y0, y1, eps
+        else:
+            t, xt, ut = super().sample_location_and_conditional_flow(x0, x1, t, return_noise)
+            return t, xt, ut, y0, y1
+
+
 def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, parallel: bool = False, seed: int = 0):
     """Generate samples.
 
@@ -327,6 +423,9 @@ class TrainingConfig:
     resolution: int # resolution of the image
     net: str # network architecture
     num_denoising_steps: int # number of timesteps
+    
+    # Flow plan algorithm
+    plan: str # flow matching plan
 
     # Training loop and optimizer
     total_steps: int  # total number of training steps
@@ -343,6 +442,7 @@ class TrainingConfig:
     validate_every: int # compute validation loss every N steps
     fid_every: int # compute FID every N steps
     num_samples_for_fid: int = 1000 # number of samples for FID
+    num_samples_for_logging: int = 16 # number of samples for logging
 
     # Regularization
     max_grad_norm: float = -1 # maximum norm for gradient clipping
@@ -358,6 +458,8 @@ class TrainingConfig:
     checkpoint_dir: str = "logs/train" # checkpoint directory
     min_steps_for_final_save: int = 100 # minimum steps for final save
     watch_model: bool = False # watch the model with wandb
+    init_from_wandb_run_path: str = None # initialize model from a wandb run path
+    init_from_wandb_file: str = None # initialize model from a wandb file
 
     # Data augmentation
     random_flip: bool = False # randomly flip images horizontally
@@ -432,7 +534,7 @@ def training_loop(
                     validate_and_log(compute_validation_loss, model_components, val_dataloader, config)
                 
                 if step % config.sample_every == 0:
-                    generate_and_log_samples(model_components, config, seed=0)
+                    generate_and_log_samples(model_components, config, seed=0, step=step)
                     # log_denoising_results(model_components, config, step, train_dataloader)
                 
                 if step % config.save_every == 0 and step > 0:
@@ -497,7 +599,7 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
 
     # Generate random noise
     # TODO: make this a config parameter
-    n_samples = 8
+    n_samples = config.num_samples_for_logging
     # Sample using the main model
     sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, seed=seed)
     images_processed = (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
@@ -509,8 +611,8 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
                 "test_samples": [wandb.Image(img) for img in images_processed],
             })
     else:
-        for i in range(sampled_images.shape[0]):
-            save_image(sampled_images[i], Path(config.checkpoint_dir) / f"generated_sample_{i}_step_{step}.png")
+        grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
+        save_image(grid, Path(config.checkpoint_dir) / f"generated_samples_step_{step}.png")
 
     if config.use_ema:
         ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples)
@@ -523,8 +625,9 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
                     "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
                 })
         else:
-            for i in range(ema_images_processed.shape[0]):
-                save_image(ema_images_processed[i], Path(config.checkpoint_dir) / f"ema_generated_sample_{i}_step_{step}.png")
+            # make grid
+            grid = make_grid(ema_sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
+            save_image(grid, Path(config.checkpoint_dir) / f"ema_generated_samples_step_{step}.png")
 
 
 def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
@@ -573,10 +676,19 @@ def create_flow_matching_model_components(config: TrainingConfig) -> FlowMatchin
     device = torch.device(config.device)
     denoising_model = create_model(net=config.net, in_channels=config.in_channels, resolution=config.resolution)
     denoising_model = denoising_model.to(device)
-    ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
+    ema_model = copy.deepcopy(denoising_model) if config.use_ema else None
     optimizer = optim.AdamW(denoising_model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup_steps, num_training_steps=config.total_steps, lr_min=config.lr_min)
-    FM = ConditionalFlowMatcher(sigma=0)
+    if config.plan == "ot":
+        FM = ExactOptimalTransportConditionalFlowMatcher(sigma=0)
+    elif config.plan == "simple":
+        FM = ConditionalFlowMatcher(sigma=0)
+    else:
+        raise ValueError(f"Unknown plan: {config.plan}")
+    
+    if config.init_from_wandb_run_path and config.init_from_wandb_file:
+        load_model_from_wandb(denoising_model, config.init_from_wandb_run_path, config.init_from_wandb_file)
 
     return FlowMatchingModelComponents(denoising_model, ema_model, optimizer, lr_scheduler, FM)
 
@@ -608,11 +720,14 @@ def parse_arguments():
         "dit_t0", "dit_t1", "dit_t2", "dit_t3",
         "dit_s2", "dit_b2", "dit_b4", 
         "dit_b2", "dit_b4", "dit_l2", "dit_l4",
-        "unet_small", "unet", "unet_large",
+        "unet_small", "unet", "unet_big",
     ], default="unet_small", help="Network architecture")
+    parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
+    parser.add_argument("--num_samples_for_logging", type=int, default=16, help="Number of samples for logging")
+    parser.add_argument("--num_samples_for_fid", type=int, default=1000, help="Number of samples for FID")
     parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
     parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
@@ -632,7 +747,8 @@ def parse_arguments():
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
-    
+    parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Initialize model from a wandb run path")
+    parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Initialize model from a wandb file")
     args = parser.parse_args()
     return args
 
@@ -704,7 +820,7 @@ def log_denoising_results(model_components: FlowMatchingModelComponents, config:
             })
         else:
             save_image(ema_denoised_grid, Path(config.checkpoint_dir) / f"ema_denoised_images_step_{step}.png")
-            # You might want to save the EMA MSE list to a file here
+
 
 def main():
     args = parse_arguments()
@@ -716,6 +832,7 @@ def main():
     num_examples_trained = training_loop(model_components, train_dataloader, val_dataloader, config)
     
     print(f"Training completed. Total examples trained: {num_examples_trained}")
+
 
 if __name__ == "__main__":
     main()
