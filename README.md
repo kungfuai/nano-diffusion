@@ -39,7 +39,7 @@ bin/run.sh python -m src.train_cfm
   - [x] DiT (tiny, small, base, large)
 - Training algorithms and scaling:
   - [x] DDPM
-  - [ ] Conditional flow matching
+  - [x] Conditional flow matching
   - [ ] Text conditioning
   - [ ] Multi-GPU training
   - [ ] Mixed precision training
@@ -49,4 +49,4 @@ bin/run.sh python -m src.train_cfm
   - [x] Log FID score
   - [ ] Log Denoising results
   - [ ] Visualize denoising path with dimension reduction
-  - [ ] Resume training from a wandb run
+  - [x] Resume training from a wandb run
