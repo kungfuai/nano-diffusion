@@ -637,14 +637,19 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
 def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
     device = torch.device(config.device)
     
-    real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
+    if config.dataset_name in ["cifar10"]:
+        # No need to get real images, as the stats are already computed.
+        real_images = None
+    else:
+        real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
+    
     batch_size = config.batch_size  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
-    for _ in range(num_batches):
+    for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
-        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size)
+        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, seed=i)
         generated_images.append(batch_images)
 
     generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
@@ -657,9 +662,9 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
         batch_size = config.batch_size
         num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
         
-        for _ in range(num_batches):
+        for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
-            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size)
+            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, seed=i)
             ema_generated_images.append(batch_images)
         
         ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
