@@ -375,19 +375,19 @@ def generate_samples_with_flow_matching(denoising_model, device, num_samples: in
     step: int
         represents the current step of training
     """
-    model_ = denoising_model
+    model = denoising_model
     
     if parallel:
         import copy
-        model_ = copy.deepcopy(denoising_model)
+        model = copy.deepcopy(denoising_model)
         # Send the models from GPU to CPU for inference with NeuralODE from Torchdyn
-        model_ = model_.to(device)
+        model = model.to(device)
 
     with torch.no_grad():
         torch.manual_seed(seed)
-        node_ = NeuralODE(model_, solver="euler", sensitivity="adjoint")
+        node = NeuralODE(model, solver="euler", sensitivity="adjoint")
         with torch.no_grad():
-            traj = node_.trajectory(
+            traj = node.trajectory(
                 torch.randn(num_samples, 3, 32, 32, device=device),
                 t_span=torch.linspace(0, 1, 100, device=device),
             )
