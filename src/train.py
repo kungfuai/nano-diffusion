@@ -53,7 +53,7 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
-from src.datasets.flowers import FlowersDatset
+from src.datasets.flowers_dataset import FlowersDatset
 from src.models.factory import create_model
 from src.utils.sample import threshold_sample, denoise_and_compare
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
