@@ -29,7 +29,6 @@ from pathlib import Path
 import tempfile
 from typing import Callable, Optional, Dict, Any, Tuple
 
-from datasets import load_dataset
 import numpy as np
 import torch
 import torch.optim as optim
@@ -53,6 +52,7 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
+from src.datasets.celeb_dataset import CelebDataset
 from src.datasets.flowers_dataset import FlowersDatset
 from src.models.factory import create_model
 from src.utils.sample import threshold_sample, denoise_and_compare
@@ -716,6 +716,9 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
     elif config.dataset == "flowers":
         print("Loading Flowers dataset")
         full_dataset = FlowersDatset(transform=transform)
+    elif config.dataset == "celeb":
+        print("Loading CelebA dataset")
+        full_dataset = CelebDataset(transform=transform)
     else:
         raise ValueError(f"Unknown dataset: {config.dataset}")
 
@@ -920,7 +923,7 @@ def parse_arguments():
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=["cifar10", "flowers"],
+        choices=["cifar10", "flowers", "celeb"],
         default="cifar10",
         help="Dataset to use",
     )
