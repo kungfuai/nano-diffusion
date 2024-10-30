@@ -1,15 +1,17 @@
 """
-Oxford Flowers Dataset from Hugging Face Datasets
-https://huggingface.co/datasets/oxford_flowers102
+Pokemon dataset from Hugging Face Datasets
+https://huggingface.co/datasets/keremberke/pokemon-classification
 """
 
 from datasets import load_dataset
 from torch.utils.data import Dataset
 
 
-class FlowersDataset(Dataset):
+class PokemonDataset(Dataset):
     def __init__(self, transform=None):
-        self.dataset = load_dataset("nelorth/oxford-flowers", split="train")
+        self.dataset = load_dataset(
+            "keremberke/pokemon-classification", name="full", split="train"
+        )
         self.transform = transform
 
     def __len__(self):
@@ -17,7 +19,7 @@ class FlowersDataset(Dataset):
 
     def __getitem__(self, idx):
         image = self.dataset[idx]["image"]
-        label = self.dataset[idx]["label"]
+        label = self.dataset[idx]["labels"]
         if self.transform:
             image = self.transform(image)
         return image, label

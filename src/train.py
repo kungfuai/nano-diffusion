@@ -53,7 +53,8 @@ except ImportError:
 
 
 from src.datasets.celeb_dataset import CelebDataset
-from src.datasets.flowers_dataset import FlowersDatset
+from src.datasets.flowers_dataset import FlowersDataset
+from src.datasets.pokemon_dataset import PokemonDataset
 from src.models.factory import create_model
 from src.utils.sample import threshold_sample, denoise_and_compare
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
@@ -324,7 +325,7 @@ class TrainingConfig:
     random_flip: bool = False  # randomly flip images horizontally
 
     # Datset
-    dataset: str = "flowers102"  # dataset to use Options: ["cifar10", "flowers102"]
+    dataset: str = "cifar10"  # dataset to use for training
 
 
 @dataclass
@@ -715,10 +716,13 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         )  # list of tuples (image, label)
     elif config.dataset == "flowers":
         print("Loading Flowers dataset")
-        full_dataset = FlowersDatset(transform=transform)
+        full_dataset = FlowersDataset(transform=transform)
     elif config.dataset == "celeb":
         print("Loading CelebA dataset")
         full_dataset = CelebDataset(transform=transform)
+    elif config.dataset == "pokemon":
+        print("Loading Pokemon dataset")
+        full_dataset = PokemonDataset(transform=transform)
     else:
         raise ValueError(f"Unknown dataset: {config.dataset}")
 
@@ -923,7 +927,7 @@ def parse_arguments():
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=["cifar10", "flowers", "celeb"],
+        choices=["cifar10", "flowers", "celeb", "pokemon"],
         default="cifar10",
         help="Dataset to use",
     )
