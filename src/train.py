@@ -490,7 +490,7 @@ def compute_and_log_fid(model_components: DiffusionModelComponents, config: Trai
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
-    for _ in range(num_batches):
+    for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
