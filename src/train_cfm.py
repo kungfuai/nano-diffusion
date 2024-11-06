@@ -375,19 +375,19 @@ def generate_samples_with_flow_matching(denoising_model, device, num_samples: in
     step: int
         represents the current step of training
     """
-    model_ = denoising_model
+    model = denoising_model
     
     if parallel:
         import copy
-        model_ = copy.deepcopy(denoising_model)
+        model = copy.deepcopy(denoising_model)
         # Send the models from GPU to CPU for inference with NeuralODE from Torchdyn
-        model_ = model_.to(device)
+        model = model.to(device)
 
     with torch.no_grad():
         torch.manual_seed(seed)
-        node_ = NeuralODE(model_, solver="euler", sensitivity="adjoint")
+        node = NeuralODE(model, solver="euler", sensitivity="adjoint")
         with torch.no_grad():
-            traj = node_.trajectory(
+            traj = node.trajectory(
                 torch.randn(num_samples, 3, 32, 32, device=device),
                 t_span=torch.linspace(0, 1, 100, device=device),
             )
@@ -418,9 +418,12 @@ def compute_validation_loss(model: Module, val_dataloader: DataLoader, device: t
 
 @dataclass
 class TrainingConfig:
+    # Dataset
+    dataset_name: str # dataset name
+    resolution: int # resolution of the image
+    
     # Model architecture
     in_channels: int # number of input channels
-    resolution: int # resolution of the image
     net: str # network architecture
     num_denoising_steps: int # number of timesteps
     
@@ -549,6 +552,7 @@ def training_loop(
         save_final_models(model_components, config)
 
     return num_examples_trained
+
 def train_step(denoising_model: Module, x_1: torch.Tensor, FM: ConditionalFlowMatcher, 
                optimizer: Optimizer, config: TrainingConfig, device: torch.device) -> torch.Tensor:
     optimizer.zero_grad()
@@ -592,7 +596,7 @@ def validate_and_log(compute_validation_loss: Callable, model_components: FlowMa
             print(f"EMA Validation Loss: {ema_val_loss:.4f}")
 
 def generate_and_log_samples(model_components: FlowMatchingModelComponents, config: TrainingConfig, step: int = None, seed: int = 0):
-    print(f"Generating and logging samples on {config.device}")
+    print(f"Generating and logging {config.num_samples_for_logging} samples on {config.device}")
     device = torch.device(config.device)
     denoising_model = model_components.denoising_model
     ema_model = model_components.ema_model
@@ -633,15 +637,38 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
 def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
     device = torch.device(config.device)
     
-    real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
-    generated_images = generate_samples_with_flow_matching(model_components.denoising_model, device, config.num_samples_for_fid)
+    if config.dataset_name in ["cifar10"]:
+        # No need to get real images, as the stats are already computed.
+        real_images = None
+    else:
+        real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
     
-    fid_score = compute_fid(real_images, generated_images, device)
+    batch_size = config.batch_size  # Adjust this value based on your GPU memory
+    num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
+    generated_images = []
+
+    for i in range(num_batches):
+        current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
+        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, seed=i)
+        generated_images.append(batch_images)
+
+    generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
+    
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset_name, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
-        ema_generated_images = generate_samples_with_flow_matching(model_components.ema_model, device, config.num_samples_for_fid)
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device)
+        ema_generated_images = []
+        batch_size = config.batch_size
+        num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
+        
+        for i in range(num_batches):
+            current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
+            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, seed=i)
+            ema_generated_images.append(batch_images)
+        
+        ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset_name, config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
     if config.logger == "wandb":
@@ -715,6 +742,9 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="CFM training for images")
+    parser.add_argument("-d", "--dataset_name", type=str, default="cifar10", help="Dataset name")
+    parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
+    parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--logger", type=str, choices=["wandb", "none"], default="none", help="Logging method")
     parser.add_argument("--net", type=str, choices=[
         "dit_t0", "dit_t1", "dit_t2", "dit_t3",
@@ -723,8 +753,6 @@ def parse_arguments():
         "unet_small", "unet", "unet_big",
     ], default="unet_small", help="Network architecture")
     parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
-    parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
-    parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
     parser.add_argument("--num_samples_for_logging", type=int, default=16, help="Number of samples for logging")
     parser.add_argument("--num_samples_for_fid", type=int, default=1000, help="Number of samples for FID")
@@ -740,7 +768,7 @@ def parse_arguments():
     parser.add_argument("--validate_every", type=int, default=1500, help="Compute validation loss every N steps")
     parser.add_argument("--fid_every", type=int, default=6000, help="Compute FID every N steps")
     parser.add_argument("--device", type=str, default="cuda:0", help="Device to use for training")
-    parser.add_argument("--max_grad_norm", type=float, default=-1, help="Maximum norm for gradient clipping")
+    parser.add_argument("--max_grad_norm", type=float, default=1, help="Maximum norm for gradient clipping. Use -1 to disable.")
     parser.add_argument("--use_loss_mean", action="store_true", help="Use loss.mean() instead of just loss")
     parser.add_argument("--watch_model", action="store_true", help="Use wandb to watch the model")
     parser.add_argument("--use_ema", action="store_true", help="Use Exponential Moving Average (EMA) for the model")
