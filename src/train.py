@@ -54,6 +54,7 @@ except ImportError:
 
 from src.datasets.celeb_dataset import CelebDataset
 from src.datasets.flowers_dataset import FlowersDataset
+from src.datasets.hugging_face_dataset import HuggingFaceDataset
 from src.datasets.pokemon_dataset import PokemonDataset
 from src.models.factory import create_model
 from src.utils.sample import threshold_sample, denoise_and_compare
@@ -724,7 +725,8 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         print("Loading Pokemon dataset")
         full_dataset = PokemonDataset(transform=transform)
     else:
-        raise ValueError(f"Unknown dataset: {config.dataset}")
+        print(f"Loading dataset from Hugging Face: {config.dataset}")
+        full_dataset = HuggingFaceDataset(config.dataset, transform=transform)
 
     train_size = int(0.9 * len(full_dataset))
     val_size = len(full_dataset) - train_size
@@ -927,7 +929,6 @@ def parse_arguments():
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=["cifar10", "flowers", "celeb", "pokemon"],
         default="cifar10",
         help="Dataset to use",
     )
