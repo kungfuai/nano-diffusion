@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Train model
+source bin/env.sh
 
 docker run --runtime nvidia -it \
 	-v $(pwd):/workspace \

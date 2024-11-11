@@ -281,8 +281,8 @@ def compute_fid(
 @dataclass
 class TrainingConfig:
     # Dataset
-    dataset_name: str # dataset name
-    resolution: int # resolution of the image
+    dataset: str  # dataset name
+    resolution: int  # resolution of the image
 
     # Model architecture
     in_channels: int  # number of input channels
@@ -328,9 +328,6 @@ class TrainingConfig:
 
     # Data augmentation
     random_flip: bool = False  # randomly flip images horizontally
-
-    # Datset
-    dataset: str = "cifar10"  # dataset to use for training
 
 
 @dataclass
@@ -653,7 +650,7 @@ def compute_and_log_fid(
 ):
     device = torch.device(config.device)
     
-    if config.dataset_name in ["cifar10"]:
+    if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
     else:
@@ -671,7 +668,7 @@ def compute_and_log_fid(
 
     generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
     
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset_name, config.resolution)
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
@@ -681,7 +678,7 @@ def compute_and_log_fid(
             batch_images = generate_samples_by_denoising(model_components.ema_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
             ema_generated_images.append(batch_images)
         ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset_name, config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
 
     if config.logger == "wandb":

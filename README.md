@@ -29,7 +29,7 @@ bin/run.sh python -m src.train_cfm
 
 - Datasets
   - [x] CIFAR-10
-  - [ ] Flowers, CelebA-HQ
+  - [x] Flowers, CelebA-HQ, AFHQ
   - [ ] Video frames from DeepMind Lab videos
   - [ ] Comics (TBD)
   - [ ] SAB

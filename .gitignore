@@ -1,5 +1,6 @@
 # Machine learning
 data/
+/results/
 wandb/
 logs/
 
@@ -28,6 +29,7 @@ coverage.xml
 # Environments
 .env
 .venv
+bin/env.sh
 env/
 venv/
 env.bak/
@@ -50,3 +52,5 @@ tmp/
 # ML-specific
 **/lightning_logs/
 mlruns/
+notebooks/results/
+notebooks/data/
