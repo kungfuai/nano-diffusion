@@ -419,7 +419,7 @@ def compute_validation_loss(model: Module, val_dataloader: DataLoader, device: t
 @dataclass
 class TrainingConfig:
     # Dataset
-    dataset_name: str # dataset name
+    dataset: str # dataset name
     resolution: int # resolution of the image
     
     # Model architecture
@@ -637,7 +637,7 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
 def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: TrainingConfig, train_dataloader: DataLoader = None):
     device = torch.device(config.device)
     
-    if config.dataset_name in ["cifar10"]:
+    if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
     else:
@@ -654,7 +654,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
 
     generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
     
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset_name, config.resolution)
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
@@ -668,7 +668,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
             ema_generated_images.append(batch_images)
         
         ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset_name, config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
     if config.logger == "wandb":
@@ -742,7 +742,12 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="CFM training for images")
-    parser.add_argument("-d", "--dataset_name", type=str, default="cifar10", help="Dataset name")
+    parser.add_argument(
+        "-d", "--dataset",
+        type=str,
+        default="cifar10",
+        help="Dataset to use: e.g. cifar10, flowers, celeb, pokemon, or any huggingface dataset that has an image field.",
+    )
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--logger", type=str, choices=["wandb", "none"], default="none", help="Logging method")
