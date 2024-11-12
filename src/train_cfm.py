@@ -31,9 +31,7 @@ import os
 from pathlib import Path
 import torch
 import torch.optim as optim
-from torchvision import transforms
-from torchvision.datasets import CIFAR10
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
 from dataclasses import dataclass, asdict
 from typing import Optional, Dict, Any, Tuple
@@ -361,7 +359,7 @@ class ExactOptimalTransportConditionalFlowMatcher(ConditionalFlowMatcher):
             return t, xt, ut, y0, y1
 
 
-def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, parallel: bool = False, seed: int = 0):
+def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, resolution: int = 32, in_channels: int = 3,  parallel: bool = False, seed: int = 0):
     """Generate samples.
 
     Parameters
@@ -388,10 +386,10 @@ def generate_samples_with_flow_matching(denoising_model, device, num_samples: in
         node = NeuralODE(model, solver="euler", sensitivity="adjoint")
         with torch.no_grad():
             traj = node.trajectory(
-                torch.randn(num_samples, 3, 32, 32, device=device),
+                torch.randn(num_samples, in_channels, resolution, resolution, device=device),
                 t_span=torch.linspace(0, 1, 100, device=device),
             )
-            traj = traj[-1, :].view([-1, 3, 32, 32]).clip(-1, 1)
+            traj = traj[-1, :].view([-1, in_channels, resolution, resolution]).clip(-1, 1)
             traj = traj / 2 + 0.5
     
     return traj  # range is expected to be [0, 1]
@@ -605,7 +603,7 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
     # TODO: make this a config parameter
     n_samples = config.num_samples_for_logging
     # Sample using the main model
-    sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, seed=seed)
+    sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels, seed=seed)
     images_processed = (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
 
     if config.logger == "wandb":
@@ -619,7 +617,7 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
         save_image(grid, Path(config.checkpoint_dir) / f"generated_samples_step_{step}.png")
 
     if config.use_ema:
-        ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples)
+        ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels)
         ema_images_processed = (ema_sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
         
         if config.logger == "wandb":
@@ -649,7 +647,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
 
     for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
-        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, seed=i)
+        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i)
         generated_images.append(batch_images)
 
     generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
@@ -664,11 +662,11 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
         
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
-            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, seed=i)
+            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i)
             ema_generated_images.append(batch_images)
         
         ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
     if config.logger == "wandb":
@@ -678,26 +676,6 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
         wandb.log(log_dict)
 
 
-def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
-    transforms_list = [
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ]
-    if config.random_flip:
-        transforms_list.insert(0, transforms.RandomHorizontalFlip())
-    
-    transform = transforms.Compose(transforms_list)
-
-    full_dataset = CIFAR10(root='./data/cifar10', train=True, download=True, transform=transform)
-    
-    train_size = int(0.9 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-
-    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2)
-    val_dataloader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2)
-
-    return train_dataloader, val_dataloader
 
 def create_flow_matching_model_components(config: TrainingConfig) -> FlowMatchingModelComponents:
     device = torch.device(config.device)
