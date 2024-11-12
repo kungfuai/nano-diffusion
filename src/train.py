@@ -689,10 +689,13 @@ def compute_and_log_fid(
 
 
 def get_real_images(batch_size: int, dataloader: DataLoader) -> torch.Tensor:
-    return next(
+    batch = next(
         iter(DataLoader(dataloader.dataset, batch_size=batch_size, shuffle=False))
     )
-
+    assert len(batch) == 2, f"Batch must contain 2 elements. Got {len(batch)}"
+    assert isinstance(batch[0], torch.Tensor), f"First element of batch must be a tensor. Got {type(batch[0])}"
+    assert len(batch[0].shape) == 4, f"First element of batch must be a 4D tensor. Got shape {batch[0].shape}"
+    return batch[0]
 
 def generate_images(
     model: Module,
@@ -700,16 +703,19 @@ def generate_images(
     n_T: int,
     device: torch.device,
     batch_size: int,
+    resolution: int = 32,
+    in_channels: int = 3,
 ) -> torch.Tensor:
     with torch.no_grad():
-        x = torch.randn(batch_size, 3, 32, 32).to(device)
+        x = torch.randn(batch_size, in_channels, resolution, resolution).to(device)
         samples = generate_samples_by_denoising(model, x, noise_schedule, n_T, device)
     return samples
 
 
 def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
+    resolution = config.resolution
     transforms_list = [
-        transforms.Resize((32, 32)),
+        transforms.Resize((resolution, resolution)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ]
