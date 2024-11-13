@@ -15,7 +15,10 @@ If you like to log to Weights & Biases, you can set the `WANDB_API_KEY` and `WAN
 bin/train.sh --logger wandb
 ```
 
+There is a `bin/env.sh.example` file that you can copy to `bin/env.sh` and set the `WANDB_API_KEY` and `WANDB_PROJECT` variables.
+
 Use `--help` to see other options.
+
 
 ## Conditional flow matching
 

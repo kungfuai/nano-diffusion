@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
 # Train model
-source bin/env.sh
+
+# if there is an env.sh file, source it
+if [ -f bin/env.sh ]; then
+	source bin/env.sh
+fi
 
 docker run --runtime nvidia -it \
 	--name nanodiffusion_training \
