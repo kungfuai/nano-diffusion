@@ -7,7 +7,7 @@ if [ -f bin/env.sh ]; then
 	source bin/env.sh
 fi
 
-docker run --runtime nvidia -it \
+docker run --runtime nvidia -it --rm \
 	--name nanodiffusion_training \
 	--gpus '"device=0,1"' \
 	-v $(pwd):/workspace:rw \

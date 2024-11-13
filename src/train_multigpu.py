@@ -44,6 +44,7 @@ from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from contextlib import contextmanager
+from torch.distributed.elastic.multiprocessing.errors import record
 try:
     import wandb
 except ImportError:
@@ -221,7 +222,7 @@ def compute_validation_loss(
     device: torch.device,
     use_loss_mean: bool,
 ) -> float:
-    total_loss = 0
+    total_loss = torch.tensor(0.0, device=device)
     num_batches = 0
     criterion = MSELoss()
 
@@ -240,7 +241,12 @@ def compute_validation_loss(
             total_loss += loss.item()
             num_batches += 1
 
-    return total_loss / num_batches
+    # Gather losses from all GPUs
+    dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
+    world_size = dist.get_world_size()
+    
+    # Average the loss across all GPUs
+    return (total_loss / (num_batches * world_size)).item()
 
 
 def compute_fid(
@@ -312,6 +318,7 @@ class TrainingConfig:
     save_every: int  # save model every N steps
     validate_every: int  # compute validation loss every N steps
     fid_every: int  # compute FID every N steps
+    num_samples_to_log: int = 8  # number of samples for logging
     num_samples_for_fid: int = 1000  # number of samples for FID
 
     # Regularization
@@ -354,11 +361,11 @@ def training_loop(
     config: TrainingConfig,
     rank: int,
     world_size: int,
+    device: torch.device,
 ) -> int:
     if rank == 0:
-        print(f"Training on {config.device}")
+        print(f"Training on device={device}")
 
-    device = torch.device(config.device)
     denoising_model = model_components.denoising_model.to(device)
     # Wrap model with DDP
     denoising_model = DDP(denoising_model, device_ids=[rank])
@@ -395,8 +402,12 @@ def training_loop(
     num_examples_trained = 0
     criterion = MSELoss()
 
+    shuffle_every = 10000
+
     while step < config.total_steps:
-        train_dataloader.sampler.set_epoch(step)  # Set epoch for DistributedSampler
+        if step % shuffle_every == 0:
+            epoch = step // shuffle_every
+            train_dataloader.sampler.set_epoch(epoch)  # Set epoch for DistributedSampler
         
         for x, _ in train_dataloader:
             if step >= config.total_steps:
@@ -422,21 +433,22 @@ def training_loop(
                     else:
                         ema_model.load_state_dict(denoising_model.state_dict())
 
-                if step % config.log_every == 0 and rank == 0:
+                if step % config.log_every == 0:
                     log_training_step(
-                        step, num_examples_trained, loss, optimizer, config.logger
+                        step, num_examples_trained, loss, optimizer, config.logger, rank
                     )
 
-                if step % config.validate_every == 0 and step > 0 and val_dataloader and rank == 0:
+                if step % config.validate_every == 0 and step > 0 and val_dataloader:
                     validate_and_log(
                         compute_validation_loss,
                         model_components,
                         val_dataloader,
                         config,
+                        rank,
                     )
 
-                if step % config.sample_every == 0 and rank == 0:
-                    generate_and_log_samples(model_components, config, step)
+                if step % config.sample_every == 0:
+                    generate_and_log_samples(model_components, config, step, rank)
 
                 if step % config.save_every == 0 and step > 0 and rank == 0:
                     save_checkpoints(model_components, step, config)
@@ -542,9 +554,10 @@ def log_training_step(
     loss: torch.Tensor,
     optimizer: Optimizer,
     logger: str,
+    rank: int = 0,
 ):
     lr = optimizer.param_groups[0]["lr"]
-    if logger == "wandb":
+    if logger == "wandb" and rank == 0:
         wandb.log(
             {
                 "num_examples_trained": num_examples_trained,
@@ -564,6 +577,7 @@ def validate_and_log(
     model_components: DiffusionModelComponents,
     val_dataloader: DataLoader,
     config: TrainingConfig,
+    rank: int,
 ):
     val_loss = compute_validation_loss(
         model_components.denoising_model,
@@ -573,6 +587,7 @@ def validate_and_log(
         config.device,
         config.use_loss_mean,
     )
+    
     if config.use_ema:
         ema_val_loss = compute_validation_loss(
             model_components.ema_model,
@@ -583,55 +598,75 @@ def validate_and_log(
             config.use_loss_mean,
         )
 
-    if config.logger == "wandb":
-        log_dict = {"val_loss": val_loss}
-        if config.use_ema:
-            log_dict["ema_val_loss"] = ema_val_loss
-        wandb.log(log_dict)
-    else:
-        print(f"Validation Loss: {val_loss:.4f}")
-        if config.use_ema:
-            print(f"EMA Validation Loss: {ema_val_loss:.4f}")
+    # Only log from rank 0
+    if rank == 0:
+        if config.logger == "wandb":
+            log_dict = {"val_loss": val_loss}
+            if config.use_ema:
+                log_dict["ema_val_loss"] = ema_val_loss
+            wandb.log(log_dict)
+        else:
+            print(f"Validation Loss: {val_loss:.4f}")
+            if config.use_ema:
+                print(f"EMA Validation Loss: {ema_val_loss:.4f}")
 
 
 def generate_and_log_samples(
-    model_components: DiffusionModelComponents, config: TrainingConfig, step: int = None
+    model_components: DiffusionModelComponents, 
+    config: TrainingConfig, 
+    step: int,
+    rank: int = 0,
 ):
+    # Only generate samples on rank 0 to avoid duplicate work
+    if rank != 0:
+        return
+        
     device = torch.device(config.device)
     denoising_model = model_components.denoising_model
     ema_model = model_components.ema_model
     noise_schedule = model_components.noise_schedule
 
     # Generate random noise
-    # TODO: make this a config parameter
-    n_samples = 8
-    x = torch.randn(n_samples, 3, 32, 32).to(device)
+    n_samples = config.num_samples_to_log
+    x = torch.randn(n_samples, config.in_channels, config.resolution, config.resolution).to(device)
 
     # Sample using the main model
+    # Use .module to access the underlying model when using DDP
     sampled_images = generate_samples_by_denoising(
-        denoising_model, x, noise_schedule, config.num_denoising_steps, device
+        denoising_model.module,  # Access underlying model
+        x, 
+        noise_schedule, 
+        config.num_denoising_steps, 
+        device
     )
     images_processed = (
-        (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
+        (sampled_images * 255)
+        .permute(0, 2, 3, 1)
+        .cpu()
+        .numpy()
+        .round()
+        .astype("uint8")
     )
 
     if config.logger == "wandb":
-        for i in range(images_processed.shape[0]):
-            wandb.log(
-                {
-                    "num_batches_trained": step,
-                    "test_samples": [wandb.Image(img) for img in images_processed],
-                }
-            )
+        wandb.log({
+            "num_batches_trained": step,
+            "test_samples": [wandb.Image(img) for img in images_processed],
+        })
     else:
         grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
         save_image(
-            grid, Path(config.checkpoint_dir) / f"generated_sample_step_{step}.png"
+            grid, 
+            Path(config.checkpoint_dir) / f"generated_sample_step_{step}.png"
         )
 
     if config.use_ema:
         ema_sampled_images = generate_samples_by_denoising(
-            ema_model, x, noise_schedule, config.num_denoising_steps, device
+            ema_model,  # EMA model is not wrapped in DDP
+            x, 
+            noise_schedule, 
+            config.num_denoising_steps, 
+            device
         )
         ema_images_processed = (
             (ema_sampled_images * 255)
@@ -643,18 +678,16 @@ def generate_and_log_samples(
         )
 
         if config.logger == "wandb":
-            for i in range(ema_images_processed.shape[0]):
-                wandb.log(
-                    {
-                        "num_batches_trained": step,
-                        "ema_test_samples": [
-                            wandb.Image(img) for img in ema_images_processed
-                        ],
-                    }
-                )
+            wandb.log({
+                "num_batches_trained": step,
+                "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
+            })
         else:
             grid = make_grid(
-                ema_sampled_images, nrow=4, normalize=True, value_range=(-1, 1)
+                ema_sampled_images, 
+                nrow=4, 
+                normalize=True, 
+                value_range=(-1, 1)
             )
             save_image(
                 grid,
@@ -1047,20 +1080,22 @@ def log_denoising_results(
             # You might want to save the EMA MSE list to a file here
 
 
+@record
 def main():
     args = parse_arguments()
     config = TrainingConfig(**vars(args))
     # Initialize distributed process group
-    dist.init_process_group(backend="nccl")
-    world_size = dist.get_world_size()
-    rank = dist.get_rank()
+    rank, world_size, device = setup_distributed()
+    print(f"Rank: {rank}, World size: {world_size}, Device: {device}")
 
     with rank0_first():
         train_dataloader, val_dataloader = load_data(config, rank, world_size)
-        model_components = create_diffusion_model_components(config)
+        with device:
+            model_components = create_diffusion_model_components(config)
 
     num_examples_trained = training_loop(
-        model_components, train_dataloader, val_dataloader, config, rank, world_size
+        model_components, train_dataloader, val_dataloader, config, rank, world_size,
+        device=device
     )
 
     print(f"Training completed. Total examples trained: {num_examples_trained}")
