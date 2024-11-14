@@ -67,6 +67,10 @@ from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 
 @contextmanager
 def rank0_first():
+    """
+    This context manager ensures that the code block is executed by the rank 0 process first,
+    then all other processes join.
+    """
     rank = dist.get_rank()
     if rank == 0:
         yield
@@ -263,15 +267,19 @@ def compute_fid(
         real_path.mkdir(exist_ok=True)
         gen_path.mkdir(exist_ok=True)
 
+        print(f"To save {len(generated_images)} generated images to {gen_path}")
         for i, img in enumerate(generated_images):
-            img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
+            img_np = (img.numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
+
+        # list the folder and print the files
+        print(f"Generated images: {list(gen_path.glob('*.npy'))}")
 
         if dataset_name in ["cifar10"]:
             score = fid.compute_fid(
                 str(gen_path),
                 dataset_name=dataset_name,
-                dataset_res=32,
+                dataset_res=resolution,
                 device=device,
                 mode="clean",
                 batch_size=2,
@@ -319,7 +327,7 @@ class TrainingConfig:
     validate_every: int  # compute validation loss every N steps
     fid_every: int  # compute FID every N steps
     num_samples_to_log: int = 8  # number of samples for logging
-    num_samples_for_fid: int = 1000  # number of samples for FID
+    num_samples_for_fid: int = 10 # 1000  # number of samples for FID
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -343,7 +351,6 @@ class TrainingConfig:
 
     # Data augmentation
     random_flip: bool = False  # randomly flip images horizontally
-
 
 @dataclass
 class DiffusionModelComponents:
@@ -431,7 +438,8 @@ def training_loop(
                     if step >= config.ema_start_step:
                         update_ema_model(ema_model, denoising_model, config.ema_beta)
                     else:
-                        ema_model.load_state_dict(denoising_model.state_dict())
+                        state_dict = {k.replace('module.', ''): v for k, v in denoising_model.state_dict().items()}
+                        ema_model.load_state_dict(state_dict)
 
                 if step % config.log_every == 0:
                     log_training_step(
@@ -453,8 +461,8 @@ def training_loop(
                 if step % config.save_every == 0 and step > 0 and rank == 0:
                     save_checkpoints(model_components, step, config)
 
-                if step % config.fid_every == 0 and step > 0 and rank == 0:
-                    compute_and_log_fid(model_components, config, train_dataloader)
+                if step % config.fid_every == 0 and step > 0:
+                    compute_and_log_fid(model_components, config, train_dataloader, rank, world_size, device)
 
             step += 1
 
@@ -700,105 +708,171 @@ def compute_and_log_fid(
     train_dataloader: DataLoader = None,
     rank: int = 0,
     world_size: int = 1,
-):
-    device = torch.device(config.device)
-    
+    device: torch.device = None,
+):  
+    """
+    First, generate samples from the model using multiple GPUs.
+    Then, gather the samples from all GPUs. This can be done in a batch-wise manner.
+    Then, compute the FID score.
+    """
+    print(f"In compute_and_log_fid, rank: {rank}, world_size: {world_size}, device: {device}")
     # Calculate samples per GPU
     samples_per_gpu = config.num_samples_for_fid // world_size
     local_batch_size = config.batch_size // world_size
     num_local_batches = (samples_per_gpu + local_batch_size - 1) // local_batch_size
     generated_images = []
 
-    for i in range(num_local_batches):
-        current_batch_size = min(local_batch_size, samples_per_gpu - len(generated_images))
-        x_t = torch.randn(
-            current_batch_size, 
-            config.in_channels, 
-            config.resolution, 
-            config.resolution,
-            device=device
-        )
-        batch_images = generate_samples_by_denoising(
-            model_components.denoising_model,
-            x_t, 
-            model_components.noise_schedule, 
-            config.num_denoising_steps, 
-            device=device,
-            seed=i + rank * num_local_batches  # Ensure different seeds across GPUs
-        )
-        generated_images.append(batch_images)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if rank == 0:
+            real_path = Path(temp_dir) / "real"
+            gen_path = Path(temp_dir) / "gen"
+            ema_gen_path = Path(temp_dir) / "ema_gen"
+        
+            real_path.mkdir(exist_ok=True, parents=True)
+            gen_path.mkdir(exist_ok=True, parents=True)
+            if config.use_ema:
+                ema_gen_path.mkdir(exist_ok=True, parents=True)
 
-    # Gather images from all GPUs
-    local_images = torch.cat(generated_images, dim=0)
-    gathered_images = [torch.zeros_like(local_images) for _ in range(world_size)]
-    dist.all_gather(gathered_images, local_images)
-    
-    if rank == 0:
-        generated_images = torch.cat(gathered_images, dim=0)[:config.num_samples_for_fid]
-    else:
-        generated_images = None
-    
-    if rank == 0:
-        if config.dataset in ["cifar10"]:
-            # No need to get real images, as the stats are already computed.
-            real_images = None
-        else:
-            real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
-        # make sure the real images are on the same device as the generated images
-        real_images = real_images.to(device)
-        generated_images = generated_images.to(device)
-        fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
-        print(f"FID Score: {fid_score:.4f}")
+        print(f"To iterate over {num_local_batches} batches")
 
+        count = 0  # this variable is used to save the generated images to npy
+        ema_count = 0
 
-    if config.use_ema:
-        ema_generated_images = []
         for i in range(num_local_batches):
-            current_batch_size = min(local_batch_size, samples_per_gpu - len(ema_generated_images))
+            current_batch_size = min(local_batch_size, samples_per_gpu - len(generated_images))
             x_t = torch.randn(
-                current_batch_size,
-                config.in_channels,
-                config.resolution,
+                current_batch_size, 
+                config.in_channels, 
+                config.resolution, 
                 config.resolution,
                 device=device
             )
             batch_images = generate_samples_by_denoising(
-                model_components.ema_model,
-                x_t,
-                model_components.noise_schedule,
-                config.num_denoising_steps,
+                model_components.denoising_model,
+                x_t, 
+                model_components.noise_schedule, 
+                config.num_denoising_steps, 
                 device=device,
                 seed=i + rank * num_local_batches  # Ensure different seeds across GPUs
             )
-            ema_generated_images.append(batch_images)
-
-        # Gather EMA images from all GPUs
-        local_ema_images = torch.cat(ema_generated_images, dim=0)
-        gathered_ema_images = [torch.zeros_like(local_ema_images) for _ in range(world_size)]
-        dist.all_gather(gathered_ema_images, local_ema_images)
-        
-        if rank == 0:
-            ema_generated_images = torch.cat(gathered_ema_images, dim=0)[:config.num_samples_for_fid]
-        else:
-            ema_generated_images = None
-        
-        if rank == 0:
-            ema_generated_images = ema_generated_images.to(device)
-            ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
-            print(f"EMA FID Score: {ema_fid_score:.4f}")
-
-    if rank == 0:
-        if config.logger == "wandb":
-            log_dict = {"fid": fid_score}
+            # generated_images.append(batch_images)
+            # gather
+            gathered_images_one_batch = [torch.zeros_like(batch_images) for _ in range(world_size)]
+            dist.all_gather(gathered_images_one_batch, batch_images)
+            """
+            # alternative implementation:
+            if rank == 0:
+                gathered_images_one_batch = [torch.zeros_like(batch_images) for _ in range(world_size)]
+            else:
+                gathered_images_one_batch = None
+            dist.gather(batch_images, gathered_images_one_batch, dst=0)
+            """
+            if rank == 0:
+                # save to npy
+                for images in gathered_images_one_batch:
+                    for img in images:
+                        idx = count
+                        print(f"To save generated image {idx} to generated_images_{idx}.npy")
+                        assert len(img.shape) == 3, f"Expected 3D tensor, got {len(img.shape)}D tensor"
+                        np.save(
+                            gen_path / f"generated_images_{idx}.npy", 
+                            img.cpu().numpy()
+                        )
+                        count += 1
+            
             if config.use_ema:
-                log_dict["ema_fid"] = ema_fid_score
-            wandb.log(log_dict)
+                batch_images = generate_samples_by_denoising(
+                    model_components.ema_model,
+                    x_t,
+                    model_components.noise_schedule,
+                    config.num_denoising_steps,
+                    device=device,
+                    seed=i + rank * num_local_batches
+                )
+                gathered_ema_images_one_batch = [torch.zeros_like(batch_images) for _ in range(world_size)]
+                dist.all_gather(gathered_ema_images_one_batch, batch_images)
+                
+                if rank == 0:
+                    for images in gathered_ema_images_one_batch:
+                        for img in images:
+                            idx = ema_count
+                            print(f"To save EMA generated image {idx} to ema_generated_images_{idx}.npy")
+                            assert len(img.shape) == 3, f"Expected 3D tensor, got {len(img.shape)}D tensor"
+                            np.save(
+                                ema_gen_path / f"ema_generated_images_{idx}.npy",
+                                img.cpu().numpy()
+                            )
+                            ema_count += 1
+            if rank == 0:
+                if config.dataset in ["cifar10"]:
+                    # No need to get real images, as the stats are already computed.
+                    fid_score = fid.compute_fid(
+                        str(gen_path),
+                        dataset_name=config.dataset,
+                        dataset_res=config.resolution,
+                        device=device,
+                        mode="clean",
+                        batch_size=2,
+                    )
+                    if config.use_ema:
+                        ema_fid_score = fid.compute_fid(
+                            str(ema_gen_path),
+                            dataset_name=config.dataset,
+                            dataset_res=config.resolution,
+                            device=device,
+                            mode="clean",
+                            batch_size=2,
+                        )
+                else:
+                    real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
+                    # save to npy
+                    for i, img in enumerate(real_images):
+                        assert len(img.shape) == 3, f"Expected 3D tensor, got {len(img.shape)}D tensor"
+                        np.save(
+                            real_path / f"real_images_{i}.npy", 
+                            img.cpu().numpy()
+                        )
+                    
+                    fid_score = fid.compute_fid(
+                        str(real_path),
+                        str(gen_path),
+                        dataset_name=config.dataset,
+                        dataset_res=config.resolution,
+                        device=device,
+                        mode="clean",
+                        batch_size=2,
+                    )
+
+                    if config.use_ema:
+                        ema_fid_score = fid.compute_fid(
+                            str(real_path),
+                            str(ema_gen_path),
+                            dataset_name=config.dataset,
+                            dataset_res=config.resolution,
+                            device=device,
+                            mode="clean",
+                            batch_size=2,
+                        )
+                
+                print(f"FID Score: {fid_score:.4f}")
+                if config.use_ema:
+                    print(f"EMA FID Score: {ema_fid_score:.4f}")
+
+                if config.logger == "wandb":
+                    log_dict = {"fid": fid_score}
+                    if config.use_ema:
+                        log_dict["ema_fid"] = ema_fid_score
+                    wandb.log(log_dict)
 
 
 def get_real_images(batch_size: int, dataloader: DataLoader) -> torch.Tensor:
-    return next(
+    batch = next(
         iter(DataLoader(dataloader.dataset, batch_size=batch_size, shuffle=False))
     )
+    assert len(batch) == 2, f"Batch must contain 2 elements. Got {len(batch)}"
+    assert isinstance(batch[0], torch.Tensor), f"First element of batch must be a tensor. Got {type(batch[0])}"
+    assert len(batch[0].shape) == 4, f"First element of batch must be a 4D tensor. Got shape {batch[0].shape}"
+    return batch[0]
 
 
 def generate_images(
@@ -878,8 +952,8 @@ def load_model_from_wandb(model, run_path, file_name):
 
 def create_diffusion_model_components(
     config: TrainingConfig,
+    device: torch.device,
 ) -> DiffusionModelComponents:
-    device = torch.device(config.device)
     denoising_model = create_model(
         net=config.net, in_channels=config.in_channels, resolution=config.resolution
     )
@@ -1133,7 +1207,7 @@ def main():
     with rank0_first():
         train_dataloader, val_dataloader = load_data(config, rank, world_size)
         with device:
-            model_components = create_diffusion_model_components(config)
+            model_components = create_diffusion_model_components(config, device)
 
     num_examples_trained = training_loop(
         model_components, train_dataloader, val_dataloader, config, rank, world_size,
