@@ -152,6 +152,12 @@ def denoising_step(
     )
     variance = torch.clamp(variance, min=1e-20)
 
+    ## Formula
+    # x_{t-1} = posterior_mean + sqrt(variance) * noise
+    # where
+    #   posterior_mean = sqrt(alpha_prod_{t-1}) * (x_t - sqrt(1 - alpha_prod_t) * epsilon_theta(x_t, t)) / sqrt(alpha_prod_t)
+    #   variance = (1 - alpha_prod_{t-1}) / (1 - alpha_prod_t) * current_beta_t
+    #   noise = N(0, 1)
     pred_prev_sample = pred_prev_sample + (variance**0.5) * variance_noise
 
     if thresholding:
@@ -250,6 +256,7 @@ def compute_fid(
         gen_path.mkdir(exist_ok=True)
 
         for i, img in enumerate(generated_images):
+            assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
             img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 

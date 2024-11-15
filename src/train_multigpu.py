@@ -100,7 +100,7 @@ def cleanup_distributed():
 
 
 def forward_diffusion(x_0, t, noise_schedule, noise=None):
-    _ts = t.view(-1, 1, 1, 1)
+    _ts = t.view(-1, 1, 1, 1).cpu()
     if noise is None:
         noise = torch.randn_like(x_0)
     assert _ts.max() < len(
@@ -224,7 +224,7 @@ def compute_validation_loss(
     noise_schedule: Dict[str, torch.Tensor],
     n_T: int,
     device: torch.device,
-    use_loss_mean: bool,
+    use_loss_mean: bool, # to be removed
 ) -> float:
     total_loss = torch.tensor(0.0, device=device)
     num_batches = 0
@@ -453,6 +453,7 @@ def training_loop(
                         val_dataloader,
                         config,
                         rank,
+                        device,
                     )
 
                 if step % config.sample_every == 0:
@@ -586,13 +587,14 @@ def validate_and_log(
     val_dataloader: DataLoader,
     config: TrainingConfig,
     rank: int,
+    device: torch.device,
 ):
     val_loss = compute_validation_loss(
         model_components.denoising_model,
         val_dataloader,
         model_components.noise_schedule,
         config.num_denoising_steps,
-        config.device,
+        device,
         config.use_loss_mean,
     )
     
@@ -602,7 +604,7 @@ def validate_and_log(
             val_dataloader,
             model_components.noise_schedule,
             config.num_denoising_steps,
-            config.device,
+            device,
             config.use_loss_mean,
         )
 

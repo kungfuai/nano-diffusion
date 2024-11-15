@@ -25,4 +25,4 @@ docker run --runtime nvidia -it --rm \
 		-m src.train_multigpu $@
 
 # To do a quick run, pass in the following args:
-# -d zzsi/afhq64_16k --num_denoising_steps 2 --fid_every 20
+# bash bin/train_multigpu.sh -d zzsi/afhq64_16k --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50
