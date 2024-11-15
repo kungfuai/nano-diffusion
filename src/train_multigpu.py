@@ -404,6 +404,11 @@ def training_loop(
     if rank == 0:
         checkpoint_dir = Path(config.checkpoint_dir)
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        # make sure the program can write to the checkpoint directory
+        # write a dummy file to the checkpoint directory
+        (checkpoint_dir / "dummy.txt").touch()
+        # remove the dummy file
+        (checkpoint_dir / "dummy.txt").unlink()
 
     step = 0
     num_examples_trained = 0
@@ -521,17 +526,21 @@ def update_ema_model(ema_model: Module, model: Module, ema_beta: float):
 def save_checkpoints(
     model_components: DiffusionModelComponents, step: int, config: TrainingConfig
 ):
-    save_model(
-        model_components.denoising_model,  # Save the inner model, not DDP wrapper
-        Path(config.checkpoint_dir) / f"model_checkpoint_step_{step}.pth",
-        config.logger,
-    )
-    if config.use_ema:
+    try:
         save_model(
-            model_components.ema_model,
-            Path(config.checkpoint_dir) / f"ema_model_checkpoint_step_{step}.pth",
+            model_components.denoising_model,  # Save the inner model, not DDP wrapper
+            Path(config.checkpoint_dir) / f"model_checkpoint_step_{step}.pth",
             config.logger,
         )
+        if config.use_ema:
+            save_model(
+                model_components.ema_model,
+                Path(config.checkpoint_dir) / f"ema_model_checkpoint_step_{step}.pth",
+                config.logger,
+            )
+    except RuntimeError as e:
+        rank = dist.get_rank()
+        print(f"Error saving checkpoints: {e}. Checkpoint directory: {config.checkpoint_dir}. Step: {step}. Rank: {rank}.")
 
 
 def save_final_models(
