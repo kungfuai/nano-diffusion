@@ -27,6 +27,7 @@ from dataclasses import dataclass, asdict
 import os
 from pathlib import Path
 import tempfile
+from datetime import datetime
 from typing import Callable, Optional, Dict, Any, Tuple
 
 import numpy as np
@@ -247,6 +248,7 @@ def compute_fid(
     device: str = "cuda",
     dataset_name: str = "cifar10",
     resolution: int = 32,
+    batch_size: int = 2,
 ) -> float:
     print(f"Computing FID for {dataset_name} with resolution {resolution}")
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -264,26 +266,51 @@ def compute_fid(
             score = fid.compute_fid(
                 str(gen_path),
                 dataset_name=dataset_name,
-                dataset_res=32,
-                device=device,
-                mode="clean",
-                batch_size=2,
-            )
-        else:
-            for i, img in enumerate(real_images):
-                img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
-                np.save(real_path / f"{i}.npy", img_np)
-            score = fid.compute_fid(
-                str(gen_path),
-                str(real_path),
                 dataset_res=resolution,
                 device=device,
                 mode="clean",
-                batch_size=2,
+                batch_size=batch_size,
+                num_workers=0,
+            )
+        else:
+            # Use precomputed stats.
+            dataset_name_safe = make_dataset_name_safe_for_cleanfid(dataset_name)
+            score = fid.compute_fid(
+                str(gen_path),
+                dataset_name=dataset_name_safe,
+                dataset_res=resolution,
+                device=device,
+                mode="clean",
+                dataset_split="custom",
+                batch_size=batch_size,
+                num_workers=0,
             )
 
     return score
 
+
+def make_dataset_name_safe_for_cleanfid(dataset_name: str):
+    return dataset_name.replace("/", "__")
+
+
+def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: "TrainingConfig", real_images_dir: Path):
+    print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
+    count = 0
+    real_images_dir.mkdir(exist_ok=True, parents=True)
+    for images, _ in dataloader:
+        # save individual images as npy files
+        for i, img in enumerate(images):
+            np_img = img.cpu().numpy().transpose(1, 2, 0)
+            # do we need to scale to 0-255?
+            np_img = (np_img * 255)
+            idx = count * len(images) + i
+            np.save(real_images_dir / f"real_images_{idx:06d}.npy", np_img)
+        count += len(images)
+        if count >= config.num_real_samples_for_fid:
+            break
+    
+    dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
+    fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
 
 @dataclass
 class TrainingConfig:
@@ -312,6 +339,7 @@ class TrainingConfig:
     validate_every: int  # compute validation loss every N steps
     fid_every: int  # compute FID every N steps
     num_samples_for_fid: int = 1000  # number of samples for FID
+    num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -336,6 +364,13 @@ class TrainingConfig:
     # Data augmentation
     random_flip: bool = False  # randomly flip images horizontally
 
+    def update_checkpoint_dir(self):
+        # Update the checkpoint directory use a timestamp
+        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    
+    def __post_init__(self):
+        self.update_checkpoint_dir()
+
 
 @dataclass
 class DiffusionModelComponents:
@@ -359,6 +394,9 @@ def training_loop(
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
+
+    if config.dataset not in ["cifar10"]:
+        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
@@ -655,26 +693,40 @@ def compute_and_log_fid(
     config: TrainingConfig,
     train_dataloader: DataLoader = None,
 ):
+    print(f"Generating samples and computing FID. This can be slow.")
     device = torch.device(config.device)
     
     if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
-    else:
-        real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
+    # else:
+    #     # Get real images in batches to avoid OOM
+    #     real_images = []
+    #     batch_size = min(1000, config.num_real_samples_for_fid)  # Process in chunks of 1000 or less
+    #     remaining = config.num_real_samples_for_fid
+    #     while remaining > 0:
+    #         curr_batch_size = min(batch_size, remaining)
+    #         batch = get_real_images(curr_batch_size, train_dataloader)
+    #         real_images.append(batch.cpu())  # Move to CPU immediately
+    #         remaining -= curr_batch_size
+    #     real_images = torch.cat(real_images, dim=0)
     
-    batch_size = config.batch_size  # Adjust this value based on your GPU memory
+    batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
+    count = 0
     for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
         generated_images.append(batch_images)
+        count += current_batch_size
+        print(f"Generated {count} out of {config.num_samples_for_fid} images")
 
-    generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
+    generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
+    real_images = None
     fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
@@ -938,13 +990,25 @@ def parse_arguments():
         "--init_from_wandb_run_path",
         type=str,
         default=None,
-        help="Resume from a wandb run path",
+        help="Resume from a wandb run path (run id)",
     )
     parser.add_argument(
         "--init_from_wandb_file",
         type=str,
         default=None,
-        help="Resume from a wandb file",
+        help="Resume from a wandb file (a model checkpoint inside the run)",
+    )
+    parser.add_argument(
+        "--num_samples_for_fid",
+        type=int,
+        default=1000,
+        help="Number of samples to use for FID computation",
+    )
+    parser.add_argument(
+        "--num_real_samples_for_fid",
+        type=int,
+        default=10000,
+        help="Number of real samples to use for FID computation",
     )
     args = parser.parse_args()
     return args
