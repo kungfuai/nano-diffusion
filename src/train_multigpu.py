@@ -1,24 +1,5 @@
 """
-A minimal training pipeline for diffusion.
-
-## Main components
-
-1. Forward Diffusion Process:
-
-Adds progressively more Gaussian noise to the data according to a noise schedule β.
-
-2. Reverse Process:
-
-A neural network is trained to predict the noise at each time step and is used to denoise the data in the reverse direction, step by step.
-
-3. Loss Function:
-
-The training is supervised by minimizing the difference (mean squared error) between the actual noise added in the forward process and the predicted noise.
-
-4. Noise Schedule:
-
-The variance β at each timestep defines how much noise to add. It can be a fixed schedule, e.g., linearly increasing over time.
-
+A minimal distributed training pipeline for diffusion.
 """
 
 import argparse

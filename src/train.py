@@ -79,7 +79,6 @@ def denoising_step(
     x_t,
     t,
     noise_schedule,
-    thresholding=False,
     clip_sample=True,
     clip_sample_range=1.0,
 ):
@@ -90,90 +89,40 @@ def denoising_step(
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
     else:
         t_tensor = t
+
     with torch.no_grad():
-        model_output = denoising_model(t=t_tensor, x=x_t)
-    if hasattr(model_output, "sample"):
-        model_output = model_output.sample
+        eps_theta = denoising_model(t=t_tensor, x=x_t)
+    if hasattr(eps_theta, "sample"):
+        eps_theta = eps_theta.sample
 
-    # Extract relevant values from noise_schedule
-    alpha_prod_t = noise_schedule["alphas_cumprod"][t_tensor]
-    # deal with t=0 case where t can be a tensor
-    alpha_prod_t_prev = torch.where(
-        t_tensor > 0,
-        noise_schedule["alphas_cumprod"][t_tensor - 1],
-        torch.ones_like(t_tensor, device=x_t.device),
-    )
+    # Extract alphas from noise schedule
+    alpha_t = noise_schedule["alphas"][t_tensor]
+    alpha_t_cumprod = noise_schedule["alphas_cumprod"][t_tensor]
 
-    # Reshape alpha_prod_t_prev for proper broadcasting
-    alpha_prod_t = alpha_prod_t.view(-1, 1, 1, 1)
-    alpha_prod_t_prev = alpha_prod_t_prev.view(-1, 1, 1, 1)
+    # Reshape for broadcasting
+    view_shape = (-1,) + (1,) * (x_t.ndim - 1)
+    alpha_t = alpha_t.view(*view_shape)
+    alpha_t_cumprod = alpha_t_cumprod.view(*view_shape)
 
-    beta_prod_t = 1 - alpha_prod_t
-    beta_prod_t_prev = 1 - alpha_prod_t_prev
-    current_alpha_t = alpha_prod_t / alpha_prod_t_prev
-    current_beta_t = 1 - current_alpha_t
+    # Calculate epsilon factor
+    eps_factor = (1 - alpha_t) / (1 - alpha_t_cumprod).sqrt()
 
-    # Compute the previous sample mean
-    pred_original_sample = (x_t - beta_prod_t**0.5 * model_output) / alpha_prod_t**0.5
-    # print("x_t mean:", x_t.mean().item())
-    # print("t:", t)
-    # print("model_output mean:", model_output.mean().item())
-    # print("pred_original_sample mean (before clipping):", pred_original_sample.mean().item())
+    # Calculate mean for reverse process
+    mean = (1 / torch.sqrt(alpha_t)) * (x_t - eps_factor * eps_theta)
+
+    # Add noise scaled by variance for non-zero timesteps
+    noise = torch.randn_like(x_t)
+    beta_t = 1 - alpha_t
+    variance = beta_t * (1 - alpha_t_cumprod / alpha_t) / (1 - alpha_t_cumprod)
+    
+    # Mask out noise for t=0 timesteps
+    non_zero_mask = (t_tensor > 0).float().view(*view_shape)
+    noise_scale = torch.sqrt(variance) * non_zero_mask
+    
+    pred_prev_sample = mean + noise_scale * noise
 
     if clip_sample:
-        pred_original_sample = torch.clamp(
-            pred_original_sample, -clip_sample_range, clip_sample_range
-        )
-
-    # Compute the coefficients for pred_original_sample and current sample
-    pred_original_sample_coeff = (alpha_prod_t_prev**0.5 * current_beta_t) / beta_prod_t
-    current_sample_coeff = current_alpha_t**0.5 * beta_prod_t_prev / beta_prod_t
-
-    # print(f"pred_original_sample shape: {pred_original_sample.shape}")
-    # print("alpha_prod_t_prev", alpha_prod_t_prev.shape)
-    # print("current_beta_t", current_beta_t.shape)
-    # print("beta_prod_t", beta_prod_t.shape)
-    # print("alpha_prod_t", alpha_prod_t.shape)
-    # print(f"pred_original_sample_coeff shape: {pred_original_sample_coeff.shape}")
-    # print(f"current_sample_coeff shape: {current_sample_coeff.shape}")
-
-    # Compute the previous sample
-    pred_prev_sample = (
-        pred_original_sample_coeff * pred_original_sample + current_sample_coeff * x_t
-    )
-
-    # Add noise
-    variance = torch.zeros_like(x_t)
-    variance_noise = torch.randn_like(x_t)
-
-    # Handle t=0 case where t can be a tensor
-    non_zero_mask = (t_tensor != 0).float().view(-1, 1, 1, 1)
-    variance = non_zero_mask * (
-        (1 - alpha_prod_t_prev) / (1 - alpha_prod_t) * current_beta_t
-    )
-    variance = torch.clamp(variance, min=1e-20)
-
-    ## Formula
-    # x_{t-1} = posterior_mean + sqrt(variance) * noise
-    # where
-    #   posterior_mean = sqrt(alpha_prod_{t-1}) * (x_t - sqrt(1 - alpha_prod_t) * epsilon_theta(x_t, t)) / sqrt(alpha_prod_t)
-    #   variance = (1 - alpha_prod_{t-1}) / (1 - alpha_prod_t) * current_beta_t
-    #   noise = N(0, 1)
-    pred_prev_sample = pred_prev_sample + (variance**0.5) * variance_noise
-
-    if thresholding:
-        pred_prev_sample = threshold_sample(pred_prev_sample)
-
-    # for debug, print out intermediate values
-    # print("alpha_prod_t", alpha_prod_t[0].item())
-    # print("alpha_prod_t_prev", alpha_prod_t_prev[0].item())
-    # print("beta_prod_t", beta_prod_t[0].item())
-    # print("beta_prod_t_prev", beta_prod_t_prev[0].item())
-    # print("current_alpha_t", current_alpha_t[0].item())
-    # print("current_beta_t", current_beta_t[0].item())
-    # print("pred_original_sample mean", pred_original_sample.mean().item())
-    # print("pred_original_sample_coeff", pred_original_sample_coeff[0].item())
-    # print("current_sample_coeff", current_sample_coeff[0].item())
+        pred_prev_sample = pred_prev_sample.clamp(-clip_sample_range, clip_sample_range)
 
     return pred_prev_sample
 
@@ -184,7 +133,6 @@ def generate_samples_by_denoising(
     noise_schedule,
     n_T,
     device,
-    thresholding=False,
     clip_sample=True,
     clip_sample_range=1.0,
     seed=0,
@@ -201,7 +149,6 @@ def generate_samples_by_denoising(
             x_t,
             t,
             noise_schedule,
-            thresholding,
             clip_sample,
             clip_sample_range,
         )
@@ -859,21 +806,22 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
     betas = torch.linspace(1e-4, 0.02, n_T).to(device)
     alphas = 1.0 - betas
     alphas_cumprod = torch.cumprod(alphas, axis=0).to(device)
-    alphas_cumprod_prev = torch.cat(
-        [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
-    )
-    sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
-    sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
-    sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-    posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+    # alphas_cumprod_prev = torch.cat(
+    #     [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
+    # )
+    # sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
+    # sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
+    # sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+    # posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
     return {
+        "alphas": alphas,
         "betas": betas,
         "alphas_cumprod": alphas_cumprod,
-        "sqrt_recip_alphas": sqrt_recip_alphas,
-        "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
-        "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
-        "posterior_variance": posterior_variance,
+        # "sqrt_recip_alphas": sqrt_recip_alphas,
+        # "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
+        # "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
+        # "posterior_variance": posterior_variance,
     }
 
 
