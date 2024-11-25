@@ -27,6 +27,7 @@ from dataclasses import dataclass, asdict
 import os
 from pathlib import Path
 import tempfile
+from datetime import datetime
 from typing import Callable, Optional, Dict, Any, Tuple
 
 import numpy as np
@@ -78,7 +79,6 @@ def denoising_step(
     x_t,
     t,
     noise_schedule,
-    thresholding=False,
     clip_sample=True,
     clip_sample_range=1.0,
 ):
@@ -89,84 +89,40 @@ def denoising_step(
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
     else:
         t_tensor = t
+
     with torch.no_grad():
-        model_output = denoising_model(t=t_tensor, x=x_t)
-    if hasattr(model_output, "sample"):
-        model_output = model_output.sample
+        eps_theta = denoising_model(t=t_tensor, x=x_t)
+    if hasattr(eps_theta, "sample"):
+        eps_theta = eps_theta.sample
 
-    # Extract relevant values from noise_schedule
-    alpha_prod_t = noise_schedule["alphas_cumprod"][t_tensor]
-    # deal with t=0 case where t can be a tensor
-    alpha_prod_t_prev = torch.where(
-        t_tensor > 0,
-        noise_schedule["alphas_cumprod"][t_tensor - 1],
-        torch.ones_like(t_tensor, device=x_t.device),
-    )
+    # Extract alphas from noise schedule
+    alpha_t = noise_schedule["alphas"][t_tensor]
+    alpha_t_cumprod = noise_schedule["alphas_cumprod"][t_tensor]
 
-    # Reshape alpha_prod_t_prev for proper broadcasting
-    alpha_prod_t = alpha_prod_t.view(-1, 1, 1, 1)
-    alpha_prod_t_prev = alpha_prod_t_prev.view(-1, 1, 1, 1)
+    # Reshape for broadcasting
+    view_shape = (-1,) + (1,) * (x_t.ndim - 1)
+    alpha_t = alpha_t.view(*view_shape)
+    alpha_t_cumprod = alpha_t_cumprod.view(*view_shape)
 
-    beta_prod_t = 1 - alpha_prod_t
-    beta_prod_t_prev = 1 - alpha_prod_t_prev
-    current_alpha_t = alpha_prod_t / alpha_prod_t_prev
-    current_beta_t = 1 - current_alpha_t
+    # Calculate epsilon factor
+    eps_factor = (1 - alpha_t) / (1 - alpha_t_cumprod).sqrt()
 
-    # Compute the previous sample mean
-    pred_original_sample = (x_t - beta_prod_t**0.5 * model_output) / alpha_prod_t**0.5
-    # print("x_t mean:", x_t.mean().item())
-    # print("t:", t)
-    # print("model_output mean:", model_output.mean().item())
-    # print("pred_original_sample mean (before clipping):", pred_original_sample.mean().item())
+    # Calculate mean for reverse process
+    mean = (1 / torch.sqrt(alpha_t)) * (x_t - eps_factor * eps_theta)
+
+    # Add noise scaled by variance for non-zero timesteps
+    noise = torch.randn_like(x_t)
+    beta_t = 1 - alpha_t
+    variance = beta_t * (1 - alpha_t_cumprod / alpha_t) / (1 - alpha_t_cumprod)
+    
+    # Mask out noise for t=0 timesteps
+    non_zero_mask = (t_tensor > 0).float().view(*view_shape)
+    noise_scale = torch.sqrt(variance) * non_zero_mask
+    
+    pred_prev_sample = mean + noise_scale * noise
 
     if clip_sample:
-        pred_original_sample = torch.clamp(
-            pred_original_sample, -clip_sample_range, clip_sample_range
-        )
-
-    # Compute the coefficients for pred_original_sample and current sample
-    pred_original_sample_coeff = (alpha_prod_t_prev**0.5 * current_beta_t) / beta_prod_t
-    current_sample_coeff = current_alpha_t**0.5 * beta_prod_t_prev / beta_prod_t
-
-    # print(f"pred_original_sample shape: {pred_original_sample.shape}")
-    # print("alpha_prod_t_prev", alpha_prod_t_prev.shape)
-    # print("current_beta_t", current_beta_t.shape)
-    # print("beta_prod_t", beta_prod_t.shape)
-    # print("alpha_prod_t", alpha_prod_t.shape)
-    # print(f"pred_original_sample_coeff shape: {pred_original_sample_coeff.shape}")
-    # print(f"current_sample_coeff shape: {current_sample_coeff.shape}")
-
-    # Compute the previous sample
-    pred_prev_sample = (
-        pred_original_sample_coeff * pred_original_sample + current_sample_coeff * x_t
-    )
-
-    # Add noise
-    variance = torch.zeros_like(x_t)
-    variance_noise = torch.randn_like(x_t)
-
-    # Handle t=0 case where t can be a tensor
-    non_zero_mask = (t_tensor != 0).float().view(-1, 1, 1, 1)
-    variance = non_zero_mask * (
-        (1 - alpha_prod_t_prev) / (1 - alpha_prod_t) * current_beta_t
-    )
-    variance = torch.clamp(variance, min=1e-20)
-
-    pred_prev_sample = pred_prev_sample + (variance**0.5) * variance_noise
-
-    if thresholding:
-        pred_prev_sample = threshold_sample(pred_prev_sample)
-
-    # for debug, print out intermediate values
-    # print("alpha_prod_t", alpha_prod_t[0].item())
-    # print("alpha_prod_t_prev", alpha_prod_t_prev[0].item())
-    # print("beta_prod_t", beta_prod_t[0].item())
-    # print("beta_prod_t_prev", beta_prod_t_prev[0].item())
-    # print("current_alpha_t", current_alpha_t[0].item())
-    # print("current_beta_t", current_beta_t[0].item())
-    # print("pred_original_sample mean", pred_original_sample.mean().item())
-    # print("pred_original_sample_coeff", pred_original_sample_coeff[0].item())
-    # print("current_sample_coeff", current_sample_coeff[0].item())
+        pred_prev_sample = pred_prev_sample.clamp(-clip_sample_range, clip_sample_range)
 
     return pred_prev_sample
 
@@ -177,7 +133,6 @@ def generate_samples_by_denoising(
     noise_schedule,
     n_T,
     device,
-    thresholding=False,
     clip_sample=True,
     clip_sample_range=1.0,
     seed=0,
@@ -194,7 +149,6 @@ def generate_samples_by_denoising(
             x_t,
             t,
             noise_schedule,
-            thresholding,
             clip_sample,
             clip_sample_range,
         )
@@ -241,6 +195,7 @@ def compute_fid(
     device: str = "cuda",
     dataset_name: str = "cifar10",
     resolution: int = 32,
+    batch_size: int = 2,
 ) -> float:
     print(f"Computing FID for {dataset_name} with resolution {resolution}")
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -250,6 +205,7 @@ def compute_fid(
         gen_path.mkdir(exist_ok=True)
 
         for i, img in enumerate(generated_images):
+            assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
             img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
@@ -257,26 +213,51 @@ def compute_fid(
             score = fid.compute_fid(
                 str(gen_path),
                 dataset_name=dataset_name,
-                dataset_res=32,
-                device=device,
-                mode="clean",
-                batch_size=2,
-            )
-        else:
-            for i, img in enumerate(real_images):
-                img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
-                np.save(real_path / f"{i}.npy", img_np)
-            score = fid.compute_fid(
-                str(gen_path),
-                str(real_path),
                 dataset_res=resolution,
                 device=device,
                 mode="clean",
-                batch_size=2,
+                batch_size=batch_size,
+                num_workers=0,
+            )
+        else:
+            # Use precomputed stats.
+            dataset_name_safe = make_dataset_name_safe_for_cleanfid(dataset_name)
+            score = fid.compute_fid(
+                str(gen_path),
+                dataset_name=dataset_name_safe,
+                dataset_res=resolution,
+                device=device,
+                mode="clean",
+                dataset_split="custom",
+                batch_size=batch_size,
+                num_workers=0,
             )
 
     return score
 
+
+def make_dataset_name_safe_for_cleanfid(dataset_name: str):
+    return dataset_name.replace("/", "__")
+
+
+def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: "TrainingConfig", real_images_dir: Path):
+    print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
+    count = 0
+    real_images_dir.mkdir(exist_ok=True, parents=True)
+    for images, _ in dataloader:
+        # save individual images as npy files
+        for i, img in enumerate(images):
+            np_img = img.cpu().numpy().transpose(1, 2, 0)
+            # do we need to scale to 0-255?
+            np_img = (np_img * 255)
+            idx = count * len(images) + i
+            np.save(real_images_dir / f"real_images_{idx:06d}.npy", np_img)
+        count += len(images)
+        if count >= config.num_real_samples_for_fid:
+            break
+    
+    dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
+    fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
 
 @dataclass
 class TrainingConfig:
@@ -305,6 +286,7 @@ class TrainingConfig:
     validate_every: int  # compute validation loss every N steps
     fid_every: int  # compute FID every N steps
     num_samples_for_fid: int = 1000  # number of samples for FID
+    num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -329,6 +311,13 @@ class TrainingConfig:
     # Data augmentation
     random_flip: bool = False  # randomly flip images horizontally
 
+    def update_checkpoint_dir(self):
+        # Update the checkpoint directory use a timestamp
+        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    
+    def __post_init__(self):
+        self.update_checkpoint_dir()
+
 
 @dataclass
 class DiffusionModelComponents:
@@ -352,6 +341,9 @@ def training_loop(
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
+
+    if config.dataset not in ["cifar10"]:
+        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
@@ -648,26 +640,40 @@ def compute_and_log_fid(
     config: TrainingConfig,
     train_dataloader: DataLoader = None,
 ):
+    print(f"Generating samples and computing FID. This can be slow.")
     device = torch.device(config.device)
     
     if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
-    else:
-        real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
+    # else:
+    #     # Get real images in batches to avoid OOM
+    #     real_images = []
+    #     batch_size = min(1000, config.num_real_samples_for_fid)  # Process in chunks of 1000 or less
+    #     remaining = config.num_real_samples_for_fid
+    #     while remaining > 0:
+    #         curr_batch_size = min(batch_size, remaining)
+    #         batch = get_real_images(curr_batch_size, train_dataloader)
+    #         real_images.append(batch.cpu())  # Move to CPU immediately
+    #         remaining -= curr_batch_size
+    #     real_images = torch.cat(real_images, dim=0)
     
-    batch_size = config.batch_size  # Adjust this value based on your GPU memory
+    batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
+    count = 0
     for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
         generated_images.append(batch_images)
+        count += current_batch_size
+        print(f"Generated {count} out of {config.num_samples_for_fid} images")
 
-    generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
+    generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
+    real_images = None
     fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
@@ -800,21 +806,22 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
     betas = torch.linspace(1e-4, 0.02, n_T).to(device)
     alphas = 1.0 - betas
     alphas_cumprod = torch.cumprod(alphas, axis=0).to(device)
-    alphas_cumprod_prev = torch.cat(
-        [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
-    )
-    sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
-    sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
-    sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-    posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+    # alphas_cumprod_prev = torch.cat(
+    #     [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
+    # )
+    # sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
+    # sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
+    # sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+    # posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
     return {
+        "alphas": alphas,
         "betas": betas,
         "alphas_cumprod": alphas_cumprod,
-        "sqrt_recip_alphas": sqrt_recip_alphas,
-        "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
-        "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
-        "posterior_variance": posterior_variance,
+        # "sqrt_recip_alphas": sqrt_recip_alphas,
+        # "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
+        # "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
+        # "posterior_variance": posterior_variance,
     }
 
 
@@ -931,13 +938,25 @@ def parse_arguments():
         "--init_from_wandb_run_path",
         type=str,
         default=None,
-        help="Resume from a wandb run path",
+        help="Resume from a wandb run path (run id)",
     )
     parser.add_argument(
         "--init_from_wandb_file",
         type=str,
         default=None,
-        help="Resume from a wandb file",
+        help="Resume from a wandb file (a model checkpoint inside the run)",
+    )
+    parser.add_argument(
+        "--num_samples_for_fid",
+        type=int,
+        default=1000,
+        help="Number of samples to use for FID computation",
+    )
+    parser.add_argument(
+        "--num_real_samples_for_fid",
+        type=int,
+        default=10000,
+        help="Number of real samples to use for FID computation",
     )
     args = parser.parse_args()
     return args

@@ -7,7 +7,7 @@ if [ -f bin/env.sh ]; then
 	source bin/env.sh
 fi
 
-docker run --runtime nvidia -it \
+docker run --runtime nvidia -it --rm \
     --gpus 'device=0' \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/root/.cache \
