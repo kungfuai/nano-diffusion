@@ -58,7 +58,7 @@ from src.datasets.flowers_dataset import FlowersDataset
 from src.datasets.hugging_face_dataset import HuggingFaceDataset
 from src.datasets.pokemon_dataset import PokemonDataset
 from src.models.factory import create_model
-from src.utils.sample import threshold_sample, denoise_and_compare
+from src.utils.sample import denoise_and_compare
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 
 
@@ -75,6 +75,17 @@ def forward_diffusion(x_0, t, noise_schedule, noise=None):
 
 
 def denoising_step(
+    denoising_model,
+    x_t,
+    t,
+    noise_schedule,
+    clip_sample=True,
+    clip_sample_range=1.0,
+):
+    return denoising_step_original(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
+
+
+def denoising_step_direct(
     denoising_model,
     x_t,
     t,
@@ -110,10 +121,15 @@ def denoising_step(
     # Calculate mean for reverse process
     mean = (1 / torch.sqrt(alpha_t)) * (x_t - eps_factor * eps_theta)
 
+    # Apply clipping to mean if requested
+    if clip_sample:
+        mean = torch.clamp(mean, -clip_sample_range, clip_sample_range)
+
     # Add noise scaled by variance for non-zero timesteps
     noise = torch.randn_like(x_t)
     beta_t = 1 - alpha_t
     variance = beta_t * (1 - alpha_t_cumprod / alpha_t) / (1 - alpha_t_cumprod)
+    variance = torch.clamp(variance, min=1e-20)  # Add clamp to prevent numerical instability
     
     # Mask out noise for t=0 timesteps
     non_zero_mask = (t_tensor > 0).float().view(*view_shape)
@@ -121,8 +137,76 @@ def denoising_step(
     
     pred_prev_sample = mean + noise_scale * noise
 
+    return pred_prev_sample
+
+
+def denoising_step_original(
+    denoising_model,
+    x_t,
+    t,
+    noise_schedule,
+    clip_sample=True,
+    clip_sample_range=1.0,
+):
+    """
+    This is the backward diffusion step, with the effect of denoising.
+    """
+    if isinstance(t, int):
+        t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
+    else:
+        t_tensor = t
+    with torch.no_grad():
+        model_output = denoising_model(t=t_tensor, x=x_t)
+    if hasattr(model_output, "sample"):
+        model_output = model_output.sample
+
+    # Extract relevant values from noise_schedule
+    alpha_prod_t = noise_schedule["alphas_cumprod"][t_tensor]
+    # deal with t=0 case where t can be a tensor
+    alpha_prod_t_prev = torch.where(
+        t_tensor > 0,
+        noise_schedule["alphas_cumprod"][t_tensor - 1],
+        torch.ones_like(t_tensor, device=x_t.device),
+    )
+
+    # Reshape alpha_prod_t_prev for proper broadcasting
+    alpha_prod_t = alpha_prod_t.view(-1, 1, 1, 1)
+    alpha_prod_t_prev = alpha_prod_t_prev.view(-1, 1, 1, 1)
+
+    beta_prod_t = 1 - alpha_prod_t
+    beta_prod_t_prev = 1 - alpha_prod_t_prev
+    current_alpha_t = alpha_prod_t / alpha_prod_t_prev
+    current_beta_t = 1 - current_alpha_t
+
+    # Compute the previous sample mean
+    pred_original_sample = (x_t - beta_prod_t**0.5 * model_output) / alpha_prod_t**0.5
+
     if clip_sample:
-        pred_prev_sample = pred_prev_sample.clamp(-clip_sample_range, clip_sample_range)
+        pred_original_sample = torch.clamp(
+            pred_original_sample, -clip_sample_range, clip_sample_range
+        )
+
+    # Compute the coefficients for pred_original_sample and current sample
+    pred_original_sample_coeff = (alpha_prod_t_prev**0.5 * current_beta_t) / beta_prod_t
+    current_sample_coeff = current_alpha_t**0.5 * beta_prod_t_prev / beta_prod_t
+
+    # Compute the previous sample
+    pred_prev_sample = (
+        pred_original_sample_coeff * pred_original_sample + current_sample_coeff * x_t
+    )
+
+    # Add noise
+    variance = torch.zeros_like(x_t)
+    variance_noise = torch.randn_like(x_t)
+
+    # Handle t=0 case where t can be a tensor
+    non_zero_mask = (t_tensor != 0).float().view(-1, 1, 1, 1)
+    variance = non_zero_mask * (
+        (1 - alpha_prod_t_prev) / (1 - alpha_prod_t) * current_beta_t
+    )
+    variance = torch.clamp(variance, min=1e-20)
+
+    pred_prev_sample = pred_prev_sample + (variance**0.5) * variance_noise
 
     return pred_prev_sample
 
@@ -287,6 +371,9 @@ class TrainingConfig:
     fid_every: int  # compute FID every N steps
     num_samples_for_fid: int = 1000  # number of samples for FID
     num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
+
+    # Sampling
+    clip_sample_range: float = 1.0  # range for clipping sample. If 0 or less, no clipping
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -578,24 +665,26 @@ def generate_and_log_samples(
     # Generate random noise
     # TODO: make this a config parameter
     n_samples = 8
+    # TODO: data_dim = [3, 32, 32] is hardcoded
     x = torch.randn(n_samples, 3, 32, 32).to(device)
 
     # Sample using the main model
     sampled_images = generate_samples_by_denoising(
-        denoising_model, x, noise_schedule, config.num_denoising_steps, device
+        denoising_model, x, noise_schedule, config.num_denoising_steps, device,
+        clip_sample=config.clip_sample_range > 0,
+        clip_sample_range=config.clip_sample_range,
     )
     images_processed = (
         (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
     )
 
     if config.logger == "wandb":
-        for i in range(images_processed.shape[0]):
-            wandb.log(
-                {
-                    "num_batches_trained": step,
-                    "test_samples": [wandb.Image(img) for img in images_processed],
-                }
-            )
+        wandb.log(
+            {
+                "num_batches_trained": step,
+                "test_samples": [wandb.Image(img) for img in images_processed],
+            }
+        )
     else:
         grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
         save_image(
@@ -806,22 +895,22 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
     betas = torch.linspace(1e-4, 0.02, n_T).to(device)
     alphas = 1.0 - betas
     alphas_cumprod = torch.cumprod(alphas, axis=0).to(device)
-    # alphas_cumprod_prev = torch.cat(
-    #     [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
-    # )
-    # sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
-    # sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
-    # sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-    # posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+    alphas_cumprod_prev = torch.cat(
+        [torch.ones(1).to(device), alphas_cumprod[:-1].to(device)]
+    )
+    sqrt_recip_alphas = torch.sqrt(1.0 / alphas).to(device)
+    sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod).to(device)
+    sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+    posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
     return {
         "alphas": alphas,
         "betas": betas,
         "alphas_cumprod": alphas_cumprod,
-        # "sqrt_recip_alphas": sqrt_recip_alphas,
-        # "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
-        # "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
-        # "posterior_variance": posterior_variance,
+        "sqrt_recip_alphas": sqrt_recip_alphas,
+        "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
+        "sqrt_one_minus_alphas_cumprod": sqrt_one_minus_alphas_cumprod,
+        "posterior_variance": posterior_variance,
     }
 
 
@@ -902,6 +991,12 @@ def parse_arguments():
     )
     parser.add_argument(
         "--device", type=str, default="cuda:0", help="Device to use for training"
+    )
+    parser.add_argument(
+        "--clip_sample_range",
+        type=float,
+        default=1.0,
+        help="Range for clipping sample",
     )
     parser.add_argument(
         "--max_grad_norm",
