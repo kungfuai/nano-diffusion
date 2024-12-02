@@ -82,7 +82,12 @@ def denoising_step(
     clip_sample=True,
     clip_sample_range=1.0,
 ):
-    return denoising_step_original(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
+    """
+    About clipping, see discussion here: https://github.com/hojonathanho/diffusion/issues/5
+
+    And explanation here: https://github.com/taehoon-yoon/Diffusion/blob/master/src/diffusion.py#L93
+    """
+    return denoising_step_one_stop(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
 
 
 def denoising_step_direct(
@@ -95,6 +100,12 @@ def denoising_step_direct(
 ):
     """
     This is the backward diffusion step, with the effect of denoising.
+
+    Given the current state x_t, predict the previous state x_{t-1}.
+
+        x_t --> x_{t-1}
+
+    Similar to a direct flight, there is no additional stop in the middle.
     """
     if isinstance(t, int):
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
@@ -140,7 +151,7 @@ def denoising_step_direct(
     return pred_prev_sample
 
 
-def denoising_step_original(
+def denoising_step_one_stop(
     denoising_model,
     x_t,
     t,
@@ -150,6 +161,16 @@ def denoising_step_original(
 ):
     """
     This is the backward diffusion step, with the effect of denoising.
+
+    The procedure is similar to a flight with one stop in the middle.
+
+        1. x_t --> predicted x_0
+        2. clip the predicted x_0 to desired range
+        3. predicted x_0 --> predicted x_{t-1}
+
+    To clip the x_0 to out desired range, we cannot directly apply (11) to sample x_{t-1}, rather we have to
+    calculate predicted x_0 using (4) and then calculate mu in (7) using that predicted x_0. Which is exactly
+    same calculation except for clipping. (See https://github.com/taehoon-yoon/Diffusion/blob/master/src/diffusion.py#L93)
     """
     if isinstance(t, int):
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
