@@ -9,8 +9,8 @@ from torch.utils.data import Dataset
 
 
 class HuggingFaceDataset(Dataset):
-    def __init__(self, dataset_path: str, transform=None):
-        self.dataset = load_dataset(dataset_path, split="train")
+    def __init__(self, dataset_path: str, split="train", transform=None):
+        self.dataset = load_dataset(dataset_path, split=split)
         self.transform = transform
         self.image_key = self.find_image_key()
 
