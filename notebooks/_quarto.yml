@@ -1,0 +1,43 @@
+project:
+  type: website
+  render:
+    - "*.qmd"
+    - "*.ipynb"
+
+website:
+  title: "Nano Diffusion"
+  sidebar:
+    background: primary
+    # logo: "images/logo.png"
+    pinned: true
+    align: center
+    tools:
+      - icon: github
+        href: https://github.com/kungfuai/nano-diffusion.git
+        text: GitHub
+    style: docked
+    contents:
+      - href: "1_1_Diffusion 2D Toy.ipynb"
+        text: 1.1 Diffusion for a 2D Point Cloud
+      - href: "1_1_a_refactor.ipynb"
+        text: 1.1a Refactor
+      - href: "1_1_b_Diffusion_2D_hyperparams.ipynb"
+        text: 1.1b Experimenting with diffusion recipes
+      - href: "1_2_Flow Matching 2D Toy.ipynb"
+        text: 1.2 Flow Matching for a 2D Point Cloud
+      - href: "2_1_nano_diffusion_afhq.ipynb"
+        text: 2.1 Diffusion for Animal Face Images
+      - href: "3_1_fid.ipynb"
+        text: "3.1 Evaluation: FID"
+      # - href: https://github.com/Pakillo/quarto-course-website-template/discussions
+      #   text: Forum
+
+format:
+  html:
+    toc: true
+    theme: cosmo
+    # theme: readable
+    # theme: flatly
+    # theme: litera
+    highlight: github
+    # css: styles.css
