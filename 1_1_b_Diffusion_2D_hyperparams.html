@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Model Hyperparameter Comparison – Nano Diffusion</title>
+<title>Experiment with hyperparameters – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -58,6 +58,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
 <script src="site_libs/quarto-search/fuse.min.js"></script>
@@ -73,11 +74,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
-  "location": "sidebar",
+  "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
-  "panel-placement": "start",
-  "type": "textbox",
+  "panel-placement": "end",
+  "type": "overlay",
   "limit": 50,
   "keyboard-shortcut": [
     "f",
@@ -107,79 +108,144 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-sidebar docked">
+<body class="nav-sidebar floating nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Nano Diffusion</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/kungfuai/nano-diffusion.git" title="GitHub" class="quarto-navigation-tool px-1" aria-label="GitHub"><i class="bi bi-github"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">1.1b Experimenting with diffusion recipes</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Experiment with hyperparameters</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
-        <i class="bi bi-search"></i>
-      </button>
     </div>
   </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
-    <div class="pt-lg-2 mt-2 text-center sidebar-header">
-    <div class="sidebar-title mb-0 py-0">
-      <a href="./">Nano Diffusion</a> 
-        <div class="sidebar-tools-main">
-    <a href="https://github.com/kungfuai/nano-diffusion.git" title="GitHub" class="quarto-navigation-tool px-1" aria-label="GitHub"><i class="bi bi-github"></i></a>
-</div>
-    </div>
-      </div>
-        <div class="mt-2 flex-shrink-0 align-items-center">
-        <div class="sidebar-search">
-        <div id="quarto-search" class="" title="Search"></div>
-        </div>
-        </div>
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
-        <li class="sidebar-item">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Generating a 2D Point Cloud</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Diffusion</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_Diffusion 2D Toy.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">1.1 Diffusion for a 2D Point Cloud</span></a>
+ <span class="menu-text">Training a Diffusion Model on 2D Points</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_a_refactor.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">1.1a Refactor</span></a>
+ <span class="menu-text">A refactoring exercise</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">1.1b Experimenting with diffusion recipes</span></a>
+ <span class="menu-text">Experiment with hyperparameters</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Flow Matching</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_2_Flow Matching 2D Toy.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">1.2 Flow Matching for a 2D Point Cloud</span></a>
+ <span class="menu-text">Training a Flow Matching Model for 2D Point Generation</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Generating Animal Face Images</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./2_1_nano_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">2.1 Diffusion for Animal Face Images</span></a>
+ <span class="menu-text">Training a Diffusion Model for Animal Face Images</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Evaluation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./3_1_fid.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">3.1 Evaluation: FID</span></a>
+ <span class="menu-text">Quality evaluation of an image generation model</span></a>
   </div>
 </li>
+      </ul>
+  </li>
     </ul>
     </div>
 </nav>
@@ -192,11 +258,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#define-the-grid-of-hyperparameters" id="toc-define-the-grid-of-hyperparameters" class="nav-link active" data-scroll-target="#define-the-grid-of-hyperparameters">Define the grid of hyperparameters</a></li>
   <li><a href="#run-model-training-experiments" id="toc-run-model-training-experiments" class="nav-link" data-scroll-target="#run-model-training-experiments">Run model training experiments</a></li>
-  <li><a href="#analyze-the-results" id="toc-analyze-the-results" class="nav-link" data-scroll-target="#analyze-the-results">Analyze the results</a>
-  <ul class="collapse">
-  <li><a href="#plot-quality-vs.-model-size" id="toc-plot-quality-vs.-model-size" class="nav-link" data-scroll-target="#plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</a></li>
-  <li><a href="#plot-quality-vs.-training-steps" id="toc-plot-quality-vs.-training-steps" class="nav-link" data-scroll-target="#plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</a></li>
-  </ul></li>
+  <li><a href="#analyze-the-results" id="toc-analyze-the-results" class="nav-link" data-scroll-target="#analyze-the-results">Analyze the results</a></li>
   <li><a href="#discussion-questions" id="toc-discussion-questions" class="nav-link" data-scroll-target="#discussion-questions">Discussion questions</a></li>
   </ul>
 </nav>
@@ -204,9 +266,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Experiment with hyperparameters</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Model Hyperparameter Comparison</h1>
+<h1 class="title">Experiment with hyperparameters</h1>
 </div>
 
 
@@ -223,8 +285,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="define-the-grid-of-hyperparameters" class="level2">
-<h2 class="anchored" data-anchor-id="define-the-grid-of-hyperparameters">Define the grid of hyperparameters</h2>
+<section id="define-the-grid-of-hyperparameters" class="level3">
+<h3 class="anchored" data-anchor-id="define-the-grid-of-hyperparameters">Define the grid of hyperparameters</h3>
 <div id="cell-3" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.<span class="bu">eval</span> <span class="im">import</span> chamfer_distance</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.model <span class="im">import</span> Model1, Model2, Model3</span>
@@ -259,8 +321,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="run-model-training-experiments" class="level2">
-<h2 class="anchored" data-anchor-id="run-model-training-experiments">Run model training experiments</h2>
+<section id="run-model-training-experiments" class="level3">
+<h3 class="anchored" data-anchor-id="run-model-training-experiments">Run model training experiments</h3>
 <p>This can take about 10 minutes to run.</p>
 <div id="cell-5" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>train_config <span class="op">=</span> TrainingConfig()</span>
@@ -952,8 +1014,8 @@ loss: 0.2812938988208771</code></pre>
 </div>
 </div>
 </section>
-<section id="analyze-the-results" class="level2">
-<h2 class="anchored" data-anchor-id="analyze-the-results">Analyze the results</h2>
+<section id="analyze-the-results" class="level3">
+<h3 class="anchored" data-anchor-id="analyze-the-results">Analyze the results</h3>
 <div id="cell-7" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb114"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find the best model</span></span>
 <span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>best_model_idx <span class="op">=</span> np.argmin(chamfer_distances)</span>
@@ -992,8 +1054,8 @@ loss: 0.2812938988208771</code></pre>
 <span id="cb116-25"><a href="#cb116-25" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"Num Parameters"</span>] <span class="op">=</span> num_parameters</span>
 <span id="cb116-26"><a href="#cb116-26" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'Quality (Negative Log Chamfer Distance)'</span>] <span class="op">=</span> np.log(<span class="dv">1</span><span class="op">/</span>df[<span class="st">'Chamfer Distance'</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="plot-quality-vs.-model-size" class="level3">
-<h3 class="anchored" data-anchor-id="plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</h3>
+<section id="plot-quality-vs.-model-size" class="level4">
+<h4 class="anchored" data-anchor-id="plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</h4>
 <div id="cell-10" class="cell" data-execution_count="65">
 <div class="sourceCode cell-code" id="cb117"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># uses seaborn scatterplot to plot the scaling law</span></span>
 <span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="co"># only uses 10,000 timesteps for the scaling law</span></span>
@@ -1025,8 +1087,8 @@ loss: 0.2812938988208771</code></pre>
 </div>
 </div>
 </section>
-<section id="plot-quality-vs.-training-steps" class="level3">
-<h3 class="anchored" data-anchor-id="plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</h3>
+<section id="plot-quality-vs.-training-steps" class="level4">
+<h4 class="anchored" data-anchor-id="plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</h4>
 <div id="cell-12" class="cell" data-execution_count="64">
 <div class="sourceCode cell-code" id="cb118"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We only look at the 5 layer model</span></span>
@@ -1044,8 +1106,8 @@ loss: 0.2812938988208771</code></pre>
 </div>
 </section>
 </section>
-<section id="discussion-questions" class="level2">
-<h2 class="anchored" data-anchor-id="discussion-questions">Discussion questions</h2>
+<section id="discussion-questions" class="level3">
+<h3 class="anchored" data-anchor-id="discussion-questions">Discussion questions</h3>
 <ul>
 <li>Is it helpful to make the model wide or deep (e.g.&nbsp;[512, 512] vs.&nbsp;[256, 256, 256, 256, 256])?</li>
 <li>Is it helpful to train for more steps?</li>
