@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Model Hyperparameter Comparison – Nano Diffusion</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-e26003cea8cd680ca0c55a263523d882.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-a8f9ed603c23890db36fbb3687c3492c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+
+</head>
+
+<body class="nav-sidebar docked">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">1.1b Experimenting with diffusion recipes</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-center sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Nano Diffusion</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/kungfuai/nano-diffusion.git" title="GitHub" class="quarto-navigation-tool px-1" aria-label="GitHub"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_Diffusion 2D Toy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1.1 Diffusion for a 2D Point Cloud</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_a_refactor.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1.1a Refactor</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">1.1b Experimenting with diffusion recipes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_2_Flow Matching 2D Toy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1.2 Flow Matching for a 2D Point Cloud</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_1_nano_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2.1 Diffusion for Animal Face Images</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3_1_fid.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3.1 Evaluation: FID</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#define-the-grid-of-hyperparameters" id="toc-define-the-grid-of-hyperparameters" class="nav-link active" data-scroll-target="#define-the-grid-of-hyperparameters">Define the grid of hyperparameters</a></li>
+  <li><a href="#run-model-training-experiments" id="toc-run-model-training-experiments" class="nav-link" data-scroll-target="#run-model-training-experiments">Run model training experiments</a></li>
+  <li><a href="#analyze-the-results" id="toc-analyze-the-results" class="nav-link" data-scroll-target="#analyze-the-results">Analyze the results</a>
+  <ul class="collapse">
+  <li><a href="#plot-quality-vs.-model-size" id="toc-plot-quality-vs.-model-size" class="nav-link" data-scroll-target="#plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</a></li>
+  <li><a href="#plot-quality-vs.-training-steps" id="toc-plot-quality-vs.-training-steps" class="nav-link" data-scroll-target="#plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</a></li>
+  </ul></li>
+  <li><a href="#discussion-questions" id="toc-discussion-questions" class="nav-link" data-scroll-target="#discussion-questions">Discussion questions</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Model Hyperparameter Comparison</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="define-the-grid-of-hyperparameters" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-grid-of-hyperparameters">Define the grid of hyperparameters</h2>
+<div id="cell-3" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.<span class="bu">eval</span> <span class="im">import</span> chamfer_distance</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.model <span class="im">import</span> Model1, Model2, Model3</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.training_loop  <span class="im">import</span> train</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.data <span class="im">import</span> load_data</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.config <span class="im">import</span> TrainingConfig</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_1_1.diffusion <span class="im">import</span> generate_samples_by_denoising, create_noise_schedule</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.optim <span class="im">as</span> optim</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ModelConfig:</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    model: <span class="bu">str</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    hidden_features: <span class="bu">list</span>[<span class="bu">int</span>]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    train_steps: <span class="bu">int</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>models <span class="op">=</span> [<span class="st">"model1"</span>, <span class="st">"model2"</span>, <span class="st">"model3"</span>]</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>layers <span class="op">=</span> [[<span class="dv">128</span>], [<span class="dv">256</span>, <span class="dv">256</span>], [<span class="dv">512</span>, <span class="dv">512</span>], [<span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">256</span>]]</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>train_steps <span class="op">=</span> [<span class="dv">1000</span>, <span class="dv">5000</span>, <span class="dv">10000</span>]</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>model_configs <span class="op">=</span> [</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    ModelConfig(model<span class="op">=</span>model, hidden_features<span class="op">=</span>layer, train_steps<span class="op">=</span>num_timestep)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> model <span class="kw">in</span> models <span class="cf">for</span> layer <span class="kw">in</span> layers <span class="cf">for</span> num_timestep <span class="kw">in</span> train_steps</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Number of model configs: </span><span class="sc">{</span><span class="bu">len</span>(model_configs)<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of model configs: 36</code></pre>
+</div>
+</div>
+</section>
+<section id="run-model-training-experiments" class="level2">
+<h2 class="anchored" data-anchor-id="run-model-training-experiments">Run model training experiments</h2>
+<p>This can take about 10 minutes to run.</p>
+<div id="cell-5" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>train_config <span class="op">=</span> TrainingConfig()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>train_dataloader, _ <span class="op">=</span> load_data(train_config)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> <span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(train_config.num_denoising_steps, device)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>losses <span class="op">=</span> []</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>chamfer_distances <span class="op">=</span> []</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>target_spiral <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(train_dataloader))</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, m_config <span class="kw">in</span> <span class="bu">enumerate</span>(model_configs):</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Experiment run </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss"> of </span><span class="sc">{</span><span class="bu">len</span>(model_configs)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    model <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m_config.model <span class="op">==</span> <span class="st">"model1"</span>:</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model1(hidden_features<span class="op">=</span>m_config.hidden_features, num_timesteps<span class="op">=</span>m_config.train_steps).to(device)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> m_config.model <span class="op">==</span> <span class="st">"model2"</span>:</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model2(hidden_features<span class="op">=</span>m_config.hidden_features, num_timesteps<span class="op">=</span>m_config.train_steps).to(device)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> m_config.model <span class="op">==</span> <span class="st">"model3"</span>:</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model3(</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            hidden_features<span class="op">=</span>m_config.hidden_features,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            num_timesteps<span class="op">=</span>m_config.train_steps,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        ).to(device)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>m_config<span class="sc">.</span>model<span class="sc">}</span><span class="ss">, Layers: </span><span class="sc">{</span>m_config<span class="sc">.</span>hidden_features<span class="sc">}</span><span class="ss">, Train Steps: </span><span class="sc">{</span>m_config<span class="sc">.</span>train_steps<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    optimizer <span class="op">=</span> optim.AdamW(model.parameters(), lr<span class="op">=</span>train_config.learning_rate, weight_decay<span class="op">=</span>train_config.weight_decay)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> train(model, train_dataloader<span class="op">=</span>train_dataloader, optimizer<span class="op">=</span>optimizer, steps<span class="op">=</span>m_config.train_steps, noise_schedule<span class="op">=</span>noise_schedule, device<span class="op">=</span>device)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"loss:"</span>, loss.item())</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    generated_points <span class="op">=</span> generate_samples_by_denoising(model, torch.randn(<span class="dv">128</span>, <span class="dv">2</span>), noise_schedule, n_T<span class="op">=</span><span class="dv">1000</span>, device<span class="op">=</span>device)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    generated_points <span class="op">=</span> generated_points.cpu().numpy()</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m_config.model <span class="op">==</span> <span class="st">"model1"</span>:</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># special treatment for model1</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        generated_points <span class="op">=</span> np.clip(generated_points, <span class="op">-</span><span class="fl">3.6</span>, <span class="fl">3.6</span>)</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    chamfer_dist <span class="op">=</span> chamfer_distance(generated_points, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    chamfer_distances.append(chamfer_dist)</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Chamfer Distance:"</span>, chamfer_dist)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>model1, Layers: [128], Train Steps: 1000
+model params: 770
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"6b72ec35ba7849c49ed8fda15c5c65b2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.4509263038635254</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1025.70it/s, std=50.1]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 40.83210172000426
+model1, Layers: [128], Train Steps: 5000
+model params: 770
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"bd60efc1b6c54d5db4ef2328ad4399f0","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.46364229917526245</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1068.78it/s, std=64.4]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 47.438745148771524
+model1, Layers: [128], Train Steps: 10000
+model params: 770
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"620f9a98d0cf4452939427309a396df4","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.4620330333709717</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1053.48it/s, std=58.7]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 43.8795945442217
+model1, Layers: [256, 256], Train Steps: 1000
+model params: 67330
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"781010cf972445d9bc33bc589b83b65d","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.433613121509552</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1025.87it/s, std=55.3]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 34.900078827080634
+model1, Layers: [256, 256], Train Steps: 5000
+model params: 67330
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"29e061f012974ed09e759d38ae5c5599","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.41779962182044983</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1030.43it/s, std=49.4]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 37.8007218336046
+model1, Layers: [256, 256], Train Steps: 10000
+model params: 67330
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"4a0c626560d5470ab5a65d6175e220e5","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.4159809947013855</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1027.20it/s, std=56.5]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 41.10801919781987
+model1, Layers: [512, 512], Train Steps: 1000
+model params: 265730
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"11159adce8824527b1e29be92f728c89","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.4471423327922821</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 982.32it/s, std=64.2]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 44.991998336324244
+model1, Layers: [512, 512], Train Steps: 5000
+model params: 265730
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"95a66c0dac384e3e87281f48003a5cd7","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.3601759076118469</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1003.78it/s, std=64] </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 47.84504672777196
+model1, Layers: [512, 512], Train Steps: 10000
+model params: 265730
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"bd6fd01e9d95409fbd9182b8052bdcf2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.44915974140167236</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 993.84it/s, std=56.1]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 40.11150077540098
+model1, Layers: [256, 256, 256, 256, 256], Train Steps: 1000
+model params: 264706
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"03bff9e1f16442e280bb2aa49ed31b8d","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.42826491594314575</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 938.80it/s, std=64.7]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 45.433996849178996
+model1, Layers: [256, 256, 256, 256, 256], Train Steps: 5000
+model params: 264706
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"a560a349ad9943cb8ea71fa665a19a03","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.43620750308036804</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 956.80it/s, std=68.4]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 47.47955309238842
+model1, Layers: [256, 256, 256, 256, 256], Train Steps: 10000
+model params: 264706
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"d73f6a379b934e7395ad613f51d6db95","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.4281949996948242</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 941.21it/s, std=56.2]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 40.01103618165592
+model2, Layers: [128], Train Steps: 1000
+model params: 4738
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"00ca66db52274508bb88ef292666a7c8","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.3815053701400757</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1000.22it/s, std=1.9]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.9952134982106191
+model2, Layers: [128], Train Steps: 5000
+model params: 4738
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"e83f88c5ac0f431f9ecb332fa764df73","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.342546284198761</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1014.42it/s, std=2.02]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.9870064848257294
+model2, Layers: [128], Train Steps: 10000
+model params: 4738
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"7b34a36b904b497eb84169f6040c1f71","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.40761643648147583</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1019.49it/s, std=1.95]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.826520714937363
+model2, Layers: [256, 256], Train Steps: 1000
+model params: 75266
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"d261d9d20c944a18bd11c3df77e51fb1","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.40317225456237793</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 990.18it/s, std=1.98]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.9103175682988993
+model2, Layers: [256, 256], Train Steps: 5000
+model params: 75266
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"52903dbec67043419bee0b1b9eba6707","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.4225660264492035</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 976.46it/s, std=1.98]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.6969788011770026
+model2, Layers: [256, 256], Train Steps: 10000
+model params: 75266
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"54a24ebc41844096959a3e7237fc4ef7","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.34160494804382324</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 971.04it/s, std=1.95] </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.5928464470174432
+model2, Layers: [512, 512], Train Steps: 1000
+model params: 281602
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"fe0f94b858cf445795ac9b72e6597cb0","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.3745132386684418</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1001.80it/s, std=1.94]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.8723187112974164
+model2, Layers: [512, 512], Train Steps: 5000
+model params: 281602
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"08870c49364c495e89dd958fdd3db535","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.4065595269203186</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 955.66it/s, std=2]   </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.6087286500392258
+model2, Layers: [512, 512], Train Steps: 10000
+model params: 281602
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"80729cd7c63149d68335625301cc579e","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.32167112827301025</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:00&lt;00:00, 1011.62it/s, std=1.97]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.46802006722301026
+model2, Layers: [256, 256, 256, 256, 256], Train Steps: 1000
+model params: 272642
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"32211b5311854e7db07202bec856a2f8","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.4069325625896454</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 934.27it/s, std=2]   </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.6562601955836662
+model2, Layers: [256, 256, 256, 256, 256], Train Steps: 5000
+model params: 272642
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"841be57802c7420f84a09dd2b26ae51a","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.3000778257846832</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 898.61it/s, std=1.94]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.23615802336684183
+model2, Layers: [256, 256, 256, 256, 256], Train Steps: 10000
+model params: 272642
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"a1b62a175b5b49ca899615ae944d3c90","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.3427009582519531</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 901.10it/s, std=1.93]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.22002034624801564
+model3, Layers: [128], Train Steps: 1000
+model params: 50570
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"e9887bd7815c458eaf4d14b6aa599b74","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.34604138135910034</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 741.65it/s, std=1.93]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.720878815943192
+model3, Layers: [128], Train Steps: 5000
+model params: 50570
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"43cb41cbc0b04e27859dc39c043b34d2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.26689964532852173</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 738.06it/s, std=2.03]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.281599986112402
+model3, Layers: [128], Train Steps: 10000
+model params: 50570
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"d14ef80165dc43a4aa598e6521a56b39","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.3543072044849396</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 751.87it/s, std=1.97]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.3179484760186321
+model3, Layers: [256, 256], Train Steps: 1000
+model params: 330762
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"0bf7587860584fd29a6ef1d7fbeb79bf","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.32084426283836365</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 619.71it/s, std=1.97]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.3826757721628579
+model3, Layers: [256, 256], Train Steps: 5000
+model params: 330762
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"6f85b98ba6744deebea9275e0f7e5b06","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.33935433626174927</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 632.97it/s, std=1.93]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.2178326634163048
+model3, Layers: [256, 256], Train Steps: 10000
+model params: 330762
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"5d533d4e232a454b929cc80d316e91d3","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.29220932722091675</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 638.39it/s, std=1.96]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.20583606746893657
+model3, Layers: [512, 512], Train Steps: 1000
+model params: 1054218
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"fb1c12d556ef459ebf4180b5ab020449","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.29506391286849976</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 641.70it/s, std=2.01]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.35953832038652656
+model3, Layers: [512, 512], Train Steps: 5000
+model params: 1054218
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"147fce6ebdab40f5b5e95dde08c26c99","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.32820066809654236</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 631.76it/s, std=2.03]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.2234631816484437
+model3, Layers: [512, 512], Train Steps: 10000
+model params: 1054218
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"4cc57b6eb7dc4429b086a23a5bb28cec","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.3356664776802063</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:01&lt;00:00, 634.93it/s, std=1.92]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.2181650604105344
+model3, Layers: [256, 256, 256, 256, 256], Train Steps: 1000
+model params: 922890
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"0752739261b14bb99a2f52e128f95904","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 1000
+loss: 0.3741267919540405</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:02&lt;00:00, 432.72it/s, std=1.97]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.25825727442566093
+model3, Layers: [256, 256, 256, 256, 256], Train Steps: 5000
+model params: 922890
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"48dcb120d6914584836ffa51af7d8ef2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 5000
+loss: 0.330197274684906</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:02&lt;00:00, 419.03it/s, std=2.02]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.21255801422529738
+model3, Layers: [256, 256, 256, 256, 256], Train Steps: 10000
+model params: 922890
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"4cd13a10d89640efb964991c23752ce2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+loss: 0.2812938988208771</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:02&lt;00:00, 435.70it/s, std=1.94]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Chamfer Distance: 0.17926968569031748</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+</div>
+</section>
+<section id="analyze-the-results" class="level2">
+<h2 class="anchored" data-anchor-id="analyze-the-results">Analyze the results</h2>
+<div id="cell-7" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find the best model</span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>best_model_idx <span class="op">=</span> np.argmin(chamfer_distances)</span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>best_model <span class="op">=</span> model_configs[best_model_idx]</span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Best model: </span><span class="sc">{</span>best_model<span class="sc">}</span><span class="ss">, Chamfer Distance: </span><span class="sc">{</span>chamfer_distances[best_model_idx]<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Best model: ModelConfig(model='model3', hidden_features=[256, 256, 256, 256, 256], train_steps=10000), Chamfer Distance: 0.17926968569031748</code></pre>
+</div>
+</div>
+<div id="cell-8" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Print a grid of the chamfer distances and the different configs</span></span>
+<span id="cb116-2"><a href="#cb116-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb116-3"><a href="#cb116-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-4"><a href="#cb116-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb116-5"><a href="#cb116-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Model"</span>: [m.model <span class="cf">for</span> m <span class="kw">in</span> model_configs],</span>
+<span id="cb116-6"><a href="#cb116-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Layers"</span>: [m.hidden_features <span class="cf">for</span> m <span class="kw">in</span> model_configs],</span>
+<span id="cb116-7"><a href="#cb116-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Train Steps"</span>: [m.train_steps <span class="cf">for</span> m <span class="kw">in</span> model_configs],</span>
+<span id="cb116-8"><a href="#cb116-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Chamfer Distance"</span>: chamfer_distances,</span>
+<span id="cb116-9"><a href="#cb116-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb116-10"><a href="#cb116-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-11"><a href="#cb116-11" aria-hidden="true" tabindex="-1"></a><span class="co"># add num parameters to df</span></span>
+<span id="cb116-12"><a href="#cb116-12" aria-hidden="true" tabindex="-1"></a>num_parameters <span class="op">=</span> []</span>
+<span id="cb116-13"><a href="#cb116-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> m_config <span class="kw">in</span> model_configs:</span>
+<span id="cb116-14"><a href="#cb116-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m_config.model <span class="op">==</span> <span class="st">"model1"</span>:</span>
+<span id="cb116-15"><a href="#cb116-15" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model1(hidden_features<span class="op">=</span>m_config.hidden_features, num_timesteps<span class="op">=</span>m_config.train_steps).to(device)</span>
+<span id="cb116-16"><a href="#cb116-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> m_config.model <span class="op">==</span> <span class="st">"model2"</span>:</span>
+<span id="cb116-17"><a href="#cb116-17" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model2(hidden_features<span class="op">=</span>m_config.hidden_features, num_timesteps<span class="op">=</span>m_config.train_steps).to(device)</span>
+<span id="cb116-18"><a href="#cb116-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> m_config.model <span class="op">==</span> <span class="st">"model3"</span>:</span>
+<span id="cb116-19"><a href="#cb116-19" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Model3(</span>
+<span id="cb116-20"><a href="#cb116-20" aria-hidden="true" tabindex="-1"></a>            hidden_features<span class="op">=</span>m_config.hidden_features,</span>
+<span id="cb116-21"><a href="#cb116-21" aria-hidden="true" tabindex="-1"></a>            num_timesteps<span class="op">=</span>m_config.train_steps,</span>
+<span id="cb116-22"><a href="#cb116-22" aria-hidden="true" tabindex="-1"></a>        ).to(device)</span>
+<span id="cb116-23"><a href="#cb116-23" aria-hidden="true" tabindex="-1"></a>    num_parameters.append(<span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters()))</span>
+<span id="cb116-24"><a href="#cb116-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-25"><a href="#cb116-25" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"Num Parameters"</span>] <span class="op">=</span> num_parameters</span>
+<span id="cb116-26"><a href="#cb116-26" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'Quality (Negative Log Chamfer Distance)'</span>] <span class="op">=</span> np.log(<span class="dv">1</span><span class="op">/</span>df[<span class="st">'Chamfer Distance'</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="plot-quality-vs.-model-size" class="level3">
+<h3 class="anchored" data-anchor-id="plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</h3>
+<div id="cell-10" class="cell" data-execution_count="65">
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># uses seaborn scatterplot to plot the scaling law</span></span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="co"># only uses 10,000 timesteps for the scaling law</span></span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a><span class="co"># We fix the number of timesteps to 10,000.</span></span>
+<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a>selected_df <span class="op">=</span> df[df[<span class="st">"Train Steps"</span>] <span class="op">==</span> <span class="dv">10000</span>]</span>
+<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a><span class="co"># model2 or 3</span></span>
+<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a><span class="co"># df = df[df["Model"] != "model1"]</span></span>
+<span id="cb117-10"><a href="#cb117-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-11"><a href="#cb117-11" aria-hidden="true" tabindex="-1"></a><span class="co">#color based on model</span></span>
+<span id="cb117-12"><a href="#cb117-12" aria-hidden="true" tabindex="-1"></a><span class="co"># adds layers as very small text next to point</span></span>
+<span id="cb117-13"><a href="#cb117-13" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(data<span class="op">=</span>selected_df, x<span class="op">=</span><span class="st">"Num Parameters"</span>, y<span class="op">=</span><span class="st">"Quality (Negative Log Chamfer Distance)"</span>, hue<span class="op">=</span><span class="st">"Model"</span>)</span>
+<span id="cb117-14"><a href="#cb117-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(selected_df)):</span>
+<span id="cb117-15"><a href="#cb117-15" aria-hidden="true" tabindex="-1"></a>    plt.text(</span>
+<span id="cb117-16"><a href="#cb117-16" aria-hidden="true" tabindex="-1"></a>        selected_df[<span class="st">"Num Parameters"</span>].iloc[i],</span>
+<span id="cb117-17"><a href="#cb117-17" aria-hidden="true" tabindex="-1"></a>        selected_df[<span class="st">"Quality (Negative Log Chamfer Distance)"</span>].iloc[i],</span>
+<span id="cb117-18"><a href="#cb117-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">str</span>(selected_df[<span class="st">"Layers"</span>].iloc[i]), fontsize<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb117-19"><a href="#cb117-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-20"><a href="#cb117-20" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Quality vs. Model Size"</span>)</span>
+<span id="cb117-21"><a href="#cb117-21" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="1_1_b_Diffusion_2D_hyperparams_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="plot-quality-vs.-training-steps" class="level3">
+<h3 class="anchored" data-anchor-id="plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</h3>
+<div id="cell-12" class="cell" data-execution_count="64">
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We only look at the 5 layer model</span></span>
+<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a>selected_df <span class="op">=</span> df[df[<span class="st">"Layers"</span>].astype(<span class="bu">str</span>) <span class="op">==</span> <span class="st">'[256, 256, 256, 256, 256]'</span>]</span>
+<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>selected_df, x<span class="op">=</span><span class="st">"Train Steps"</span>, y<span class="op">=</span><span class="st">"Quality (Negative Log Chamfer Distance)"</span>, hue<span class="op">=</span><span class="st">"Model"</span>, style<span class="op">=</span><span class="st">"Model"</span>, markers<span class="op">=</span><span class="va">True</span>, dashes<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Quality vs. Training Steps"</span>)</span>
+<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="1_1_b_Diffusion_2D_hyperparams_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="discussion-questions" class="level2">
+<h2 class="anchored" data-anchor-id="discussion-questions">Discussion questions</h2>
+<ul>
+<li>Is it helpful to make the model wide or deep (e.g.&nbsp;[512, 512] vs.&nbsp;[256, 256, 256, 256, 256])?</li>
+<li>Is it helpful to train for more steps?</li>
+<li>What is the model architecture? Does model 3 dominate the other models?</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
