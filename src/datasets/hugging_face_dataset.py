@@ -9,8 +9,15 @@ from torch.utils.data import Dataset
 
 
 class HuggingFaceDataset(Dataset):
-    def __init__(self, dataset_path: str, split="train", transform=None):
+    def __init__(
+        self,
+        dataset_path: str,
+        split: str = "train",
+        label_key: list[str] | None = None,
+        transform=None,
+    ) -> None:
         self.dataset = load_dataset(dataset_path, split=split)
+        self.label_key = label_key
         self.transform = transform
         self.image_key = self.find_image_key()
 
@@ -21,14 +28,17 @@ class HuggingFaceDataset(Dataset):
             return "image"
         raise KeyError("Dataset does not have an 'image' key")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         image = self.dataset[idx][self.image_key]
         image = image.convert("RGB")  # Convert to RGB to ensure 3 channels
         # By default, set label to 0 to conform to current expected batch format
-        label = 0
+        if self.label_key is None:
+            label = 0
+        else:
+            label = self.dataset[idx][self.label_key]
         if self.transform:
             image = self.transform(image)
         return image, label
