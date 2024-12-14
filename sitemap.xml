@@ -2,46 +2,46 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/index.html</loc>
-    <lastmod>2024-12-11T03:36:23.209Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.083Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/inception_embedding_and_tsne.html</loc>
-    <lastmod>2024-12-11T03:36:23.209Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.083Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/compare_denoising_step_fns.html</loc>
-    <lastmod>2024-12-11T03:36:23.201Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.071Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/2_1_nano_diffusion_afhq.html</loc>
-    <lastmod>2024-12-11T03:36:23.201Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.071Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_b_Diffusion_2D_hyperparams.html</loc>
-    <lastmod>2024-12-11T03:36:23.181Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.051Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_Diffusion 2D Toy.html</loc>
-    <lastmod>2024-12-11T03:36:23.173Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.047Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_a_refactor.html</loc>
-    <lastmod>2024-12-11T03:36:23.181Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.051Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_2_Flow Matching 2D Toy.html</loc>
-    <lastmod>2024-12-11T03:36:23.193Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.063Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/3_1_fid.html</loc>
-    <lastmod>2024-12-11T03:36:23.201Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.071Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/compare_vlms.html</loc>
-    <lastmod>2024-12-11T03:36:23.201Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.071Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/text_encoder.html</loc>
-    <lastmod>2024-12-11T03:36:23.213Z</lastmod>
+    <lastmod>2024-12-14T02:11:01.087Z</lastmod>
   </url>
 </urlset>

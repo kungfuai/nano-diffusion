@@ -105,6 +105,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 <script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -271,21 +300,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#flow-plan" id="toc-flow-plan" class="nav-link" data-scroll-target="#flow-plan">FLow Plan</a>
   <ul class="collapse">
-  <li><a href="#conditional-flow-matcher" id="toc-conditional-flow-matcher" class="nav-link" data-scroll-target="#conditional-flow-matcher">Conditional Flow Matcher</a>
+  <li><a href="#a-simple-flow-plan" id="toc-a-simple-flow-plan" class="nav-link" data-scroll-target="#a-simple-flow-plan">A Simple Flow Plan</a>
   <ul class="collapse">
-  <li><a href="#how-does-flow-matching-plan-the-route" id="toc-how-does-flow-matching-plan-the-route" class="nav-link" data-scroll-target="#how-does-flow-matching-plan-the-route">How does flow matching plan the route?</a></li>
-  <li><a href="#visualizing-the-denoising-flow" id="toc-visualizing-the-denoising-flow" class="nav-link" data-scroll-target="#visualizing-the-denoising-flow">Visualizing the denoising flow</a></li>
+  <li><a href="#conditional-flow-matcher" id="toc-conditional-flow-matcher" class="nav-link" data-scroll-target="#conditional-flow-matcher">Conditional Flow Matcher</a></li>
   </ul></li>
+  <li><a href="#optimal-transport-flow-plan" id="toc-optimal-transport-flow-plan" class="nav-link" data-scroll-target="#optimal-transport-flow-plan">Optimal Transport Flow Plan</a></li>
+  <li><a href="#visualizing-the-flow-matching-plan" id="toc-visualizing-the-flow-matching-plan" class="nav-link" data-scroll-target="#visualizing-the-flow-matching-plan">Visualizing the flow matching plan</a>
+  <ul class="collapse">
+  <li><a href="#simple-flow-plan" id="toc-simple-flow-plan" class="nav-link" data-scroll-target="#simple-flow-plan">Simple Flow Plan</a></li>
+  <li><a href="#optimal-transport" id="toc-optimal-transport" class="nav-link" data-scroll-target="#optimal-transport">Optimal Transport</a></li>
+  </ul></li>
+  <li><a href="#visualizing-the-denoising-flow" id="toc-visualizing-the-denoising-flow" class="nav-link" data-scroll-target="#visualizing-the-denoising-flow">Visualizing the denoising flow</a></li>
   </ul></li>
   <li><a href="#training" id="toc-training" class="nav-link" data-scroll-target="#training">Training</a>
   <ul class="collapse">
-  <li><a href="#training-code" id="toc-training-code" class="nav-link" data-scroll-target="#training-code">Training code</a></li>
+  <li><a href="#training-loop" id="toc-training-loop" class="nav-link" data-scroll-target="#training-loop">Training loop</a></li>
   </ul></li>
-  <li><a href="#generation" id="toc-generation" class="nav-link" data-scroll-target="#generation">Generation</a></li>
-  <li><a href="#what-does-the-denoising-flow-look-like" id="toc-what-does-the-denoising-flow-look-like" class="nav-link" data-scroll-target="#what-does-the-denoising-flow-look-like">What does the denoising flow look like?</a>
+  <li><a href="#generation" id="toc-generation" class="nav-link" data-scroll-target="#generation">Generation</a>
   <ul class="collapse">
+  <li><a href="#visualize-the-sampled-data" id="toc-visualize-the-sampled-data" class="nav-link" data-scroll-target="#visualize-the-sampled-data">Visualize the sampled data</a></li>
+  <li><a href="#train-more-steps-and-generate-again" id="toc-train-more-steps-and-generate-again" class="nav-link" data-scroll-target="#train-more-steps-and-generate-again">Train more steps and generate again</a></li>
+  <li><a href="#visualize-denoising-flows" id="toc-visualize-denoising-flows" class="nav-link" data-scroll-target="#visualize-denoising-flows">Visualize denoising flows</a>
+  <ul class="collapse">
+  <li><a href="#animate-the-denoising-process" id="toc-animate-the-denoising-process" class="nav-link" data-scroll-target="#animate-the-denoising-process">Animate the denoising process</a></li>
+  </ul></li>
   <li><a href="#visualize-the-learned-vector-field-over-time" id="toc-visualize-the-learned-vector-field-over-time" class="nav-link" data-scroll-target="#visualize-the-learned-vector-field-over-time">Visualize the learned vector field over time</a></li>
-  <li><a href="#learned-denoising-flow-over-time" id="toc-learned-denoising-flow-over-time" class="nav-link" data-scroll-target="#learned-denoising-flow-over-time">Learned denoising flow over time</a></li>
   </ul></li>
   <li><a href="#comparing-model-performance" id="toc-comparing-model-performance" class="nav-link" data-scroll-target="#comparing-model-performance">Comparing Model Performance</a>
   <ul class="collapse">
@@ -336,7 +375,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Basic understanding of PyTorch</li>
 <li>Familiarity with neural networks and optimization</li>
 </ul>
-<div id="cell-2" class="cell" data-execution_count="4">
+<div id="cell-2" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Dict, Tuple</span>
@@ -356,7 +395,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-data" class="level1">
 <h1>The Data</h1>
 <p>First, let’s take a look at the data we’ll be working with. Diffusion models can be very resource intensive when trained on images and videos, so in order for us to train on a CPU quickly, we’ll start off by using a dataset of spirals in 2 dimensions.</p>
-<div id="cell-4" class="cell" data-outputid="ee5ad332-ca2a-47c8-bc8f-125d122fd9c7" data-execution_count="5">
+<div id="cell-4" class="cell" data-outputid="ee5ad332-ca2a-47c8-bc8f-125d122fd9c7" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x, _ <span class="op">=</span> make_swiss_roll(n_samples<span class="op">=</span><span class="dv">1000</span>, noise<span class="op">=</span><span class="fl">0.1</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> x[:, [<span class="dv">0</span>, <span class="dv">2</span>]]</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> (x <span class="op">-</span> x.mean()) <span class="op">/</span> x.std()</span>
@@ -374,7 +413,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="dataloaders" class="level2">
 <h2 class="anchored" data-anchor-id="dataloaders">Dataloaders</h2>
 <p>Before training the model, we need to define some hyperparameters and create our train and validation dataloaders.</p>
-<div id="cell-8" class="cell" data-outputid="2fe24a83-91d5-4bfe-ed72-edadab3350fe" data-execution_count="6">
+<div id="cell-8" class="cell" data-outputid="2fe24a83-91d5-4bfe-ed72-edadab3350fe" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> torch.device(<span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
@@ -433,7 +472,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="helper-functions" class="level1">
 <h1>Helper Functions</h1>
-<div id="cell-10" class="cell" data-execution_count="7">
+<div id="cell-10" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pad_t_like_x(t, x):</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Function to reshape the time vector t by the number of dimensions of x.</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -469,7 +508,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="model-1-timestep-concatination" class="level3">
 <h3 class="anchored" data-anchor-id="model-1-timestep-concatination">Model 1: Timestep Concatination</h3>
 <p>Our first model is a simple three layer MLP. Note that in the <code>foward</code> method, we concatinate the time to the input before each foward pass. This allows the model to have a sense of the where it is in the denoising process.</p>
-<div id="cell-13" class="cell" data-execution_count="8">
+<div id="cell-13" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Model1(nn.Module):</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, hidden_dim<span class="op">=</span><span class="dv">512</span>):</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
@@ -502,7 +541,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In this model, we utilize a 3-layer MLP. Instead of concatenating the raw time embedding directly to the image embedding, we first transform the time embedding into a sinusoidal embedding and then concatenate it with the image embedding.</p>
 <p><strong>History</strong></p>
 <p>This model builds upon the idea of incorporating temporal information into the embedding space, inspired by the effectiveness of sinusoidal embeddings in positional encoding for transformers. The sinusoidal representation allows the model to capture periodicity and smooth transitions in the time domain, potentially improving its ability to generalize across different temporal contexts.</p>
-<div id="cell-15" class="cell" data-execution_count="9">
+<div id="cell-15" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MLP(nn.Sequential):</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
@@ -548,7 +587,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="model-3-sinusoidal-time-embeddings-multiplication" class="level3">
 <h3 class="anchored" data-anchor-id="model-3-sinusoidal-time-embeddings-multiplication">Model 3: Sinusoidal Time Embeddings Multiplication</h3>
 <p>Model 3 introduces a time-conditioned architecture where time is incorporated directly into the network through TimeLinear layers. Instead of directly concatenating time embeddings with the image embeddings, the model uses the time embeddings to modulate the weights of the linear transformations dynamically. This approach allows the network to adapt its behavior to different timesteps, enabling more nuanced temporal modeling.</p>
-<div id="cell-17" class="cell" data-outputid="b05cc753-0eff-40af-c35a-6d28a024e125" data-execution_count="10">
+<div id="cell-17" class="cell" data-outputid="b05cc753-0eff-40af-c35a-6d28a024e125" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TimeEmbedding(nn.Module):</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Time embedding module that embeds the time step into a hidden representation.</span></span>
@@ -686,10 +725,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="flow-plan" class="level1">
 <h1>FLow Plan</h1>
-<p>Here we create a flow matching plan. It includes the “forward” and “backward” processes.</p>
-<section id="conditional-flow-matcher" class="level2">
-<h2 class="anchored" data-anchor-id="conditional-flow-matcher">Conditional Flow Matcher</h2>
-<div id="cell-20" class="cell" data-execution_count="11">
+<p>Similar to diffusion, in flow matching we also design a process that moves clean data points to noise in a way that is easy to reverse. The process to add noise is defined with a flow plan.</p>
+<section id="a-simple-flow-plan" class="level2">
+<h2 class="anchored" data-anchor-id="a-simple-flow-plan">A Simple Flow Plan</h2>
+<p>Given a clean data point <span class="math inline">\(x_1\)</span> and random noise <span class="math inline">\(x_0\)</span> with the same shape, we can simply use a straight line to move <span class="math inline">\(x_1\)</span> to <span class="math inline">\(x_0\)</span> or vice versa. If we allow for <span class="math inline">\(T=100\)</span> time steps between <span class="math inline">\(t=0\)</span> and <span class="math inline">\(t=1\)</span>, the following sequence can be produced:</p>
+<p><span class="math display">\[x_t = t \cdot x_1 + (1 - t) \cdot x_0\]</span></p>
+<p>A “ConditionalFlowMatcher” class is responsible for drawing samples from the flow plan, and computing the conditional flow: a vector/velocity field that moves the data points from <span class="math inline">\(x_0\)</span> to <span class="math inline">\(x_1\)</span>:</p>
+<p><span class="math display">\[u_t(x_1|x_0) = x_1 - x_0\]</span></p>
+<p>This is the desired velocity at time <span class="math inline">\(t\)</span> that we want the denoising model to learn.</p>
+<p>Below is a simple example of a conditional flow matcher, where each data point is independent of the others.</p>
+<section id="conditional-flow-matcher" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-flow-matcher">Conditional Flow Matcher</h3>
+<div id="cell-20" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Union</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -871,7 +918,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb12-179"><a href="#cb12-179" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="dv">2</span> <span class="op">*</span> sigma_t <span class="op">/</span> (<span class="va">self</span>.sigma<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> <span class="fl">1e-8</span>)</span>
 <span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-21" class="cell" data-execution_count="12">
+</section>
+</section>
+<section id="optimal-transport-flow-plan" class="level2">
+<h2 class="anchored" data-anchor-id="optimal-transport-flow-plan">Optimal Transport Flow Plan</h2>
+<p>An improvement to the simple flow matcher is to use optimal transport (OT) to plan the route. This is implemented in the “ExactOptimalTransportConditionalFlowMatcher” class.</p>
+<p>Optimal transport is a technique that finds the best way to transport mass from one distribution to another. In the context of flow matching, it is used to plan the route between the source and target distributions.</p>
+<p>Given two point clouds: the clean data points <span class="math inline">\(\{x_1^i\}_{i=1}^n\)</span> and the noisy data points <span class="math inline">\(\{x_0^j\}_{j=1}^m\)</span>, the OT plan is a matrix <span class="math inline">\(P\)</span> that describes the best way to transport mass from <span class="math inline">\(x_0\)</span> to <span class="math inline">\(x_1\)</span>. The matrix <span class="math inline">\(P\)</span> is defined as:</p>
+<p><span class="math display">\[P = \arg \min_{P} \sum_{i,j} c(x_1^i, x_0^j) P_{i,j} \quad \text{s.t.} \quad \sum_{j=1}^m P_{i,j} = 1, \quad \sum_{i=1}^n P_{i,j} = 1\]</span></p>
+<p>where <span class="math inline">\(c(x_1^i, x_0^j)\)</span> is the cost of transporting mass from <span class="math inline">\(x_1^i\)</span> to <span class="math inline">\(x_0^j\)</span>. In this case, we use the squared Euclidean distance, so <span class="math inline">\(c(x_1^i, x_0^j) = \|x_1^i - x_0^j\|^2\)</span>.</p>
+<p>The <code>OTPlanSampler</code> class is then used to draw samples from the flow plan. The samples are drawn from the source distribution, and then transported to the target distribution using the OT plan.</p>
+<div id="cell-22" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ot <span class="im">as</span> pot</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> warnings</span>
@@ -1179,16 +1236,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb13-305"><a href="#cb13-305" aria-hidden="true" tabindex="-1"></a>            t, xt, ut <span class="op">=</span> <span class="bu">super</span>().sample_location_and_conditional_flow(x0, x1, t, return_noise)</span>
 <span id="cb13-306"><a href="#cb13-306" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> t, xt, ut, y0, y1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2024-12-10 20:31:20.781305: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2024-12-10 20:31:20.792884: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:485] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-2024-12-10 20:31:20.805317: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:8454] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-2024-12-10 20:31:20.808998: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1452] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-2024-12-10 20:31:20.820170: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+<pre><code>2024-12-14 02:04:10.450586: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2024-12-14 02:04:10.462017: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:485] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-12-14 02:04:10.474088: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:8454] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-12-14 02:04:10.477825: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1452] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-12-14 02:04:10.488925: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
 To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-2024-12-10 20:31:21.579569: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT</code></pre>
+2024-12-14 02:04:11.398120: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT</code></pre>
 </div>
 </div>
-<div id="cell-22" class="cell" data-outputid="34b3b29e-8709-4653-cf6d-065dd09e1f25" data-execution_count="13">
+<div id="cell-23" class="cell" data-outputid="34b3b29e-8709-4653-cf6d-065dd09e1f25" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_samples_with_flow_matching(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>        denoising_model, device, num_samples: <span class="bu">int</span> <span class="op">=</span> <span class="dv">8</span>,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>        data_dims <span class="op">=</span> [<span class="dv">2</span>,], parallel: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>, seed: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>,</span>
@@ -1231,111 +1288,114 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> traj  <span class="co"># range is expected to be [0, 1]?</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-23" class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>FM <span class="op">=</span> ConditionalFlowMatcher(sigma<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># FM = ExactOptimalTransportConditionalFlowMatcher(sigma=0)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<section id="how-does-flow-matching-plan-the-route" class="level3">
-<h3 class="anchored" data-anchor-id="how-does-flow-matching-plan-the-route">How does flow matching plan the route?</h3>
-<div id="cell-25" class="cell" data-execution_count="15">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="15">
+</section>
+<section id="visualizing-the-flow-matching-plan" class="level2">
+<h2 class="anchored" data-anchor-id="visualizing-the-flow-matching-plan">Visualizing the flow matching plan</h2>
+<div id="cell-25" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="11">
 <pre><code>tensor([0.0000, 0.1111, 0.2222, 0.3333, 0.4444, 0.5556, 0.6667, 0.7778, 0.8889,
         1.0000])</code></pre>
 </div>
 </div>
-<div id="cell-26" class="cell" data-execution_count="16">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_flow_matching_trajectories(FM, n_examples<span class="op">=</span><span class="dv">30</span>):</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set a commmon xlim and ylim</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    xlim <span class="op">=</span> [<span class="op">-</span><span class="fl">3.7</span>, <span class="fl">3.7</span>]</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    ylim <span class="op">=</span> [<span class="op">-</span><span class="fl">3.7</span>, <span class="fl">3.7</span>]</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clean data (spiral)</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    x_clean <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(val_dataloader))[:n_examples]</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># noisy data</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    x_noisy <span class="op">=</span> torch.randn_like(x_clean)</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sample multiple timesteps to visualize flow progression</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    num_timesteps <span class="op">=</span> <span class="dv">10</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    t_grid <span class="op">=</span> torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, num_timesteps)</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    x_ts <span class="op">=</span> []</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    u_ts <span class="op">=</span> []</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> t_grid:</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        t_batch <span class="op">=</span> t.repeat(x_clean.shape[<span class="dv">0</span>])</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>        np.random.seed(<span class="dv">0</span>)</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>        t, x_t, u_t <span class="op">=</span> FM.sample_location_and_conditional_flow(x0<span class="op">=</span>x_noisy, x1<span class="op">=</span>x_clean, t<span class="op">=</span>t_batch)</span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        x_ts.append(x_t.detach().cpu().numpy())</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>        u_ts.append(u_t.detach().cpu().numpy())</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create visualization</span></span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    fig, axs <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">12</span>))</span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot initial and final distributions</span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].scatter(x_noisy[:, <span class="dv">0</span>], x_noisy[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'blue'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Initial'</span>)</span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].scatter(x_clean[:, <span class="dv">0</span>], x_clean[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'red'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Target'</span>) </span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_title(<span class="st">"Initial and Target Distributions"</span>)</span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].legend()</span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_xlim(xlim)</span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_ylim(ylim)</span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ======================================</span></span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Now show the full trajectories</span></span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ======================================</span></span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(x_ts[<span class="op">-</span><span class="dv">1</span>][:, <span class="dv">0</span>], x_ts[<span class="op">-</span><span class="dv">1</span>][:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'red'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Target (t=1)'</span>)</span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(x_ts[<span class="dv">0</span>][:, <span class="dv">0</span>], x_ts[<span class="dv">0</span>][:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'blue'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Initial (t=0)'</span>)</span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sample a few timesteps to show progression</span></span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>    sample_ts <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>]</span>
-<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> sample_ts:</span>
-<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>        current_points <span class="op">=</span> np.array(x_ts[t])</span>
-<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>        prev_points <span class="op">=</span> np.array(x_ts[t<span class="op">-</span><span class="dv">1</span>])</span>
-<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Calculate color interpolation factor (0 to 1)</span></span>
-<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a>        factor <span class="op">=</span> t <span class="op">/</span> (<span class="bu">len</span>(x_ts)<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Interpolate between blue (0,0,1) and red (1,0,0)</span></span>
-<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> (factor, <span class="dv">0</span>, <span class="dv">1</span><span class="op">-</span>factor)</span>
-<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>        axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(current_points[:, <span class="dv">0</span>], current_points[:, <span class="dv">1</span>], color<span class="op">=</span>color, alpha<span class="op">=</span><span class="fl">0.3</span>, label<span class="op">=</span><span class="ss">f't=0.</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">'</span>)</span>
-<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a>        <span class="co"># connect the dots: previous point to current point</span></span>
-<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> prev_points.shape <span class="op">==</span> (n_examples, <span class="dv">2</span>), <span class="ss">f"prev_traj.shape=</span><span class="sc">{</span>prev_points<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span></span>
-<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i_point <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(current_points)):</span>
-<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Plot the line segment from previous point to current point</span></span>
-<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a>            axs[<span class="dv">0</span>, <span class="dv">1</span>].plot(</span>
-<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a>                [prev_points[i_point, <span class="dv">0</span>], current_points[i_point, <span class="dv">0</span>]],</span>
-<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>                [prev_points[i_point, <span class="dv">1</span>], current_points[i_point, <span class="dv">1</span>]],</span>
-<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a>                <span class="st">'k-'</span>, alpha<span class="op">=</span><span class="fl">0.1</span></span>
-<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a>            )</span>
-<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].legend(bbox_to_anchor<span class="op">=</span>(<span class="fl">1.05</span>, <span class="dv">1</span>), loc<span class="op">=</span><span class="st">'upper left'</span>)</span>
-<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_title(<span class="st">"Flow Matching Full Trajectories"</span>)</span>
-<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_xlim(xlim)</span>
-<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_ylim(ylim)</span>
-<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot vector field at t=0</span></span>
-<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> x_ts[<span class="dv">0</span>]</span>
-<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a>    u_0 <span class="op">=</span> u_ts[<span class="dv">0</span>]</span>
-<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].quiver(x_0[:, <span class="dv">0</span>], x_0[:, <span class="dv">1</span>], u_0[:, <span class="dv">0</span>], u_0[:, <span class="dv">1</span>], </span>
-<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a>                alpha<span class="op">=</span><span class="fl">0.5</span>, scale<span class="op">=</span><span class="dv">30</span>, width<span class="op">=</span><span class="fl">0.003</span>)</span>
-<span id="cb19-72"><a href="#cb19-72" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].scatter(x_0[:, <span class="dv">0</span>], x_0[:, <span class="dv">1</span>], c<span class="op">=</span><span class="st">'k'</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, s<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb19-73"><a href="#cb19-73" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_title(<span class="st">"Vector Field (t=0)"</span>)</span>
-<span id="cb19-74"><a href="#cb19-74" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_xlim(xlim)</span>
-<span id="cb19-75"><a href="#cb19-75" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_ylim(ylim)</span>
-<span id="cb19-76"><a href="#cb19-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-77"><a href="#cb19-77" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot vector field at t=0.5</span></span>
-<span id="cb19-78"><a href="#cb19-78" aria-hidden="true" tabindex="-1"></a>    mid_idx <span class="op">=</span> <span class="bu">len</span>(x_ts)<span class="op">//</span><span class="dv">2</span></span>
-<span id="cb19-79"><a href="#cb19-79" aria-hidden="true" tabindex="-1"></a>    x_mid <span class="op">=</span> x_ts[mid_idx]</span>
-<span id="cb19-80"><a href="#cb19-80" aria-hidden="true" tabindex="-1"></a>    u_mid <span class="op">=</span> u_ts[mid_idx]</span>
-<span id="cb19-81"><a href="#cb19-81" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].quiver(x_mid[:, <span class="dv">0</span>], x_mid[:, <span class="dv">1</span>], u_mid[:, <span class="dv">0</span>], u_mid[:, <span class="dv">1</span>], </span>
-<span id="cb19-82"><a href="#cb19-82" aria-hidden="true" tabindex="-1"></a>                alpha<span class="op">=</span><span class="fl">0.5</span>, scale<span class="op">=</span><span class="dv">30</span>, width<span class="op">=</span><span class="fl">0.003</span>)</span>
-<span id="cb19-83"><a href="#cb19-83" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].scatter(x_mid[:, <span class="dv">0</span>], x_mid[:, <span class="dv">1</span>], c<span class="op">=</span><span class="st">'k'</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, s<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb19-84"><a href="#cb19-84" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_title(<span class="st">"Vector Field (t=0.5)"</span>)</span>
-<span id="cb19-85"><a href="#cb19-85" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_xlim(xlim)</span>
-<span id="cb19-86"><a href="#cb19-86" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_ylim(ylim)</span>
-<span id="cb19-87"><a href="#cb19-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-88"><a href="#cb19-88" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
-<span id="cb19-89"><a href="#cb19-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-90"><a href="#cb19-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-91"><a href="#cb19-91" aria-hidden="true" tabindex="-1"></a>plot_flow_matching_trajectories(FM, n_examples<span class="op">=</span><span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-26" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_flow_matching_trajectories(FM, n_examples<span class="op">=</span><span class="dv">30</span>):</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set a commmon xlim and ylim</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    xlim <span class="op">=</span> [<span class="op">-</span><span class="fl">3.7</span>, <span class="fl">3.7</span>]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    ylim <span class="op">=</span> [<span class="op">-</span><span class="fl">3.7</span>, <span class="fl">3.7</span>]</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clean data (spiral)</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    x_clean <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(val_dataloader))[:n_examples]</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># noisy data</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    x_noisy <span class="op">=</span> torch.randn_like(x_clean)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sample multiple timesteps to visualize flow progression</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    num_timesteps <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    t_grid <span class="op">=</span> torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, num_timesteps)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    x_ts <span class="op">=</span> []</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    u_ts <span class="op">=</span> []</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> t_grid:</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        t_batch <span class="op">=</span> t.repeat(x_clean.shape[<span class="dv">0</span>])</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>        np.random.seed(<span class="dv">0</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>        t, x_t, u_t <span class="op">=</span> FM.sample_location_and_conditional_flow(x0<span class="op">=</span>x_noisy, x1<span class="op">=</span>x_clean, t<span class="op">=</span>t_batch)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        x_ts.append(x_t.detach().cpu().numpy())</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        u_ts.append(u_t.detach().cpu().numpy())</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create visualization</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    fig, axs <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">12</span>))</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot initial and final distributions</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].scatter(x_noisy[:, <span class="dv">0</span>], x_noisy[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'blue'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Initial'</span>)</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].scatter(x_clean[:, <span class="dv">0</span>], x_clean[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'red'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Target'</span>) </span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_title(<span class="st">"Initial and Target Distributions"</span>)</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].legend()</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_xlim(xlim)</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">0</span>].set_ylim(ylim)</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ======================================</span></span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Now show the full trajectories</span></span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ======================================</span></span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(x_ts[<span class="op">-</span><span class="dv">1</span>][:, <span class="dv">0</span>], x_ts[<span class="op">-</span><span class="dv">1</span>][:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'red'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Target (t=1)'</span>)</span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(x_ts[<span class="dv">0</span>][:, <span class="dv">0</span>], x_ts[<span class="dv">0</span>][:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'blue'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Initial (t=0)'</span>)</span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sample a few timesteps to show progression</span></span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>    sample_ts <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>]</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> sample_ts:</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>        current_points <span class="op">=</span> np.array(x_ts[t])</span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>        prev_points <span class="op">=</span> np.array(x_ts[t<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Calculate color interpolation factor (0 to 1)</span></span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>        factor <span class="op">=</span> t <span class="op">/</span> (<span class="bu">len</span>(x_ts)<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Interpolate between blue (0,0,1) and red (1,0,0)</span></span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> (factor, <span class="dv">0</span>, <span class="dv">1</span><span class="op">-</span>factor)</span>
+<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>        axs[<span class="dv">0</span>, <span class="dv">1</span>].scatter(current_points[:, <span class="dv">0</span>], current_points[:, <span class="dv">1</span>], color<span class="op">=</span>color, alpha<span class="op">=</span><span class="fl">0.3</span>, label<span class="op">=</span><span class="ss">f't=0.</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a>        <span class="co"># connect the dots: previous point to current point</span></span>
+<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> prev_points.shape <span class="op">==</span> (n_examples, <span class="dv">2</span>), <span class="ss">f"prev_traj.shape=</span><span class="sc">{</span>prev_points<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i_point <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(current_points)):</span>
+<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Plot the line segment from previous point to current point</span></span>
+<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>            axs[<span class="dv">0</span>, <span class="dv">1</span>].plot(</span>
+<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>                [prev_points[i_point, <span class="dv">0</span>], current_points[i_point, <span class="dv">0</span>]],</span>
+<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>                [prev_points[i_point, <span class="dv">1</span>], current_points[i_point, <span class="dv">1</span>]],</span>
+<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>                <span class="st">'k-'</span>, alpha<span class="op">=</span><span class="fl">0.1</span></span>
+<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].legend(bbox_to_anchor<span class="op">=</span>(<span class="fl">1.05</span>, <span class="dv">1</span>), loc<span class="op">=</span><span class="st">'upper left'</span>)</span>
+<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_title(<span class="st">"Flow Matching Full Trajectories"</span>)</span>
+<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_xlim(xlim)</span>
+<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>, <span class="dv">1</span>].set_ylim(ylim)</span>
+<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot vector field at t=0</span></span>
+<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> x_ts[<span class="dv">0</span>]</span>
+<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a>    u_0 <span class="op">=</span> u_ts[<span class="dv">0</span>]</span>
+<span id="cb18-70"><a href="#cb18-70" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].quiver(x_0[:, <span class="dv">0</span>], x_0[:, <span class="dv">1</span>], u_0[:, <span class="dv">0</span>], u_0[:, <span class="dv">1</span>], </span>
+<span id="cb18-71"><a href="#cb18-71" aria-hidden="true" tabindex="-1"></a>                alpha<span class="op">=</span><span class="fl">0.5</span>, scale<span class="op">=</span><span class="dv">30</span>, width<span class="op">=</span><span class="fl">0.003</span>)</span>
+<span id="cb18-72"><a href="#cb18-72" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].scatter(x_0[:, <span class="dv">0</span>], x_0[:, <span class="dv">1</span>], c<span class="op">=</span><span class="st">'k'</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, s<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb18-73"><a href="#cb18-73" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_title(<span class="st">"Vector Field (t=0)"</span>)</span>
+<span id="cb18-74"><a href="#cb18-74" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_xlim(xlim)</span>
+<span id="cb18-75"><a href="#cb18-75" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">0</span>].set_ylim(ylim)</span>
+<span id="cb18-76"><a href="#cb18-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-77"><a href="#cb18-77" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot vector field at t=0.5</span></span>
+<span id="cb18-78"><a href="#cb18-78" aria-hidden="true" tabindex="-1"></a>    mid_idx <span class="op">=</span> <span class="bu">len</span>(x_ts)<span class="op">//</span><span class="dv">2</span></span>
+<span id="cb18-79"><a href="#cb18-79" aria-hidden="true" tabindex="-1"></a>    x_mid <span class="op">=</span> x_ts[mid_idx]</span>
+<span id="cb18-80"><a href="#cb18-80" aria-hidden="true" tabindex="-1"></a>    u_mid <span class="op">=</span> u_ts[mid_idx]</span>
+<span id="cb18-81"><a href="#cb18-81" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].quiver(x_mid[:, <span class="dv">0</span>], x_mid[:, <span class="dv">1</span>], u_mid[:, <span class="dv">0</span>], u_mid[:, <span class="dv">1</span>], </span>
+<span id="cb18-82"><a href="#cb18-82" aria-hidden="true" tabindex="-1"></a>                alpha<span class="op">=</span><span class="fl">0.5</span>, scale<span class="op">=</span><span class="dv">30</span>, width<span class="op">=</span><span class="fl">0.003</span>)</span>
+<span id="cb18-83"><a href="#cb18-83" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].scatter(x_mid[:, <span class="dv">0</span>], x_mid[:, <span class="dv">1</span>], c<span class="op">=</span><span class="st">'k'</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, s<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_title(<span class="st">"Vector Field (t=0.5)"</span>)</span>
+<span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_xlim(xlim)</span>
+<span id="cb18-86"><a href="#cb18-86" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">1</span>, <span class="dv">1</span>].set_ylim(ylim)</span>
+<span id="cb18-87"><a href="#cb18-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-88"><a href="#cb18-88" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
+<span id="cb18-89"><a href="#cb18-89" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="simple-flow-plan" class="level3">
+<h3 class="anchored" data-anchor-id="simple-flow-plan">Simple Flow Plan</h3>
+<div id="cell-28" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This is the "teaching".</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>FM <span class="op">=</span> ConditionalFlowMatcher(sigma<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># FM = ExactOptimalTransportConditionalFlowMatcher(sigma=0)</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>plot_flow_matching_trajectories(FM, n_examples<span class="op">=</span><span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
@@ -1344,7 +1404,7 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </div>
 </div>
 </div>
-<div id="cell-27" class="cell" data-execution_count="17">
+<div id="cell-29" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drawing more samples</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>plot_flow_matching_trajectories(FM, n_examples<span class="op">=</span><span class="dv">100</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
@@ -1355,7 +1415,11 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </div>
 </div>
 </div>
-<div id="cell-28" class="cell" data-execution_count="18">
+</section>
+<section id="optimal-transport" class="level3">
+<h3 class="anchored" data-anchor-id="optimal-transport">Optimal Transport</h3>
+<p>The flows overlap much less with the optimal transport. Intuitively, this can make the denoising model less confused: at each position of the 2D space, the direction is more consistent.</p>
+<div id="cell-31" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This is the "teaching".</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>plot_flow_matching_trajectories(ExactOptimalTransportConditionalFlowMatcher(), n_examples<span class="op">=</span><span class="dv">100</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
@@ -1367,9 +1431,21 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </div>
 </div>
 </section>
-<section id="visualizing-the-denoising-flow" class="level3">
-<h3 class="anchored" data-anchor-id="visualizing-the-denoising-flow">Visualizing the denoising flow</h3>
-<div id="cell-30" class="cell" data-execution_count="19">
+</section>
+<section id="visualizing-the-denoising-flow" class="level2">
+<h2 class="anchored" data-anchor-id="visualizing-the-denoising-flow">Visualizing the denoising flow</h2>
+<p>If the above flow plan is how we teach the model, then the denoising flow shows what the model has learned.</p>
+<p>The denoising process is a sequence of data points starting from noise <span class="math inline">\(x_0\)</span>:</p>
+<p><span class="math display">\[x_0 \to x_1 \to x_2 \to \cdots \to x_{n-1} \to x_n\]</span></p>
+<p>and</p>
+<p><span class="math display">\[x_t = \int_0^t v_\theta(x_s, s) ds\]</span></p>
+<p>where <span class="math inline">\(v_\theta(x_s, s)\)</span> is the denoising model that predicts the velocity field at time <span class="math inline">\(s\)</span>.</p>
+<p>Numerical integration is used to compute the denoising flow. For example, using Euler’s method:</p>
+<p><span class="math display">\[x_{t+1} = x_t + v_\theta(x_t, t) dt\]</span></p>
+<p>where <span class="math inline">\(dt\)</span> is the size of the time step: <span class="math inline">\(dt = \frac{1}{T}\)</span> given <span class="math inline">\(T\)</span> (e.g.&nbsp;100) denoising steps.</p>
+<p>The following code generates and visualizes the denoising flow from a denoising model.</p>
+<p>Before learning, the denoising flow is random and the velocity field does not move the points much.</p>
+<div id="cell-33" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Tuple</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1509,7 +1585,9 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <pre><code>&lt;Figure size 640x480 with 0 Axes&gt;</code></pre>
 </div>
 </div>
-<div id="cell-31" class="cell" data-execution_count="20">
+<section id="utility-code-to-generate-animations" class="level4">
+<h4 class="anchored" data-anchor-id="utility-code-to-generate-animations">Utility code to generate animations</h4>
+<div id="cell-35" class="cell" data-execution_count="17">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A shared state to store the frames for the vector field animation.</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>_state <span class="op">=</span> {</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"frames"</span>: {},</span>
@@ -1570,14 +1648,14 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <span id="cb24-58"><a href="#cb24-58" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"d1909f79d4ae43f1b4d471e624bccae4","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"a38401748d7445bc850ded688c5790b8","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="20">
+<div class="cell-output cell-output-display" data-execution_count="17">
 <pre><code>&lt;function __main__.visualize_denoising_vector_field(model, t=0, num_samples=32, num_timesteps=100, seed=0)&gt;</code></pre>
 </div>
 </div>
-<div id="cell-32" class="cell" data-execution_count="21">
+<div id="cell-36" class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a GIF from the frames</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> PIL <span class="im">import</span> Image</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> io</span>
@@ -1591,12 +1669,10 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </section>
 <section id="training" class="level1">
 <h1>Training</h1>
-<p>Now that we have our data and models defined, we are ready for training.</p>
-<p>Diffusion models have two key phases: Forward Diffusion and Reverse Denoising.</p>
-<section id="training-code" class="level2">
-<h2 class="anchored" data-anchor-id="training-code">Training code</h2>
-<p>We’ve picked our data, created our dataloaders, and defined our noise schedule, foward diffusion, and reverse diffusion steps. Now, the only thing left to do is to train our diffusion model.</p>
-<div id="cell-35" class="cell" data-outputid="e9600a5c-7d1b-45ec-fdff-5e71cfdaa30e" data-execution_count="22">
+<section id="training-loop" class="level2">
+<h2 class="anchored" data-anchor-id="training-loop">Training loop</h2>
+<p>The training loop is very simple. We sample a batch of data points <span class="math inline">\(x_1\)</span> and noise <span class="math inline">\(x_0\)</span> from the dataset. We then compute the desired conditional flow <span class="math inline">\(u_t\)</span> using the flow matching planner. We then compute the loss as the mean squared error between the predicted velocity field <span class="math inline">\(v_\theta(x_t, t)\)</span> and the conditional flow <span class="math inline">\(u_t\)</span>.</p>
+<div id="cell-39" class="cell" data-outputid="e9600a5c-7d1b-45ec-fdff-5e71cfdaa30e" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> train(model: nn.Module, optimizer: torch.optim.Optimizer, steps: <span class="bu">int</span><span class="op">=</span><span class="dv">100</span>, quiet: <span class="bu">bool</span><span class="op">=</span><span class="va">False</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  model.train()</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">not</span> quiet:</span>
@@ -1612,130 +1688,148 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
 <span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>      progress_bar <span class="op">=</span> tqdm(train_dataloader, total<span class="op">=</span><span class="bu">min</span>(max_train_steps <span class="op">-</span> step, <span class="bu">len</span>(train_dataloader)))</span>
 <span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> x_1 <span class="kw">in</span> progress_bar:</span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>      optimizer.zero_grad()</span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>      x_1 <span class="op">=</span> x_1.<span class="bu">float</span>().to(device)</span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>      x_0 <span class="op">=</span> torch.randn_like(x_1).to(device)</span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>      t, x_t, u_t <span class="op">=</span> FM.sample_location_and_conditional_flow(x_0, x_1)</span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>      v_t <span class="op">=</span> model(t<span class="op">=</span>t, x<span class="op">=</span>x_t)</span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>      v_t <span class="op">=</span> v_t.sample <span class="cf">if</span> <span class="bu">hasattr</span>(v_t, <span class="st">"sample"</span>) <span class="cf">else</span> v_t</span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>      loss <span class="op">=</span> torch.mean((v_t <span class="op">-</span> u_t) <span class="op">**</span> <span class="dv">2</span>)  <span class="co"># MSE loss</span></span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>      loss.backward()</span>
-<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>      optimizer.step()</span>
-<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="kw">not</span> quiet:</span>
-<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>        progress_bar.set_postfix({<span class="st">"loss"</span>: loss.cpu().item()})</span>
-<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>      step <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> step <span class="op">&gt;=</span> max_train_steps:</span>
-<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> quiet:</span>
-<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>          <span class="bu">print</span>(<span class="ss">f"Reached the max training steps:"</span>, max_train_steps)</span>
-<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>      <span class="co">###########################################</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Start of the core training step</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>      <span class="co">###########################################</span></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>      optimizer.zero_grad()</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>      x_1 <span class="op">=</span> x_1.<span class="bu">float</span>().to(device)</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>      x_0 <span class="op">=</span> torch.randn_like(x_1).to(device)</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>      t, x_t, u_t <span class="op">=</span> FM.sample_location_and_conditional_flow(x_0, x_1)</span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>      v_t <span class="op">=</span> model(t<span class="op">=</span>t, x<span class="op">=</span>x_t)</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>      v_t <span class="op">=</span> v_t.sample <span class="cf">if</span> <span class="bu">hasattr</span>(v_t, <span class="st">"sample"</span>) <span class="cf">else</span> v_t</span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>      loss <span class="op">=</span> torch.mean((v_t <span class="op">-</span> u_t) <span class="op">**</span> <span class="dv">2</span>)  <span class="co"># MSE loss</span></span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>      loss.backward()</span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>      optimizer.step()</span>
+<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>      <span class="co">###########################################</span></span>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>      <span class="co"># End of the core training step</span></span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>      <span class="co">###########################################</span></span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="kw">not</span> quiet:</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>        progress_bar.set_postfix({<span class="st">"loss"</span>: loss.cpu().item()})</span>
 <span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span>
+<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>      step <span class="op">+=</span> <span class="dv">1</span></span>
 <span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the model and optimizer</span></span>
-<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
-<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">128</span>],  <span class="co"># [128, 128, 256],</span></span>
-<span id="cb27-45"><a href="#cb27-45" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
-<span id="cb27-46"><a href="#cb27-46" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
-<span id="cb27-47"><a href="#cb27-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model3.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb27-48"><a href="#cb27-48" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
-<span id="cb27-49"><a href="#cb27-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-50"><a href="#cb27-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Train the model</span></span>
-<span id="cb27-51"><a href="#cb27-51" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">1000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> step <span class="op">&gt;=</span> max_train_steps:</span>
+<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> quiet:</span>
+<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>          <span class="bu">print</span>(<span class="ss">f"Reached the max training steps:"</span>, max_train_steps)</span>
+<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-45"><a href="#cb27-45" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="train-for-1000-steps" class="level4">
+<h4 class="anchored" data-anchor-id="train-for-1000-steps">Train for 1000 steps</h4>
+<div id="cell-41" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the model and optimizer</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">128</span>],  <span class="co"># [128, 128, 256],</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model3.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Train the model</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">100</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>model params: 182410
 Training on device: cuda</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"c92108397bc243bc86d675b2726e4445","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"d8bcda78686146c1be873d6c1cb013b5","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Reached the max training steps: 1000</code></pre>
+<pre><code>Reached the max training steps: 100</code></pre>
 </div>
 </div>
+</section>
 </section>
 </section>
 <section id="generation" class="level1">
 <h1>Generation</h1>
-<p>We trained a model for 100 training steps. Let’s see what the output looks like at this early stage.</p>
-<div id="cell-37" class="cell" data-outputid="af83765e-96dd-45c0-a281-d27930e0d09c" data-execution_count="23">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># visualize the sampled images</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> visualize_sampled_data(model):</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># print("Loss of the denoising model:", loss.item())</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  x_sampled <span class="op">=</span> generate_samples_with_flow_matching(</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    denoising_model<span class="op">=</span>model,</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    device<span class="op">=</span>device,</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    num_samples<span class="op">=</span><span class="dv">128</span>,</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    parallel<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    clip_min<span class="op">=-</span><span class="fl">3.6</span>,</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    clip_max<span class="op">=</span><span class="fl">3.6</span>,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.scatter(x_sampled[:, 0], x_sampled[:, 1])</span></span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>  fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">5</span>, <span class="dv">5</span>))</span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  x_sampled <span class="op">=</span> x_sampled.cpu().numpy()</span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  axs.scatter(x_sampled[:,<span class="dv">0</span>], x_sampled[:,<span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># axs.set_axis_off()</span></span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.xlim(-3.6, 3.6)</span></span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.ylim(-3.6, 3.6)</span></span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> fig</span>
-<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>model3.<span class="bu">eval</span>()</span>
-<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>During generation, we use the denoising model to compute velocity and then integrate it to get the denoising flow.</p>
+<section id="visualize-the-sampled-data" class="level2">
+<h2 class="anchored" data-anchor-id="visualize-the-sampled-data">Visualize the sampled data</h2>
+<div id="cell-43" class="cell" data-outputid="af83765e-96dd-45c0-a281-d27930e0d09c" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># visualize the sampled images</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> visualize_sampled_data(model):</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># print("Loss of the denoising model:", loss.item())</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  x_sampled <span class="op">=</span> generate_samples_with_flow_matching(</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    denoising_model<span class="op">=</span>model,</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    device<span class="op">=</span>device,</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    num_samples<span class="op">=</span><span class="dv">128</span>,</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    parallel<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    clip_min<span class="op">=-</span><span class="fl">3.6</span>,</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    clip_max<span class="op">=</span><span class="fl">3.6</span>,</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.scatter(x_sampled[:, 0], x_sampled[:, 1])</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">5</span>, <span class="dv">5</span>))</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  x_sampled <span class="op">=</span> x_sampled.cpu().numpy()</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  axs.scatter(x_sampled[:,<span class="dv">0</span>], x_sampled[:,<span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># axs.set_axis_off()</span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.xlim(-3.6, 3.6)</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plt.ylim(-3.6, 3.6)</span></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> fig</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>model3.<span class="bu">eval</span>()</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-23-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-24-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>We can already see a spiral starting to form. What if we increase the length of training?</p>
-<div id="cell-39" class="cell" data-outputid="48e32317-7e99-4ea1-ed89-fd2a7ba41d24" data-execution_count="24">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train some more</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">1000</span>)</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"loss:"</span>, model3_loss.item())</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="train-more-steps-and-generate-again" class="level2">
+<h2 class="anchored" data-anchor-id="train-more-steps-and-generate-again">Train more steps and generate again</h2>
+<div id="cell-46" class="cell" data-outputid="48e32317-7e99-4ea1-ed89-fd2a7ba41d24" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train some more</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">1000</span>)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"loss:"</span>, model3_loss.item())</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Training on device: cuda</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"30ce782ebb244063b79997775f6c87d9","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"7d425144e754467fb6bc36d9431088e9","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reached the max training steps: 1000
-loss: 2.9036197662353516</code></pre>
+loss: 2.769697427749634</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-24-output-4.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-25-output-4.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>That’s more like it! In just 1000 training steps, we were able to go from complete noise to a fairly representative spiral.</p>
 </section>
-<section id="what-does-the-denoising-flow-look-like" class="level1">
-<h1>What does the denoising flow look like?</h1>
-<div id="cell-42" class="cell" data-execution_count="25">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>visualize_denoising_flow(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="visualize-denoising-flows" class="level2">
+<h2 class="anchored" data-anchor-id="visualize-denoising-flows">Visualize denoising flows</h2>
+<p>We can visualize the denoising flow at different timesteps, connecting the sequence of points from noise (<span class="math inline">\(x_0\)</span>, <span style="color:blue">blue</span>) to clean data (<span class="math inline">\(x_1\)</span>, <span style="color:red">red</span>), with intermediate samples colored in between.</p>
+<p>The trajectories roughly follow the flow plans that we use to teach the model, but not exactly.</p>
+<div id="cell-49" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>visualize_denoising_flow(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-25-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-26-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -1743,340 +1837,254 @@ loss: 2.9036197662353516</code></pre>
 <pre><code>&lt;Figure size 640x480 with 0 Axes&gt;</code></pre>
 </div>
 </div>
-<section id="visualize-the-learned-vector-field-over-time" class="level3">
-<h3 class="anchored" data-anchor-id="visualize-the-learned-vector-field-over-time">Visualize the learned vector field over time</h3>
-<div id="cell-44" class="cell" data-execution_count="26">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A shared state to store the frames for the vector field animation.</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>_state <span class="op">=</span> {</span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"frames"</span>: {},</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>interact(visualize_denoising_vector_field, model<span class="op">=</span>fixed(model3), t<span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">0.99</span>, <span class="fl">0.01</span>), num_samples<span class="op">=</span>fixed(<span class="dv">128</span>), num_timesteps<span class="op">=</span>fixed(<span class="dv">100</span>), seed<span class="op">=</span>fixed(<span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="animate-the-denoising-process" class="level3">
+<h3 class="anchored" data-anchor-id="animate-the-denoising-process">Animate the denoising process</h3>
+<p>Let’s animate the denoising process over generation steps.</p>
+<div id="cell-51" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A shared state to store the frames for the vector field animation.</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>_state <span class="op">=</span> {</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"frames"</span>: {},</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>interact(visualize_denoising_vector_field, model<span class="op">=</span>fixed(model3), t<span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">0.99</span>, <span class="fl">0.01</span>), num_samples<span class="op">=</span>fixed(<span class="dv">128</span>), num_timesteps<span class="op">=</span>fixed(<span class="dv">100</span>), seed<span class="op">=</span>fixed(<span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"fe919bd79bb140538bf6e113aec7184c","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"12c6be899e684522b1d5bb556ac9bc95","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="26">
+<div class="cell-output cell-output-display" data-execution_count="24">
 <pre><code>&lt;function __main__.visualize_denoising_vector_field(model, t=0, num_samples=32, num_timesteps=100, seed=0)&gt;</code></pre>
 </div>
 </div>
 <p>Use the slider to move through the vector field at different timesteps. Try to move slowly and cover many timesteps. Once done, you should run the next cell to save the frames as a GIF.</p>
-<div id="cell-46" class="cell" data-execution_count="40">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the frames as a GIF</span></span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">len</span>(_state[<span class="st">"frames"</span>]) <span class="op">&gt;</span> <span class="dv">1</span>:</span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [_state[<span class="st">"frames"</span>][k] <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">sorted</span>(_state[<span class="st">"frames"</span>].keys(), key<span class="op">=</span><span class="bu">float</span>)]</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [Image.<span class="bu">open</span>(io.BytesIO(frame)).resize((<span class="dv">360</span>, <span class="dv">360</span>)) <span class="cf">for</span> frame <span class="kw">in</span> frames]</span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>    frames[<span class="dv">0</span>].save(</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"learned_denoising_vector_field.gif"</span>, save_all<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>        append_images<span class="op">=</span>frames[<span class="dv">1</span>:],</span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>        duration<span class="op">=</span><span class="dv">100</span> <span class="op">*</span> <span class="dv">5</span>,  <span class="co"># Increased duration (milliseconds per frame) for slower motion</span></span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>        loop<span class="op">=</span><span class="dv">0</span></span>
-<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-53" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the frames as a GIF</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">len</span>(_state[<span class="st">"frames"</span>]) <span class="op">&gt;</span> <span class="dv">1</span>:</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [_state[<span class="st">"frames"</span>][k] <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">sorted</span>(_state[<span class="st">"frames"</span>].keys(), key<span class="op">=</span><span class="bu">float</span>)]</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [Image.<span class="bu">open</span>(io.BytesIO(frame)).resize((<span class="dv">360</span>, <span class="dv">360</span>)) <span class="cf">for</span> frame <span class="kw">in</span> frames]</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>    frames[<span class="dv">0</span>].save(</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"learned_denoising_vector_field.gif"</span>, save_all<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>        append_images<span class="op">=</span>frames[<span class="dv">1</span>:],</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>        duration<span class="op">=</span><span class="dv">100</span> <span class="op">*</span> <span class="dv">5</span>,  <span class="co"># Increased duration (milliseconds per frame) for slower motion</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>        loop<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-47" class="cell" data-execution_count="41">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show the generated GIF animation</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> HTML</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>HTML(<span class="st">"""</span></span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;img src="learned_denoising_vector_field.gif"&gt;</span></span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="41">
+<div id="cell-54" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show the generated GIF animation</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> HTML</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>HTML(<span class="st">"""</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;img src="learned_denoising_vector_field.gif"&gt;</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="26">
 
 <img src="learned_denoising_vector_field.gif">
 </div>
 </div>
-<div id="cell-48" class="cell" data-execution_count="29">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-55" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-29-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-30-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 </section>
-<section id="learned-denoising-flow-over-time" class="level3">
-<h3 class="anchored" data-anchor-id="learned-denoising-flow-over-time">Learned denoising flow over time</h3>
-<p>To get a better idea of what the inbetween steps looked like, let’s animate the process every 100 steps.</p>
-<div id="cell-50" class="cell" data-execution_count="30">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">256</span>],</span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>samples <span class="op">=</span> []</span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>num_samples <span class="op">=</span> <span class="dv">10</span></span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>all_trajs <span class="op">=</span> []</span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>steps_to_checkpoint <span class="op">=</span> [<span class="dv">10</span>, <span class="dv">15</span>, <span class="dv">20</span>, <span class="dv">25</span>, <span class="dv">30</span>, <span class="dv">35</span>, <span class="dv">40</span>, <span class="dv">45</span>, <span class="dv">50</span>, <span class="dv">60</span>, <span class="dv">70</span>, <span class="dv">80</span>, <span class="dv">90</span>, <span class="dv">100</span>, <span class="dv">120</span>, <span class="dv">140</span>, <span class="dv">160</span>, <span class="dv">180</span>, <span class="dv">200</span>, <span class="dv">300</span>, <span class="dv">400</span>, <span class="dv">500</span>]</span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, checkpoint_steps <span class="kw">in</span> tqdm(<span class="bu">enumerate</span>(steps_to_checkpoint), total<span class="op">=</span><span class="bu">len</span>(steps_to_checkpoint)):</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">=</span> checkpoint_steps <span class="op">-</span> steps_to_checkpoint[i<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> i <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> checkpoint_steps</span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>    model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span>steps, quiet<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>    node <span class="op">=</span> NeuralODE(model3, solver<span class="op">=</span><span class="st">"euler"</span>, sensitivity<span class="op">=</span><span class="st">"adjoint"</span>)</span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>    torch.manual_seed(<span class="dv">0</span>)</span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>    num_samples <span class="op">=</span> <span class="dv">100</span></span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>    num_timesteps <span class="op">=</span> <span class="dv">100</span></span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>    data_dims <span class="op">=</span> [<span class="dv">2</span>,]</span>
-<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clip_min = -3.6</span></span>
-<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clip_max = 3.6</span></span>
-<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
-<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a>        torch.manual_seed(<span class="dv">0</span>)</span>
-<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> node.trajectory(</span>
-<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a>            torch.randn(num_samples, <span class="op">*</span>data_dims, device<span class="op">=</span>device),</span>
-<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a>            t_span<span class="op">=</span>torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, num_timesteps, device<span class="op">=</span>device),</span>
-<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> trajs.cpu().numpy()</span>
-<span id="cb41-30"><a href="#cb41-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># invert the time dimension to make it start from clean data to noise</span></span>
-<span id="cb41-31"><a href="#cb41-31" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> trajs[::<span class="op">-</span><span class="dv">1</span>, ...]</span>
-<span id="cb41-32"><a href="#cb41-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># all_trajs.append(trajs)</span></span>
-<span id="cb41-33"><a href="#cb41-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># plot the trajectory</span></span>
-<span id="cb41-34"><a href="#cb41-34" aria-hidden="true" tabindex="-1"></a>        traj_set <span class="op">=</span> TrajectorySet(trajs)</span>
-<span id="cb41-35"><a href="#cb41-35" aria-hidden="true" tabindex="-1"></a>        all_trajs.append(traj_set)</span>
-<span id="cb41-36"><a href="#cb41-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># samples.append(generate_samples_with_flow_matching(model3, device, num_samples=128, parallel=False, seed=0, clip_min=-3.6, clip_max=3.6))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="visualize-the-learned-vector-field-over-time" class="level2">
+<h2 class="anchored" data-anchor-id="visualize-the-learned-vector-field-over-time">Visualize the learned vector field over time</h2>
+<p>We can also visualize the progress of learning over the training steps.</p>
+<div id="cell-57" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">256</span>],</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>samples <span class="op">=</span> []</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>num_samples <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>all_trajs <span class="op">=</span> []</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>steps_to_checkpoint <span class="op">=</span> [<span class="dv">10</span>, <span class="dv">15</span>, <span class="dv">20</span>, <span class="dv">25</span>, <span class="dv">30</span>, <span class="dv">35</span>, <span class="dv">40</span>, <span class="dv">45</span>, <span class="dv">50</span>, <span class="dv">60</span>, <span class="dv">70</span>, <span class="dv">80</span>, <span class="dv">90</span>, <span class="dv">100</span>, <span class="dv">120</span>, <span class="dv">140</span>, <span class="dv">160</span>, <span class="dv">180</span>, <span class="dv">200</span>, <span class="dv">300</span>, <span class="dv">400</span>, <span class="dv">500</span>]</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, checkpoint_steps <span class="kw">in</span> tqdm(<span class="bu">enumerate</span>(steps_to_checkpoint), total<span class="op">=</span><span class="bu">len</span>(steps_to_checkpoint)):</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">=</span> checkpoint_steps <span class="op">-</span> steps_to_checkpoint[i<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> i <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> checkpoint_steps</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>    model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span>steps, quiet<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>    node <span class="op">=</span> NeuralODE(model3, solver<span class="op">=</span><span class="st">"euler"</span>, sensitivity<span class="op">=</span><span class="st">"adjoint"</span>)</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>    torch.manual_seed(<span class="dv">0</span>)</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>    num_samples <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>    num_timesteps <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>    data_dims <span class="op">=</span> [<span class="dv">2</span>,]</span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clip_min = -3.6</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># clip_max = 3.6</span></span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>        torch.manual_seed(<span class="dv">0</span>)</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> node.trajectory(</span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>            torch.randn(num_samples, <span class="op">*</span>data_dims, device<span class="op">=</span>device),</span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>            t_span<span class="op">=</span>torch.linspace(<span class="dv">0</span>, <span class="dv">1</span>, num_timesteps, device<span class="op">=</span>device),</span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> trajs.cpu().numpy()</span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># invert the time dimension to make it start from clean data to noise</span></span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>        trajs <span class="op">=</span> trajs[::<span class="op">-</span><span class="dv">1</span>, ...]</span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># all_trajs.append(trajs)</span></span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># plot the trajectory</span></span>
+<span id="cb42-34"><a href="#cb42-34" aria-hidden="true" tabindex="-1"></a>        traj_set <span class="op">=</span> TrajectorySet(trajs)</span>
+<span id="cb42-35"><a href="#cb42-35" aria-hidden="true" tabindex="-1"></a>        all_trajs.append(traj_set)</span>
+<span id="cb42-36"><a href="#cb42-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># samples.append(generate_samples_with_flow_matching(model3, device, num_samples=128, parallel=False, seed=0, clip_min=-3.6, clip_max=3.6))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"b8f2ef1a2bd646dba417bf64d24d8fef","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"5cc736f1003342aea5cb3586af9d6a06","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 </div>
-<div id="cell-51" class="cell" data-execution_count="31">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A shared state to store the frames for the vector field animation.</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>_state <span class="op">=</span> {</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"frames"</span>: {},</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> show_traj_at_learning_step(i<span class="op">=</span><span class="dv">0</span>):</span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    bytes_value <span class="op">=</span> all_trajs[i].plot_trajectories(</span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>        n<span class="op">=</span><span class="dv">100</span>, show_figure<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="dv">6</span>, <span class="dv">6</span>),</span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>        with_ticks<span class="op">=</span><span class="va">True</span>, title<span class="op">=</span><span class="ss">f"train steps = </span><span class="sc">{</span>steps_to_checkpoint[i]<span class="sc">}</span><span class="ss">"</span>,</span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>        xlim<span class="op">=</span>(<span class="op">-</span><span class="dv">5</span>, <span class="dv">5</span>), ylim<span class="op">=</span>(<span class="op">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>    _state[<span class="st">"frames"</span>][steps_to_checkpoint[i]] <span class="op">=</span> bytes_value</span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>interact(show_traj_at_learning_step, i<span class="op">=</span>(<span class="dv">0</span>, <span class="bu">len</span>(all_trajs)<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-58" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A shared state to store the frames for the vector field animation.</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>_state <span class="op">=</span> {</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"frames"</span>: {},</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> show_traj_at_learning_step(i<span class="op">=</span><span class="dv">0</span>):</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    bytes_value <span class="op">=</span> all_trajs[i].plot_trajectories(</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>        n<span class="op">=</span><span class="dv">100</span>, show_figure<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="dv">6</span>, <span class="dv">6</span>),</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>        with_ticks<span class="op">=</span><span class="va">True</span>, title<span class="op">=</span><span class="ss">f"train steps = </span><span class="sc">{</span>steps_to_checkpoint[i]<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>        xlim<span class="op">=</span>(<span class="op">-</span><span class="dv">5</span>, <span class="dv">5</span>), ylim<span class="op">=</span>(<span class="op">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>    _state[<span class="st">"frames"</span>][steps_to_checkpoint[i]] <span class="op">=</span> bytes_value</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>interact(show_traj_at_learning_step, i<span class="op">=</span>(<span class="dv">0</span>, <span class="bu">len</span>(all_trajs)<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"40ae7f08bf2440c6aba8c2feafcfead4","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"f8a3112ba3f3458d948dced75be71cf3","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="31">
+<div class="cell-output cell-output-display" data-execution_count="29">
 <pre><code>&lt;function __main__.show_traj_at_learning_step(i=0)&gt;</code></pre>
 </div>
 </div>
-<div id="cell-52" class="cell" data-execution_count="32">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the frames as a GIF</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> _state[<span class="st">"frames"</span>]:</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> <span class="bu">list</span>(_state[<span class="st">"frames"</span>].values())</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [Image.<span class="bu">open</span>(io.BytesIO(frame)) <span class="cf">for</span> frame <span class="kw">in</span> frames]</span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add copies of the last frame to make it pause at the end</span></span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>    frames_with_pause <span class="op">=</span> frames[:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> [frames[<span class="op">-</span><span class="dv">1</span>]] <span class="op">*</span> <span class="dv">5</span></span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>    frames[<span class="dv">0</span>].save(</span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"denoising_trajectories_over_training_steps.gif"</span>, save_all<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>        append_images<span class="op">=</span>frames_with_pause[<span class="dv">1</span>:],</span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>        duration<span class="op">=</span><span class="dv">100</span> <span class="op">*</span> <span class="dv">5</span>,  <span class="co"># Increased duration (milliseconds per frame) for slower motion</span></span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>        loop<span class="op">=</span><span class="dv">0</span></span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>    plt.imshow(frames[<span class="dv">0</span>])  <span class="co"># double check that the first frame looks ok</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-59" class="cell" data-execution_count="37">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the frames as a GIF</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> _state[<span class="st">"frames"</span>] <span class="kw">and</span> <span class="bu">len</span>(_state[<span class="st">"frames"</span>]) <span class="op">&gt;</span> <span class="dv">5</span>:</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> <span class="bu">list</span>(_state[<span class="st">"frames"</span>].values())</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>    frames <span class="op">=</span> [Image.<span class="bu">open</span>(io.BytesIO(frame)) <span class="cf">for</span> frame <span class="kw">in</span> frames]</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add copies of the last frame to make it pause at the end</span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    frames_with_pause <span class="op">=</span> frames[:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> [frames[<span class="op">-</span><span class="dv">1</span>]] <span class="op">*</span> <span class="dv">5</span></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>    frames[<span class="dv">0</span>].save(</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"denoising_trajectories_over_training_steps.gif"</span>, save_all<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>        append_images<span class="op">=</span>frames_with_pause[<span class="dv">1</span>:],</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>        duration<span class="op">=</span><span class="dv">100</span> <span class="op">*</span> <span class="dv">5</span>,  <span class="co"># Increased duration (milliseconds per frame) for slower motion</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>        loop<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># plt.imshow(frames[0])  # double check that the first frame looks ok</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-32-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-33-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
+</div>
+</div>
+<div id="cell-60" class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load the generated GIF</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> HTML</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>HTML(<span class="st">"""</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;img src="denoising_trajectories_over_training_steps.gif"&gt;</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="38">
+
+<img src="denoising_trajectories_over_training_steps.gif">
 </div>
 </div>
 </section>
 </section>
 <section id="comparing-model-performance" class="level1">
 <h1>Comparing Model Performance</h1>
-<p>To compare the quality of different model architectures at generating 2D spirals, we can use the Chamfer distance. The Chamfer distance is an evaluation metric for comparing two point clouds, so it’s perfect for our data.</p>
-<div id="cell-54" class="cell" data-execution_count="33">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> NearestNeighbors</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> chamfer_distance(x, y, metric<span class="op">=</span><span class="st">'l2'</span>, direction<span class="op">=</span><span class="st">'bi'</span>):</span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Chamfer distance between two point clouds</span></span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="co">    x: numpy array [n_points_x, n_dims]</span></span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="co">        first point cloud</span></span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a><span class="co">    y: numpy array [n_points_y, n_dims]</span></span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a><span class="co">        second point cloud</span></span>
-<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a><span class="co">    metric: string or callable, default 'l2'</span></span>
-<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a><span class="co">        metric to use for distance computation. Any metric from scikit-learn or scipy.spatial.distance can be used.</span></span>
-<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a><span class="co">    direction: str</span></span>
-<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a><span class="co">        direction of Chamfer distance.</span></span>
-<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a><span class="co">            'y_to_x':  computes average minimal distance from every point in y to x</span></span>
-<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a><span class="co">            'x_to_y':  computes average minimal distance from every point in x to y</span></span>
-<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a><span class="co">            'bi': compute both</span></span>
-<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
-<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
-<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a><span class="co">    chamfer_dist: float</span></span>
-<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a><span class="co">        computed bidirectional Chamfer distance:</span></span>
-<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a><span class="co">            sum_{x_i \in x}{\min_{y_j \in y}{||x_i-y_j||**2}} + sum_{y_j \in y}{\min_{x_i \in x}{||x_i-y_j||**2}}</span></span>
-<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb45-27"><a href="#cb45-27" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb45-28"><a href="#cb45-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> direction<span class="op">==</span><span class="st">'y_to_x'</span>:</span>
-<span id="cb45-29"><a href="#cb45-29" aria-hidden="true" tabindex="-1"></a>        x_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(x)</span>
-<span id="cb45-30"><a href="#cb45-30" aria-hidden="true" tabindex="-1"></a>        min_y_to_x <span class="op">=</span> x_nn.kneighbors(y)[<span class="dv">0</span>]</span>
-<span id="cb45-31"><a href="#cb45-31" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_y_to_x)</span>
-<span id="cb45-32"><a href="#cb45-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> direction<span class="op">==</span><span class="st">'x_to_y'</span>:</span>
-<span id="cb45-33"><a href="#cb45-33" aria-hidden="true" tabindex="-1"></a>        y_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(y)</span>
-<span id="cb45-34"><a href="#cb45-34" aria-hidden="true" tabindex="-1"></a>        min_x_to_y <span class="op">=</span> y_nn.kneighbors(x)[<span class="dv">0</span>]</span>
-<span id="cb45-35"><a href="#cb45-35" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_x_to_y)</span>
-<span id="cb45-36"><a href="#cb45-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> direction<span class="op">==</span><span class="st">'bi'</span>:</span>
-<span id="cb45-37"><a href="#cb45-37" aria-hidden="true" tabindex="-1"></a>        x_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(x)</span>
-<span id="cb45-38"><a href="#cb45-38" aria-hidden="true" tabindex="-1"></a>        min_y_to_x <span class="op">=</span> x_nn.kneighbors(y)[<span class="dv">0</span>]</span>
-<span id="cb45-39"><a href="#cb45-39" aria-hidden="true" tabindex="-1"></a>        y_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(y)</span>
-<span id="cb45-40"><a href="#cb45-40" aria-hidden="true" tabindex="-1"></a>        min_x_to_y <span class="op">=</span> y_nn.kneighbors(x)[<span class="dv">0</span>]</span>
-<span id="cb45-41"><a href="#cb45-41" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_y_to_x) <span class="op">+</span> np.mean(min_x_to_y)</span>
-<span id="cb45-42"><a href="#cb45-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb45-43"><a href="#cb45-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Invalid direction type. Supported types: </span><span class="ch">\'</span><span class="st">y_x</span><span class="ch">\'</span><span class="st">, </span><span class="ch">\'</span><span class="st">x_y</span><span class="ch">\'</span><span class="st">, </span><span class="ch">\'</span><span class="st">bi</span><span class="ch">\'</span><span class="st">"</span>)</span>
-<span id="cb45-44"><a href="#cb45-44" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb45-45"><a href="#cb45-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> chamfer_dist</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>To compare the quality of different model architectures at generating 2D spirals, we can use the Chamfer distance.</p>
+<div id="cell-62" class="cell" data-execution_count="31">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> NearestNeighbors</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> chamfer_distance(x, y, metric<span class="op">=</span><span class="st">'l2'</span>, direction<span class="op">=</span><span class="st">'bi'</span>):</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Chamfer distance between two point clouds</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a><span class="co">    x: numpy array [n_points_x, n_dims]</span></span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a><span class="co">        first point cloud</span></span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a><span class="co">    y: numpy array [n_points_y, n_dims]</span></span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a><span class="co">        second point cloud</span></span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a><span class="co">    metric: string or callable, default 'l2'</span></span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a><span class="co">        metric to use for distance computation. Any metric from scikit-learn or scipy.spatial.distance can be used.</span></span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a><span class="co">    direction: str</span></span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a><span class="co">        direction of Chamfer distance.</span></span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a><span class="co">            'y_to_x':  computes average minimal distance from every point in y to x</span></span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a><span class="co">            'x_to_y':  computes average minimal distance from every point in x to y</span></span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a><span class="co">            'bi': compute both</span></span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a><span class="co">    chamfer_dist: float</span></span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a><span class="co">        computed bidirectional Chamfer distance:</span></span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a><span class="co">            sum_{x_i \in x}{\min_{y_j \in y}{||x_i-y_j||**2}} + sum_{y_j \in y}{\min_{x_i \in x}{||x_i-y_j||**2}}</span></span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> direction<span class="op">==</span><span class="st">'y_to_x'</span>:</span>
+<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a>        x_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(x)</span>
+<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>        min_y_to_x <span class="op">=</span> x_nn.kneighbors(y)[<span class="dv">0</span>]</span>
+<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_y_to_x)</span>
+<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> direction<span class="op">==</span><span class="st">'x_to_y'</span>:</span>
+<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a>        y_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(y)</span>
+<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a>        min_x_to_y <span class="op">=</span> y_nn.kneighbors(x)[<span class="dv">0</span>]</span>
+<span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_x_to_y)</span>
+<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> direction<span class="op">==</span><span class="st">'bi'</span>:</span>
+<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a>        x_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(x)</span>
+<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>        min_y_to_x <span class="op">=</span> x_nn.kneighbors(y)[<span class="dv">0</span>]</span>
+<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a>        y_nn <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">1</span>, leaf_size<span class="op">=</span><span class="dv">1</span>, algorithm<span class="op">=</span><span class="st">'kd_tree'</span>, metric<span class="op">=</span>metric).fit(y)</span>
+<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a>        min_x_to_y <span class="op">=</span> y_nn.kneighbors(x)[<span class="dv">0</span>]</span>
+<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a>        chamfer_dist <span class="op">=</span> np.mean(min_y_to_x) <span class="op">+</span> np.mean(min_x_to_y)</span>
+<span id="cb47-42"><a href="#cb47-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb47-43"><a href="#cb47-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Invalid direction type. Supported types: </span><span class="ch">\'</span><span class="st">y_x</span><span class="ch">\'</span><span class="st">, </span><span class="ch">\'</span><span class="st">x_y</span><span class="ch">\'</span><span class="st">, </span><span class="ch">\'</span><span class="st">bi</span><span class="ch">\'</span><span class="st">"</span>)</span>
+<span id="cb47-44"><a href="#cb47-44" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb47-45"><a href="#cb47-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> chamfer_dist</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="model-1" class="level2">
 <h2 class="anchored" data-anchor-id="model-1">Model 1</h2>
-<div id="cell-56" class="cell" data-execution_count="34">
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>model1 <span class="op">=</span> Model1().to(device)</span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model1.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>model1_optimizer <span class="op">=</span> optim.AdamW(model1.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>model1_loss <span class="op">=</span> train(model1, model1_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model1_loss:"</span>, model1_loss.item())</span>
-<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-64" class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>model1 <span class="op">=</span> Model1().to(device)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model1.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>model1_optimizer <span class="op">=</span> optim.AdamW(model1.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>model1_loss <span class="op">=</span> train(model1, model1_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model1_loss:"</span>, model1_loss.item())</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>model params: 265730
 Training on device: cuda</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"885f5ee89b384eda92dc2c91656b61b9","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"63ff98ab8c30461f9dfed5de31bae4a3","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"488409d009c3475b98e842cf950366fb","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"35f415732fd14e318b10b14496502f20","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"1b6fa246da43434bb2aa9e690afad9ca","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"ef9cce41b0ea43748c0ed074eba8f6ba","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-display">
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"a18ae8cfab04470f9b86794dffcec889","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+{"model_id":"469c1d0d85cf476f83b4d46119097f53","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
 </script>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reached the max training steps: 10000
-model1_loss: 3.6429638862609863</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-34-output-7.png" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-</section>
-<section id="model-2" class="level2">
-<h2 class="anchored" data-anchor-id="model-2">Model 2</h2>
-<div id="cell-58" class="cell" data-execution_count="35">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>model2 <span class="op">=</span> Model2(features<span class="op">=</span><span class="dv">2</span>, hidden_features<span class="op">=</span>[<span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">512</span>]).to(device)</span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model2.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>model2_optimizer <span class="op">=</span> optim.AdamW(model2.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>model2_loss <span class="op">=</span> train(model2, model2_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model2_loss:"</span>, model2_loss.item())</span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>model params: 207362
-Training on device: cuda</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"09bc701acfa5491ab50d8dabde3bfef6","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"fb471dee91fe488ca25838b3d610066a","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"a7ebf6d981b94e1ca993b7a02d1e20ad","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"60d8f767efee4e27ba2c8d00ea3a4334","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Reached the max training steps: 10000
-model2_loss: 2.836972236633301</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-35-output-7.png" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-</section>
-<section id="model-3" class="level2">
-<h2 class="anchored" data-anchor-id="model-3">Model 3</h2>
-<div id="cell-60" class="cell" data-execution_count="36">
-<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
-<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">128</span>],</span>
-<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
-<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
-<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model3.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
-<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
-<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model3_loss:"</span>, model3_loss.item())</span>
-<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>model params: 182410
-Training on device: cuda</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"e236573939714f75b253630a191db8e2","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"fb8650b51ae14be88dbd952245876285","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"993c2f6c21314e3291a2666978bc8fed","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"69b8da73b78e4f7b892d70fea985aaee","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Reached the max training steps: 10000
-model3_loss: 2.9682607650756836</code></pre>
+model1_loss: 4.022025108337402</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -2086,57 +2094,156 @@ model3_loss: 2.9682607650756836</code></pre>
 </div>
 </div>
 </div>
-<div id="cell-61" class="cell" data-execution_count="37">
-<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample points from the model</span></span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_points(model):</span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>        x_T <span class="op">=</span> torch.randn(<span class="dv">128</span>, <span class="dv">2</span>)</span>
-<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>        x_sampled <span class="op">=</span> generate_samples_with_flow_matching(model, device, num_samples<span class="op">=</span><span class="dv">128</span>, parallel<span class="op">=</span><span class="va">False</span>, seed<span class="op">=</span><span class="dv">0</span>, clip_min<span class="op">=-</span><span class="fl">3.6</span>, clip_max<span class="op">=</span><span class="fl">3.6</span>)</span>
-<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x_sampled.cpu().numpy()</span>
-<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="co"># The target spiral points for comparison</span></span>
-<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a>target_spiral <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(train_dataloader))</span>
-<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>chamfer_dist <span class="op">=</span> {}</span>
-<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a>generated_points_1 <span class="op">=</span> generate_points(model1)</span>
-<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a>generated_points_1 <span class="op">=</span> np.clip(generated_points_1, <span class="op">-</span><span class="dv">3</span>, <span class="dv">3</span>)</span>
-<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">1</span>] <span class="op">=</span> chamfer_distance(generated_points_1, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
-<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 1 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">1</span>])</span>
-<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a>generated_points_2 <span class="op">=</span> generate_points(model2)</span>
-<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">2</span>] <span class="op">=</span> chamfer_distance(generated_points_2, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
-<span id="cb55-23"><a href="#cb55-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 2 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">2</span>])</span>
-<span id="cb55-24"><a href="#cb55-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-25"><a href="#cb55-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Chamfer distance</span></span>
-<span id="cb55-26"><a href="#cb55-26" aria-hidden="true" tabindex="-1"></a>generated_points_3 <span class="op">=</span> generate_points(model3)</span>
-<span id="cb55-27"><a href="#cb55-27" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">3</span>] <span class="op">=</span> chamfer_distance(generated_points_3, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
-<span id="cb55-28"><a href="#cb55-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 3 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">3</span>])</span>
-<span id="cb55-29"><a href="#cb55-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-30"><a href="#cb55-30" aria-hidden="true" tabindex="-1"></a><span class="co"># # visualize the sampled images side by side</span></span>
-<span id="cb55-31"><a href="#cb55-31" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> visualize_sampled_data_side_by_side(models, generated_points):</span>
-<span id="cb55-32"><a href="#cb55-32" aria-hidden="true" tabindex="-1"></a>    fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="bu">len</span>(models) <span class="op">+</span> <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">5</span> <span class="op">*</span> <span class="bu">len</span>(models), <span class="dv">5</span>))</span>
-<span id="cb55-33"><a href="#cb55-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add ground truth</span></span>
-<span id="cb55-34"><a href="#cb55-34" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>].scatter(target_spiral[:, <span class="dv">0</span>], target_spiral[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb55-35"><a href="#cb55-35" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>].set_title(<span class="st">"Ground truth"</span>)</span>
-<span id="cb55-36"><a href="#cb55-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-37"><a href="#cb55-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, (model, points) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(models, generated_points)):</span>
-<span id="cb55-38"><a href="#cb55-38" aria-hidden="true" tabindex="-1"></a>        axs[i<span class="op">+</span><span class="dv">1</span>].scatter(points[:,<span class="dv">0</span>], points[:,<span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb55-39"><a href="#cb55-39" aria-hidden="true" tabindex="-1"></a>        axs[i<span class="op">+</span><span class="dv">1</span>].set_title(<span class="ss">f"</span><span class="sc">{</span>model<span class="sc">.</span>__class__<span class="sc">.</span><span class="va">__name__</span><span class="sc">}</span><span class="ss">, Chamfer: </span><span class="sc">{</span>chamfer_dist[i<span class="op">+</span><span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb55-40"><a href="#cb55-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-41"><a href="#cb55-41" aria-hidden="true" tabindex="-1"></a>visualize_sampled_data_side_by_side([model1, model2, model3], [generated_points_1, generated_points_2, generated_points_3])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="model-2" class="level2">
+<h2 class="anchored" data-anchor-id="model-2">Model 2</h2>
+<div id="cell-66" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>model2 <span class="op">=</span> Model2(features<span class="op">=</span><span class="dv">2</span>, hidden_features<span class="op">=</span>[<span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">512</span>]).to(device)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model2.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>model2_optimizer <span class="op">=</span> optim.AdamW(model2.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>model2_loss <span class="op">=</span> train(model2, model2_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model2_loss:"</span>, model2_loss.item())</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Model 1 Chamfer Distance: 0.9377454986740738
-Model 2 Chamfer Distance: 0.2691695609444996
-Model 3 Chamfer Distance: 0.17190213142619662</code></pre>
+<pre><code>model params: 207362
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"424d8a24f0dd4bc99ec7dab5a558cb4b","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"ca857717db994443b36040fa0841b2ac","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"b057e31510ca4e76937b8ac16fb4d211","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"8bb0899e6f994fa58cb760b30aa53889","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+model2_loss: 2.48366641998291</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-37-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-37-output-7.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="model-3" class="level2">
+<h2 class="anchored" data-anchor-id="model-3">Model 3</h2>
+<div id="cell-68" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>    dim_hids<span class="op">=</span>[<span class="dv">128</span>, <span class="dv">128</span>, <span class="dv">128</span>],</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>    num_timesteps<span class="op">=</span>config.num_denoising_steps,</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>).to(device)</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model3.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>model3_loss <span class="op">=</span> train(model3, model3_optimizer, steps<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"model3_loss:"</span>, model3_loss.item())</span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> visualize_sampled_data(model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>model params: 182410
+Training on device: cuda</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"a6514c80c52c49c8a12241da4ee5a404","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"0edf009d60f4481f9f96d369e60eae4b","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"88e12b7239574afb8bb7924734fbe222","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"91b2eaf5028445769955fe766645da48","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reached the max training steps: 10000
+model3_loss: 2.8760814666748047</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-38-output-7.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cell-69" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample points from the model</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_points(model):</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>        x_T <span class="op">=</span> torch.randn(<span class="dv">128</span>, <span class="dv">2</span>)</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>        x_sampled <span class="op">=</span> generate_samples_with_flow_matching(model, device, num_samples<span class="op">=</span><span class="dv">128</span>, parallel<span class="op">=</span><span class="va">False</span>, seed<span class="op">=</span><span class="dv">0</span>, clip_min<span class="op">=-</span><span class="fl">3.6</span>, clip_max<span class="op">=</span><span class="fl">3.6</span>)</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x_sampled.cpu().numpy()</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a><span class="co"># The target spiral points for comparison</span></span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>target_spiral <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(train_dataloader))</span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>chamfer_dist <span class="op">=</span> {}</span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a>generated_points_1 <span class="op">=</span> generate_points(model1)</span>
+<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>generated_points_1 <span class="op">=</span> np.clip(generated_points_1, <span class="op">-</span><span class="dv">3</span>, <span class="dv">3</span>)</span>
+<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">1</span>] <span class="op">=</span> chamfer_distance(generated_points_1, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
+<span id="cb57-18"><a href="#cb57-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 1 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">1</span>])</span>
+<span id="cb57-19"><a href="#cb57-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-20"><a href="#cb57-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-21"><a href="#cb57-21" aria-hidden="true" tabindex="-1"></a>generated_points_2 <span class="op">=</span> generate_points(model2)</span>
+<span id="cb57-22"><a href="#cb57-22" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">2</span>] <span class="op">=</span> chamfer_distance(generated_points_2, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
+<span id="cb57-23"><a href="#cb57-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 2 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">2</span>])</span>
+<span id="cb57-24"><a href="#cb57-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-25"><a href="#cb57-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Chamfer distance</span></span>
+<span id="cb57-26"><a href="#cb57-26" aria-hidden="true" tabindex="-1"></a>generated_points_3 <span class="op">=</span> generate_points(model3)</span>
+<span id="cb57-27"><a href="#cb57-27" aria-hidden="true" tabindex="-1"></a>chamfer_dist[<span class="dv">3</span>] <span class="op">=</span> chamfer_distance(generated_points_3, target_spiral, direction<span class="op">=</span><span class="st">'bi'</span>)</span>
+<span id="cb57-28"><a href="#cb57-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Model 3 Chamfer Distance:"</span>, chamfer_dist[<span class="dv">3</span>])</span>
+<span id="cb57-29"><a href="#cb57-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-30"><a href="#cb57-30" aria-hidden="true" tabindex="-1"></a><span class="co"># # visualize the sampled images side by side</span></span>
+<span id="cb57-31"><a href="#cb57-31" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> visualize_sampled_data_side_by_side(models, generated_points):</span>
+<span id="cb57-32"><a href="#cb57-32" aria-hidden="true" tabindex="-1"></a>    fig, axs <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="bu">len</span>(models) <span class="op">+</span> <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">5</span> <span class="op">*</span> <span class="bu">len</span>(models), <span class="dv">5</span>))</span>
+<span id="cb57-33"><a href="#cb57-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add ground truth</span></span>
+<span id="cb57-34"><a href="#cb57-34" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>].scatter(target_spiral[:, <span class="dv">0</span>], target_spiral[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb57-35"><a href="#cb57-35" aria-hidden="true" tabindex="-1"></a>    axs[<span class="dv">0</span>].set_title(<span class="st">"Ground truth"</span>)</span>
+<span id="cb57-36"><a href="#cb57-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-37"><a href="#cb57-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, (model, points) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(models, generated_points)):</span>
+<span id="cb57-38"><a href="#cb57-38" aria-hidden="true" tabindex="-1"></a>        axs[i<span class="op">+</span><span class="dv">1</span>].scatter(points[:,<span class="dv">0</span>], points[:,<span class="dv">1</span>], color<span class="op">=</span><span class="st">'white'</span>, edgecolor<span class="op">=</span><span class="st">'gray'</span>, s<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb57-39"><a href="#cb57-39" aria-hidden="true" tabindex="-1"></a>        axs[i<span class="op">+</span><span class="dv">1</span>].set_title(<span class="ss">f"</span><span class="sc">{</span>model<span class="sc">.</span>__class__<span class="sc">.</span><span class="va">__name__</span><span class="sc">}</span><span class="ss">, Chamfer: </span><span class="sc">{</span>chamfer_dist[i<span class="op">+</span><span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb57-40"><a href="#cb57-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-41"><a href="#cb57-41" aria-hidden="true" tabindex="-1"></a>visualize_sampled_data_side_by_side([model1, model2, model3], [generated_points_1, generated_points_2, generated_points_3])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Model 1 Chamfer Distance: 0.9057995027368986
+Model 2 Chamfer Distance: 0.2634166245391036
+Model 3 Chamfer Distance: 0.21145526577085916</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="1_2_Flow Matching 2D Toy_files/figure-html/cell-39-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -2150,6 +2257,7 @@ Model 3 Chamfer Distance: 0.17190213142619662</code></pre>
 <li>How does the model size matter (number of parameters, controlled by the number of layers, and number of hidden units), within the same class of arch?</li>
 <li>How does the number of timesteps matter?</li>
 <li>What other designs of flow plans are there in recent literature? Can you bring them to this toy example?</li>
+<li>The learned denoising flow is not exactly the same as the flow plans. They seem to first go “inward” before traveling to the target positions. Why is this happening?</li>
 </ul>
 
 
