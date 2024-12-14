@@ -28,9 +28,10 @@ Please use the sidebar to navigate through the tutorials.
 
 There are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:
 
+- [FAIR's flow matching guide](https://arxiv.org/abs/2412.06264)
 - [DDPM paper](https://arxiv.org/abs/2006.11239)
 - [Lillian Weng's blog](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)
 - [CVPR'22 tutorial](https://cvpr2022-tutorial-diffusion-models.github.io/)
 - [DiT paper](https://arxiv.org/abs/2212.09748)
 - [Flow matching paper](https://arxiv.org/abs/2210.02747)
-- [FAIR's flow matching guide](https://arxiv.org/abs/2412.06264)
+
