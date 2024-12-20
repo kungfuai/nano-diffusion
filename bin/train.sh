@@ -10,7 +10,12 @@ fi
 # This is the username in Dockerfile.
 USER=nanodiffusion
 
+# Create a data/container_cache directory if it doesn't exist
+mkdir -p data/container_cache
+chmod a+rw -R data/container_cache
+
 docker run --runtime nvidia -it --rm \
+	--shm-size 16G \
 	--gpus 'device=0' \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/home/$USER/.cache \
