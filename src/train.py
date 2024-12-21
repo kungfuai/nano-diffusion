@@ -325,7 +325,7 @@ def compute_fid(
                 num_workers=0,
             )
         else:
-            # Use precomputed stats.
+            # Use precomputed stats for custom datasets.
             dataset_name_safe = make_dataset_name_safe_for_cleanfid(dataset_name)
             score = fid.compute_fid(
                 str(gen_path),
