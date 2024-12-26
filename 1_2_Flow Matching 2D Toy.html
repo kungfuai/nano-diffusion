@@ -249,12 +249,6 @@ window.Quarto = {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./2_1_nano_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Training a Diffusion Model for Animal Face Images</span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -1719,8 +1713,8 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-45"><a href="#cb27-45" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="train-for-1000-steps" class="level4">
-<h4 class="anchored" data-anchor-id="train-for-1000-steps">Train for 1000 steps</h4>
+<section id="train-for-100-steps" class="level4">
+<h4 class="anchored" data-anchor-id="train-for-100-steps">Train for 100 steps</h4>
 <div id="cell-41" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the model and optimizer</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
@@ -2258,6 +2252,8 @@ Model 3 Chamfer Distance: 0.21145526577085916</code></pre>
 <li>How does the number of timesteps matter?</li>
 <li>What other designs of flow plans are there in recent literature? Can you bring them to this toy example?</li>
 <li>The learned denoising flow is not exactly the same as the flow plans. They seem to first go “inward” before traveling to the target positions. Why is this happening?</li>
+<li>If you change the scale factor of the data (look for <code>scaling = 2</code>) to 1 or 3, how does the model’s behavior change?</li>
+<li>If you change the target dataset to a different shape (e.g.&nbsp;<code>make_moons</code>), how does the model’s behavior change?</li>
 </ul>
 
 

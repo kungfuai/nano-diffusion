@@ -20,10 +20,44 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -66,6 +100,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
 
 </head>
@@ -182,12 +220,6 @@ ul.task-list li input[type="checkbox"] {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./2_1_nano_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Training a Diffusion Model for Animal Face Images</span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -218,7 +250,10 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#fid" id="toc-fid" class="nav-link active" data-scroll-target="#fid">FID</a></li>
+  <li><a href="#fid" id="toc-fid" class="nav-link active" data-scroll-target="#fid">FID</a>
+  <ul class="collapse">
+  <li><a href="#load-a-pre-trained-model" id="toc-load-a-pre-trained-model" class="nav-link" data-scroll-target="#load-a-pre-trained-model">Load a pre-trained model</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -244,7 +279,6 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>(under construction)</p>
 <section id="fid" class="level2">
 <h2 class="anchored" data-anchor-id="fid">FID</h2>
 <p>The Chamfer distance that we used in the previous notebook is a distance between point clouds. It is based on Euclidean distance, which works for low-dimensional data such as 2D points. For high-dimensional data such as images, the Euclidean distance is not a good measure, because the distance between two images can be high even if they are very similar.</p>
@@ -252,11 +286,277 @@ ul.task-list li input[type="checkbox"] {
 <p>The limitations of FID include: - It assumes Gaussian distribution of features. - It is sensitive to sample size and requires large sample sizes for stable estimates, which means it is computationally expensive.</p>
 <p>Other metrics include: - Inception Score (IS): measures both the diversity and quality of generated images. It may give misleading scores for specialized datasets (e.g., medical images, abstract art). - LPIPS (Learned Perceptual Image Patch Similarity). It is good at measureing individual image quality, and more suitable for tasks like style transfer, image reconstruction. - PSNR (Peak Signal-to-Noise Ratio). It measures pixel-level reconstruction quality,and does not measure perceptual quality. - SSIM (Structural Similarity Index). It measures image quality based on luminance and contrast, and does not measure perceptual quality. - Arena-style human evaluation: compare generated images from different models side by side, and ask human experts to choose the better one.</p>
 <p>We are going to use the package<code>clean-fid</code>. As a santity check for the metric, let’s take a pre-trained model from huggingface with known good quality, and see what the FID score looks like.</p>
+<section id="install-the-package" class="level4">
+<h4 class="anchored" data-anchor-id="install-the-package">Install the package</h4>
+<div id="4d313b30" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:43.100446Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:43.099996Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:00:44.095507Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:00:44.095035Z&quot;}" data-papermill="{&quot;duration&quot;:1.001573,&quot;end_time&quot;:&quot;2024-12-16T22:00:44.096787&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:43.095214&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install clean<span class="op">-</span>fid</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Defaulting to user installation because normal site-packages is not writeable
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)
+Requirement already satisfied: clean-fid in /home/ubuntu/.local/lib/python3.11/site-packages (0.1.35)
+Requirement already satisfied: torch in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (2.5.1)
+Requirement already satisfied: torchvision in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (0.20.1)
+Requirement already satisfied: numpy&gt;=1.14.3 in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (1.26.4)
+Requirement already satisfied: scipy&gt;=1.0.1 in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (1.14.0)
+Requirement already satisfied: tqdm&gt;=4.28.1 in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (4.66.5)
+Requirement already satisfied: pillow&gt;=8.1 in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (10.2.0)
+Requirement already satisfied: requests in /home/ubuntu/.local/lib/python3.11/site-packages (from clean-fid) (2.32.3)
+Requirement already satisfied: charset-normalizer&lt;4,&gt;=2 in /opt/miniconda/lib/python3.11/site-packages (from requests-&gt;clean-fid) (2.0.4)
+Requirement already satisfied: idna&lt;4,&gt;=2.5 in /opt/miniconda/lib/python3.11/site-packages (from requests-&gt;clean-fid) (3.4)
+Requirement already satisfied: urllib3&lt;3,&gt;=1.21.1 in /opt/miniconda/lib/python3.11/site-packages (from requests-&gt;clean-fid) (1.26.18)
+Requirement already satisfied: certifi&gt;=2017.4.17 in /opt/miniconda/lib/python3.11/site-packages (from requests-&gt;clean-fid) (2023.7.22)
+Requirement already satisfied: filelock in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (3.13.3)
+Requirement already satisfied: typing-extensions&gt;=4.8.0 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (4.10.0)
+Requirement already satisfied: networkx in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (3.2.1)
+Requirement already satisfied: jinja2 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (3.1.4)
+Requirement already satisfied: fsspec in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (2024.3.1)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.4.127 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.127)
+Requirement already satisfied: nvidia-cuda-runtime-cu12==12.4.127 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.127)
+Requirement already satisfied: nvidia-cuda-cupti-cu12==12.4.127 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.127)
+Requirement already satisfied: nvidia-cudnn-cu12==9.1.0.70 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (9.1.0.70)
+Requirement already satisfied: nvidia-cublas-cu12==12.4.5.8 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.5.8)
+Requirement already satisfied: nvidia-cufft-cu12==11.2.1.3 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (11.2.1.3)
+Requirement already satisfied: nvidia-curand-cu12==10.3.5.147 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (10.3.5.147)
+Requirement already satisfied: nvidia-cusolver-cu12==11.6.1.9 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (11.6.1.9)
+Requirement already satisfied: nvidia-cusparse-cu12==12.3.1.170 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.3.1.170)
+Requirement already satisfied: nvidia-nccl-cu12==2.21.5 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (2.21.5)
+Requirement already satisfied: nvidia-nvtx-cu12==12.4.127 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.127)
+Requirement already satisfied: nvidia-nvjitlink-cu12==12.4.127 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (12.4.127)
+Requirement already satisfied: triton==3.1.0 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (3.1.0)
+Requirement already satisfied: sympy==1.13.1 in /home/ubuntu/.local/lib/python3.11/site-packages (from torch-&gt;clean-fid) (1.13.1)
+Requirement already satisfied: mpmath&lt;1.4,&gt;=1.1.0 in /home/ubuntu/.local/lib/python3.11/site-packages (from sympy==1.13.1-&gt;torch-&gt;clean-fid) (1.3.0)
+Requirement already satisfied: MarkupSafe&gt;=2.0 in /home/ubuntu/.local/lib/python3.11/site-packages (from jinja2-&gt;torch-&gt;clean-fid) (2.1.5)
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)
+WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local/lib/python3.11/site-packages)</code></pre>
+</div>
+</div>
+</section>
+<section id="load-a-pre-trained-model" class="level3">
+<h3 class="anchored" data-anchor-id="load-a-pre-trained-model">Load a pre-trained model</h3>
+<p>This is the model released by Google, which is trained on CIFAR-10 dataset.</p>
+<div id="f92e8c5f" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:44.114972Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:44.114600Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:00:46.276300Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:00:46.275873Z&quot;}" data-papermill="{&quot;duration&quot;:2.167763,&quot;end_time&quot;:&quot;2024-12-16T22:00:46.277192&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:44.109429&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch, transformers, diffusers, xformers, torchvision</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"torch version:"</span>, torch.__version__)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"transformers version:"</span>, transformers.__version__)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"diffusers version:"</span>, diffusers.__version__)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"xformers version:"</span>, xformers.__version__)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"torchvision version:"</span>, torchvision.__version__)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>torch version: 2.5.1+cu124
+transformers version: 4.47.0
+diffusers version: 0.31.0
+xformers version: 0.0.28.post3
+torchvision version: 0.20.1+cu124</code></pre>
+</div>
+</div>
+<div id="c2095fb0" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:46.286939Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:46.286251Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:00:49.803119Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:00:49.802728Z&quot;}" data-papermill="{&quot;duration&quot;:3.522514,&quot;end_time&quot;:&quot;2024-12-16T22:00:49.803953&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:46.281439&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> diffusers <span class="im">import</span> DDPMPipeline, DDIMPipeline, PNDMPipeline</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="op">=</span> <span class="st">"google/ddpm-cifar10-32"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># load model and scheduler</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>ddpm <span class="op">=</span> DDPMPipeline.from_pretrained(model_id)  <span class="co"># you can replace DDPMPipeline with DDIMPipeline or PNDMPipeline for faster inference</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>ddpm.set_progress_bar_config(disable<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>2024-12-16 22:00:47.499784: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2024-12-16 22:00:47.512904: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:485] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-12-16 22:00:47.527894: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:8454] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-12-16 22:00:47.532473: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1452] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-12-16 22:00:47.543787: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-12-16 22:00:48.384524: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"677e78339e20407498332224d1dcd4b4","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>An error occurred while trying to fetch /home/ubuntu/.cache/huggingface/hub/models--google--ddpm-cifar10-32/snapshots/267b167dc01f0e4e61923ea244e8b988f84deb80: Error no file named diffusion_pytorch_model.safetensors found in directory /home/ubuntu/.cache/huggingface/hub/models--google--ddpm-cifar10-32/snapshots/267b167dc01f0e4e61923ea244e8b988f84deb80.
+Defaulting to unsafe serialization. Pass `allow_pickle=False` to raise an error instead.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 2.57 s, sys: 639 ms, total: 3.21 s
+Wall time: 3.51 s</code></pre>
+</div>
+</div>
+<div id="ba2d2f6a" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:49.814184Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:49.813602Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:38.694846Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:38.694434Z&quot;}" data-papermill="{&quot;duration&quot;:828.892271,&quot;end_time&quot;:&quot;2024-12-16T22:14:38.700774&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:49.808503&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># run pipeline in inference (sample random noise and denoise)</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm.notebook <span class="im">import</span> tqdm</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ddpm.to(<span class="st">"cuda"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>images <span class="op">=</span> []</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> tqdm(<span class="bu">range</span>(<span class="dv">9</span>)):</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    images <span class="op">+=</span> [i <span class="cf">for</span> i <span class="kw">in</span> ddpm(batch_size<span class="op">=</span><span class="dv">100</span>).images]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"c98e51ea6bc44d31a8c4d98ecd5aaf60","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 13min 48s, sys: 272 ms, total: 13min 49s
+Wall time: 13min 48s</code></pre>
+</div>
+</div>
+<p>Visualize the first image:</p>
+<div id="93341d0f" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:38.719884Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:38.719482Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:38.726439Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:38.726082Z&quot;}" data-papermill="{&quot;duration&quot;:0.012953,&quot;end_time&quot;:&quot;2024-12-16T22:14:38.727181&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:38.714228&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>images[<span class="dv">0</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<div>
+<figure class="figure">
+<p><img src="3_1_fid_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="calculating-fid-on-the-first-100-images" class="level4">
+<h4 class="anchored" data-anchor-id="calculating-fid-on-the-first-100-images">Calculating FID on the first 100 images</h4>
+<div id="3e0717c1" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:38.746358Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:38.745995Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:44.931003Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:44.930519Z&quot;}" data-papermill="{&quot;duration&quot;:6.191071,&quot;end_time&quot;:&quot;2024-12-16T22:14:44.931890&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:38.740819&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Save images</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cleanfid <span class="im">import</span> fid</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>gen_path <span class="op">=</span> Path(<span class="st">"results/sampled_img_100"</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>gen_path.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, img <span class="kw">in</span> <span class="bu">enumerate</span>(images[:<span class="dv">100</span>]):</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    img_np <span class="op">=</span> np.array(img)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    np.save(gen_path <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">.npy"</span>, img_np)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>score <span class="op">=</span> fid.compute_fid(</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>            <span class="bu">str</span>(gen_path),</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>            dataset_name<span class="op">=</span><span class="st">"cifar10"</span>,</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>            dataset_res<span class="op">=</span><span class="dv">32</span>,</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>            device<span class="op">=</span><span class="st">"cuda"</span>,</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>            mode<span class="op">=</span><span class="st">"clean"</span>,</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>            batch_size<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"FID score:"</span>, score)  <span class="co"># 156.41708381872482</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>compute FID of a folder with cifar10 statistics
+Found 100 images in the folder results/sampled_img_100</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+FID sampled_img_100 :   0%|                                                                     | 0/50 [00:00&lt;?, ?it/s]
+FID sampled_img_100 :   2%|█▏                                                           | 1/50 [00:00&lt;00:24,  1.96it/s]
+FID sampled_img_100 :   4%|██▍                                                          | 2/50 [00:02&lt;01:19,  1.66s/it]
+FID sampled_img_100 :  40%|████████████████████████                                    | 20/50 [00:03&lt;00:03,  9.26it/s]
+FID sampled_img_100 :  78%|██████████████████████████████████████████████▊             | 39/50 [00:03&lt;00:00, 20.85it/s]
+FID sampled_img_100 : 100%|████████████████████████████████████████████████████████████| 50/50 [00:03&lt;00:00, 15.31it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>FID score: 155.1173252056065
+CPU times: user 57 s, sys: 7.68 s, total: 1min 4s
+Wall time: 6.18 s</code></pre>
+</div>
+</div>
+</section>
+<section id="first-1000-images" class="level4">
+<h4 class="anchored" data-anchor-id="first-1000-images">First 1000 images</h4>
+<div id="c2b04fa6" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:44.959488Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:44.959133Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:45.129069Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:45.128642Z&quot;}" data-papermill="{&quot;duration&quot;:0.181906,&quot;end_time&quot;:&quot;2024-12-16T22:14:45.130190&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:44.948284&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Save images</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>gen_path <span class="op">=</span> Path(<span class="st">"results/sampled_img_1000"</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>gen_path.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, img <span class="kw">in</span> <span class="bu">enumerate</span>(images[:<span class="dv">1000</span>]):</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    img_np <span class="op">=</span> np.array(img)</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    np.save(gen_path <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">.npy"</span>, img_np)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 341 ms, sys: 905 ms, total: 1.25 s
+Wall time: 166 ms</code></pre>
+</div>
+</div>
+<div id="0e489d84" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:45.141449Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:45.141188Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:53.066892Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:53.066400Z&quot;}" data-papermill="{&quot;duration&quot;:7.932191,&quot;end_time&quot;:&quot;2024-12-16T22:14:53.067735&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:45.135544&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cleanfid <span class="im">import</span> fid</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>score <span class="op">=</span> fid.compute_fid(</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>            <span class="bu">str</span>(gen_path),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>            dataset_name<span class="op">=</span><span class="st">"cifar10"</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>            dataset_res<span class="op">=</span><span class="dv">32</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>            device<span class="op">=</span><span class="st">"cuda"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>            mode<span class="op">=</span><span class="st">"clean"</span>,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>            batch_size<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>            verbose<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"FID score:"</span>, score)  <span class="co"># 44.02850054643022</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>FID score: 47.59607117774948
+CPU times: user 50.7 s, sys: 7.36 s, total: 58.1 s
+Wall time: 7.92 s</code></pre>
+</div>
+</div>
+<section id="k-images" class="level5">
+<h5 class="anchored" data-anchor-id="k-images">50k images</h5>
+<div id="03274106" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:53.092103Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:53.091653Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-17T10:51:25.319743Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-17T10:51:25.319319Z&quot;}" data-papermill="{&quot;duration&quot;:45392.242846,&quot;end_time&quot;:&quot;2024-12-17T10:51:25.326204&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:53.083358&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> tqdm(<span class="bu">range</span>(<span class="dv">490</span>)):</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    images <span class="op">+=</span> [i <span class="cf">for</span> i <span class="kw">in</span> ddpm(batch_size<span class="op">=</span><span class="dv">100</span>).images]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"b54d087157da46d59098d00863ca2cb8","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 12h 36min 39s, sys: 6.73 s, total: 12h 36min 45s
+Wall time: 12h 36min 32s</code></pre>
+</div>
+</div>
+<div id="85979f5b" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-17T10:51:25.337689Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-17T10:51:25.337273Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-17T10:51:29.773768Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-17T10:51:29.772869Z&quot;}" data-papermill="{&quot;duration&quot;:4.44352,&quot;end_time&quot;:&quot;2024-12-17T10:51:29.775068&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-17T10:51:25.331548&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>gen_path <span class="op">=</span> Path(<span class="st">"results/sampled_img_50k"</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>gen_path.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, img <span class="kw">in</span> <span class="bu">enumerate</span>(images[:<span class="dv">50000</span>]):</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    img_np <span class="op">=</span> np.array(img)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    np.save(gen_path <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">.npy"</span>, img_np)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="070a3221" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-17T10:51:29.786922Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-17T10:51:29.786592Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-17T10:53:55.823402Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-17T10:53:55.822948Z&quot;}" data-papermill="{&quot;duration&quot;:146.048584,&quot;end_time&quot;:&quot;2024-12-17T10:53:55.829200&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-17T10:51:29.780616&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>score <span class="op">=</span> fid.compute_fid(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>            <span class="bu">str</span>(gen_path),</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>            dataset_name<span class="op">=</span><span class="st">"cifar10"</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>            dataset_res<span class="op">=</span><span class="dv">32</span>,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>            device<span class="op">=</span><span class="st">"cuda"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>            mode<span class="op">=</span><span class="st">"clean"</span>,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>            batch_size<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>            verbose<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>        )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 2min 53s, sys: 18.6 s, total: 3min 11s
+Wall time: 2min 26s</code></pre>
+</div>
+</div>
+<div id="4a73b16a" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-17T10:53:55.840956Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-17T10:53:55.840572Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-17T10:53:55.843173Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-17T10:53:55.842802Z&quot;}" data-papermill="{&quot;duration&quot;:0.010037,&quot;end_time&quot;:&quot;2024-12-17T10:53:55.844672&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-17T10:53:55.834635&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"FID score:"</span>, score)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>FID score: 14.702197781209179</code></pre>
+</div>
+</div>
+<p>As you can see, FID score is sensitive to the sample size. From 100 to 1000 and then to 50k sampled images, we see the FID score decreases from 150 to about 50 and then to roughly 10. The recommended sample size is 50k, however, it takes a long time to sample.</p>
 
 
 </section>
+</section>
+</section>
+</section>
 
 </main> <!-- /main -->
+<script type="application/vnd.jupyter.widget-state+json">
+{"state":{"02ea7619b25449eebaef5e619c36d7ab":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"ProgressStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"ProgressStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","bar_color":null,"description_width":""}},"03db07fe4ce8460bb86924c79b1fd82b":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_50184e20507544648f02b05c40fa7d3f","placeholder":"​","style":"IPY_MODEL_493a0cd41fe942f1846bb717fe88333c","tabbable":null,"tooltip":null,"value":" 2/2 [00:00&lt;00:00,  7.52it/s]"}},"12157d1740cd4fe5af1814c8bc505d80":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"FloatProgressModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"FloatProgressModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"ProgressView","bar_style":"success","description":"","description_allow_html":false,"layout":"IPY_MODEL_65f4a73789ff4b80a35d17afd8bc6481","max":490,"min":0,"orientation":"horizontal","style":"IPY_MODEL_02ea7619b25449eebaef5e619c36d7ab","tabbable":null,"tooltip":null,"value":490}},"1811b0c11d894f98922833b91df58728":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"1a04e1d3f2214d0f8e2ded2c95140297":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"2616a3ebd8054789aa198c717d08ec31":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"FloatProgressModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"FloatProgressModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"ProgressView","bar_style":"success","description":"","description_allow_html":false,"layout":"IPY_MODEL_3915f1e7649d4cdd9613bf56cd0ec734","max":9,"min":0,"orientation":"horizontal","style":"IPY_MODEL_699ef83a22c04989a035a652b9bcf8b8","tabbable":null,"tooltip":null,"value":9}},"2ab378f55c6d470b9ec432acb3971ff7":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_ce5aa6eb673d424ba9e6302115ecca04","placeholder":"​","style":"IPY_MODEL_499817d540ec4721a073f05b661683e1","tabbable":null,"tooltip":null,"value":" 490/490 [12:36:32&lt;00:00, 92.61s/it]"}},"3915f1e7649d4cdd9613bf56cd0ec734":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"3ce95f2e3dfc41b38b26ddcac44f6bfe":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"493a0cd41fe942f1846bb717fe88333c":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"499817d540ec4721a073f05b661683e1":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"50184e20507544648f02b05c40fa7d3f":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"65f4a73789ff4b80a35d17afd8bc6481":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"677e78339e20407498332224d1dcd4b4":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HBoxModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HBoxModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HBoxView","box_style":"","children":["IPY_MODEL_9c6e8726cf08402893d454669eaaa334","IPY_MODEL_9b76136170a941dd892ae8b702b642d0","IPY_MODEL_03db07fe4ce8460bb86924c79b1fd82b"],"layout":"IPY_MODEL_82c2c61734014f71a70b82de7b135b0b","tabbable":null,"tooltip":null}},"699ef83a22c04989a035a652b9bcf8b8":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"ProgressStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"ProgressStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","bar_color":null,"description_width":""}},"72a7b71880994d7da2c8b0528efaaf00":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"749fec4a11064f3e87970f4a8fcf2081":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"7a3114916ef8400e88c4d816be67ab6b":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"813aa17c9a8d4d4783a7f4e15be8a871":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_908db8357555480aaa36cdd62802ce3b","placeholder":"​","style":"IPY_MODEL_7a3114916ef8400e88c4d816be67ab6b","tabbable":null,"tooltip":null,"value":"100%"}},"829338c56f7649dc8e5710ab0ac539f8":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"82c2c61734014f71a70b82de7b135b0b":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"89d97a0e6a6046169e6ab26eae347560":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","background":null,"description_width":"","font_size":null,"text_color":null}},"908db8357555480aaa36cdd62802ce3b":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"93c37961bdba4b5cb1326ded6c84bc4a":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"9b76136170a941dd892ae8b702b642d0":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"FloatProgressModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"FloatProgressModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"ProgressView","bar_style":"success","description":"","description_allow_html":false,"layout":"IPY_MODEL_3ce95f2e3dfc41b38b26ddcac44f6bfe","max":2,"min":0,"orientation":"horizontal","style":"IPY_MODEL_b70bfd5966e846d9964b7992833d35f1","tabbable":null,"tooltip":null,"value":2}},"9c6e8726cf08402893d454669eaaa334":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_93c37961bdba4b5cb1326ded6c84bc4a","placeholder":"​","style":"IPY_MODEL_1a04e1d3f2214d0f8e2ded2c95140297","tabbable":null,"tooltip":null,"value":"Loading pipeline components...: 100%"}},"a1458eb45b2f45568988a6601f706bb4":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_72a7b71880994d7da2c8b0528efaaf00","placeholder":"​","style":"IPY_MODEL_89d97a0e6a6046169e6ab26eae347560","tabbable":null,"tooltip":null,"value":" 9/9 [13:48&lt;00:00, 92.50s/it]"}},"b54d087157da46d59098d00863ca2cb8":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HBoxModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HBoxModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HBoxView","box_style":"","children":["IPY_MODEL_fe9d9d6a7c2f436b8139d2a78cda2072","IPY_MODEL_12157d1740cd4fe5af1814c8bc505d80","IPY_MODEL_2ab378f55c6d470b9ec432acb3971ff7"],"layout":"IPY_MODEL_829338c56f7649dc8e5710ab0ac539f8","tabbable":null,"tooltip":null}},"b70bfd5966e846d9964b7992833d35f1":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"ProgressStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"ProgressStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","bar_color":null,"description_width":""}},"c714a836b9a44cd196c4e5d128e81362":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"c98e51ea6bc44d31a8c4d98ecd5aaf60":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HBoxModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HBoxModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HBoxView","box_style":"","children":["IPY_MODEL_813aa17c9a8d4d4783a7f4e15be8a871","IPY_MODEL_2616a3ebd8054789aa198c717d08ec31","IPY_MODEL_a1458eb45b2f45568988a6601f706bb4"],"layout":"IPY_MODEL_749fec4a11064f3e87970f4a8fcf2081","tabbable":null,"tooltip":null}},"ce5aa6eb673d424ba9e6302115ecca04":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":null}},"fe9d9d6a7c2f436b8139d2a78cda2072":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"HTMLModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"HTMLModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"HTMLView","description":"","description_allow_html":false,"layout":"IPY_MODEL_c714a836b9a44cd196c4e5d128e81362","placeholder":"​","style":"IPY_MODEL_1811b0c11d894f98922833b91df58728","tabbable":null,"tooltip":null,"value":"100%"}}},"version_major":2,"version_minor":0}
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
