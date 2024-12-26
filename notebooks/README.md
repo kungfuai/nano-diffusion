@@ -26,6 +26,11 @@ This folder holds the educational notebooks to learn practical recipes for train
 - VAE / tokenizer (to get to high res)
 	- SD VAE
 	- Cosmos
+- Practical fine-tuning recipes
+	- Fine-tune StableDiffusion
+	- Fine-tune Flux
+- Practical model hosting
+	- Framework and hardware choices
 - Optional:
 	- Conditioning on other modalities (ControlNet)
 	- ROPE for long context

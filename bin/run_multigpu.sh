@@ -4,6 +4,7 @@
 source bin/env.sh
 
 docker run --runtime nvidia -it \
+	--shm-size 16G \
     --gpus '"device=1,2"' \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/root/.cache \

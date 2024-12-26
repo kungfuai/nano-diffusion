@@ -10,6 +10,7 @@ fi
 USER=nanodiffusion
 
 docker run --runtime nvidia -it --rm \
+	--shm-size 16G \
 	--name nanodiffusion_training \
 	--gpus '"device=0,1"' \
 	-v $(pwd):/workspace:rw \

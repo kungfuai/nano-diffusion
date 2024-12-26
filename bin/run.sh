@@ -8,6 +8,7 @@ if [ -f bin/env.sh ]; then
 fi
 
 docker run --runtime nvidia -it --rm \
+	--shm-size 16G \
     --gpus 'device=0' \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/root/.cache \

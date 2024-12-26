@@ -56,7 +56,7 @@ from src.models.factory import create_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from src.train import create_model, log_training_step, \
     compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
-    save_checkpoints, load_model_from_wandb
+    save_checkpoints, load_model_from_wandb, precompute_fid_stats_for_real_images
 
 
 
@@ -488,6 +488,9 @@ def training_loop(
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
+
+    if config.dataset not in ["cifar10"]:
+        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"

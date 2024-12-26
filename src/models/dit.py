@@ -142,6 +142,28 @@ class FinalLayer(nn.Module):
         return x
 
 
+class TextEncoder(nn.Module):
+    """
+    Text encoder for DiT.
+    """
+    def __init__(self, model_name: str, hidden_dim: int):
+        from transformers import CLIPModel, CLIPProcessor
+
+        super().__init__()
+        self.model = CLIPModel.from_pretrained(model_name)
+        # TODO: should processor be in the model? Or should it be in the dataset class?
+        self.processor = CLIPProcessor.from_pretrained(model_name)
+        self.hidden_dim = hidden_dim
+        # self.model.config.hidden_size?
+        self.projector = nn.Linear(self.model.config.hidden_size, hidden_dim)
+
+    def forward(self, text: str):
+        inputs = self.processor(text=text, return_tensors="pt", padding=True, truncation=True)
+        text_features = self.model.get_text_features(**inputs)
+        # project to hidden_dim
+        text_features = self.projector(text_features)
+        return text_features
+
 class DiT(nn.Module):
     """
     Diffusion model with a Transformer backbone.
@@ -159,6 +181,20 @@ class DiT(nn.Module):
         num_classes=1000,
         learn_sigma=True,
     ):
+        """
+        # Load the processor and model
+        processor = CLIPProcessor.from_pretrained("zer0int/CLIP-GmP-ViT-L-14")
+        model = CLIPModel.from_pretrained("zer0int/CLIP-GmP-ViT-L-14").to(device)
+
+        # Tokenize the text
+        inputs = processor(
+            text=text, return_tensors="pt", padding=True, truncation=True
+        ).to(device)
+
+        # Get text embeddings
+        with torch.no_grad():
+            text_features = model.get_text_features(**inputs)  # (batch_size, 512)
+        """
         super().__init__()
         self.learn_sigma = learn_sigma
         self.in_channels = in_channels
@@ -168,7 +204,8 @@ class DiT(nn.Module):
 
         self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+        # self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+        self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
         num_patches = self.x_embedder.num_patches
         # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
