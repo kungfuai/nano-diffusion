@@ -3,9 +3,13 @@ title: "Time to move off of the notebook"
 ---
 
 
-The training time to get to a decent model is now in the order of hours. When we want to do a lot of experiments to find the best hyperparameters, it is often easier to do it in a script and make each experiment a clean, separate run.
+As our model training becomes more complex, we need to transition from notebooks to production scripts for several reasons:
 
-To make training jobs robust, some bookkeeping is needed: dependency management, monitoring, logging, and checkpointing.
+1. Training times are now in hours, making experimentation in notebooks impractical
+2. We need robust experiment tracking and reproducibility
+3. We want to run many experiments and would like each experiment to be a clean, separate run
+
+To make training jobs robust, some extra work is needed: dependency management, monitoring, logging, and checkpointing.
 
 The `lib_2_1` directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:
 
@@ -91,7 +95,7 @@ Several files are added to manage the environment and run the training job in a 
 
 We use the `Dockerfile` to define the environment for the training job. When we run the `build.sh` script, it will build the Docker image that has all the dependencies installed.
 
-It is minimal:
+It is minimal but complete:
 
 ```dockerfile
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
