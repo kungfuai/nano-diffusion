@@ -137,7 +137,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Time to move off of the notebook</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -216,6 +216,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </a> 
       </div>
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_1_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Training a Diffusion Model for Animal Face Images</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Time to move off of the notebook</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -263,7 +275,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Time to move off of the notebook</h1>
 </div>
@@ -282,8 +294,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The training time to get to a decent model is now in the order of hours. When we want to do a lot of experiments to find the best hyperparameters, it is often easier to do it in a script and make each experiment a clean, separate run.</p>
-<p>To make training jobs robust, some bookkeeping is needed: dependency management, monitoring, logging, and checkpointing.</p>
+<p>As our model training becomes more complex, we need to transition from notebooks to production scripts for several reasons:</p>
+<ol type="1">
+<li>Training times are now in hours, making experimentation in notebooks impractical</li>
+<li>We need robust experiment tracking and reproducibility</li>
+<li>We want to run many experiments and would like each experiment to be a clean, separate run</li>
+</ol>
+<p>To make training jobs robust, some extra work is needed: dependency management, monitoring, logging, and checkpointing.</p>
 <p>The <code>lib_2_1</code> directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:</p>
 <ul>
 <li><a href="https://www.docker.com/">Docker</a></li>
@@ -365,7 +382,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-dockerfile" class="level3">
 <h3 class="anchored" data-anchor-id="the-dockerfile">The <code>Dockerfile</code></h3>
 <p>We use the <code>Dockerfile</code> to define the environment for the training job. When we run the <code>build.sh</code> script, it will build the Docker image that has all the dependencies installed.</p>
-<p>It is minimal:</p>
+<p>It is minimal but complete:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Non-root user</span></span>
