@@ -1,4 +1,4 @@
 /.quarto/
 /_site/
 /results/
-/checkpoints/
+checkpoints/
