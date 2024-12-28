@@ -8,7 +8,7 @@ This folder holds the educational notebooks to learn practical recipes for train
 	- Diffusion (DDPM) [Colab](https://colab.research.google.com/drive/1TIV3GEPLEoZzMBfSm8B5QTeRFNTSVxIu)
 	- CFM (conditional flow matching)
 - Image generation
-	- Image gen (CIFAR10 or animal faces) using DDPM [Colab](https://colab.research.google.com/drive/1pcFJS5nWDcDEHsig3c4AA8INd52Wjl35)
+	- Image gen (animal faces) using DDPM [Colab](https://colab.research.google.com/drive/1pcFJS5nWDcDEHsig3c4AA8INd52Wjl35)
 		- Forward diffusion
 		- Denoising model
 		- Reverse diffusion (Sampling by Denoising)
@@ -19,8 +19,8 @@ This folder holds the educational notebooks to learn practical recipes for train
 	- What does reverse diffusion look like
 	- How does training change the reverse diffusion paths
 - FID: evaluation for image gen [Colab](https://colab.research.google.com/drive/1Qdb8HjVXdN8tvwgoW2rZR86gTPruSrRW)
+- Text Conditioning (text2image)
 - [Relationship between diffusion and flow matching](https://diffusionflow.github.io/)
-- Conditioning on Text (text2image)
 - Multi-GPU recipe (8xH100)
 	- This may be more cost effective and time saving.
 - VAE / tokenizer (to get to high res)

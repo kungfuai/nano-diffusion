@@ -83,8 +83,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--resolution', type=int, default=32)
-    parser.add_argument('--batch-size', type=int, default=256)
+    parser.add_argument('--resolution', type=int, default=64)
+    parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--learning-rate', type=float, default=5e-4)
     parser.add_argument('--weight-decay', type=float, default=1e-6)
     parser.add_argument('--num-denoising-steps', type=int, default=1000)

@@ -148,8 +148,9 @@ def generate_and_log_samples(
     # Generate random noise
     # TODO: make this a config parameter
     n_samples = 8
-    # TODO: data_dim = [3, 32, 32] is hardcoded
-    x = torch.randn(n_samples, 3, 32, 32).to(device)
+    # TODO: data_dim is hardcoded
+    data_dim = [3, config.resolution, config.resolution]
+    x = torch.randn(n_samples, *data_dim).to(device)
 
     # Sample using the main model
     sampled_images = generate_samples_by_denoising(

@@ -13,6 +13,7 @@ To make training jobs robust, some extra work is needed: dependency management, 
 
 The `lib_2_1` directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:
 
+- A GPU machine (e.g. A10 on [Lambda Labs](https://lambdalabs.com/))
 - [Docker](https://www.docker.com/)
 - [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
 
@@ -22,6 +23,14 @@ The `lib_2_1` directory contains the complete setup for a training job inside a 
 cd notebooks/lib_2_1
 bash build.sh
 bash train.sh
+```
+
+By default, the results will be saved in the `checkpoints` directory. If you like to use a hosted experiment tracking service like [Weights & Biases](https://wandb.ai/), you can set the `WANB_API_KEY` and `WANDB_PROJECT` environment variables, and the results will be logged to Weights & Biases.
+
+```bash
+export WANB_API_KEY=...
+export WANDB_PROJECT=...
+bash train.sh --logger wandb
 ```
 
 # The refactoring

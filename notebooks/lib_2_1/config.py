@@ -12,7 +12,7 @@ class TrainingConfig:
     weight_decay: float = 1e-6  # weight decay
     num_denoising_steps: int = 1000  # number of timesteps
     device: str = "cuda"  # device
-    resolution: int = 32  # resolution
+    resolution: int = 64  # resolution
     random_flip: bool = False  # random flip
 
     # Bookkeeping
