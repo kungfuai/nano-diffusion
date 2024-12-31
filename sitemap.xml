@@ -2,58 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/index.html</loc>
-    <lastmod>2024-12-31T21:02:38.330Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.854Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/text_encoder.html</loc>
-    <lastmod>2024-12-31T21:02:38.334Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.858Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/compare_vlms.html</loc>
-    <lastmod>2024-12-31T21:02:38.318Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.842Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/4_1a_generate.html</loc>
-    <lastmod>2024-12-31T21:02:38.318Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.838Z</lastmod>
   </url>
   <url>
-    <loc>https://kungfuai.github.io/nano-diffusion/3_1_fid.html</loc>
-    <lastmod>2024-12-31T21:02:38.314Z</lastmod>
+    <loc>https://kungfuai.github.io/nano-diffusion/2_2_fid.html</loc>
+    <lastmod>2024-12-31T22:14:41.838Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_2_Flow Matching 2D Toy.html</loc>
-    <lastmod>2024-12-31T21:02:38.306Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.826Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_a_refactor.html</loc>
-    <lastmod>2024-12-31T21:02:38.294Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.814Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_Diffusion 2D Toy.html</loc>
-    <lastmod>2024-12-31T21:02:38.286Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.806Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/1_1_b_Diffusion_2D_hyperparams.html</loc>
-    <lastmod>2024-12-31T21:02:38.294Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.814Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/2_1_diffusion_afhq.html</loc>
-    <lastmod>2024-12-31T21:02:38.314Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.838Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/4_1_text_conditioning.html</loc>
-    <lastmod>2024-12-31T21:02:38.314Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.838Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/compare_denoising_step_fns.html</loc>
-    <lastmod>2024-12-31T21:02:38.318Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.838Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/inception_embedding_and_tsne.html</loc>
-    <lastmod>2024-12-31T21:02:38.330Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.854Z</lastmod>
   </url>
   <url>
     <loc>https://kungfuai.github.io/nano-diffusion/2_1_a_move_off_notebook.html</loc>
-    <lastmod>2024-12-31T21:02:38.306Z</lastmod>
+    <lastmod>2024-12-31T22:14:41.826Z</lastmod>
   </url>
 </urlset>

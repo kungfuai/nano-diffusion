@@ -141,7 +141,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./3_1_fid.html">Evaluation</a></li><li class="breadcrumb-item"><a href="./3_1_fid.html">Quality evaluation of an image generation model</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_2_fid.html">Quality evaluation of an image generation model</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -232,21 +232,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">Time to move off of the notebook</span></a>
   </div>
 </li>
-      </ul>
-  </li>
-        <li class="px-0"><hr class="sidebar-divider hi "></li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Evaluation</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./3_1_fid.html" class="sidebar-item-text sidebar-link active">
+  <a href="./2_2_fid.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Quality evaluation of an image generation model</span></a>
   </div>
 </li>
@@ -255,13 +243,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
  <span class="menu-text">Text Conditioning</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./4_1_text_conditioning.html" class="sidebar-item-text sidebar-link">
@@ -289,6 +277,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#fid" id="toc-fid" class="nav-link active" data-scroll-target="#fid">FID</a>
   <ul class="collapse">
   <li><a href="#load-a-pre-trained-model" id="toc-load-a-pre-trained-model" class="nav-link" data-scroll-target="#load-a-pre-trained-model">Load a pre-trained model</a></li>
+  <li><a href="#evaluate-on-100-images" id="toc-evaluate-on-100-images" class="nav-link" data-scroll-target="#evaluate-on-100-images">Evaluate on 100 images</a></li>
+  <li><a href="#first-1000-images" id="toc-first-1000-images" class="nav-link" data-scroll-target="#first-1000-images">First 1000 images</a></li>
+  <li><a href="#k-images" id="toc-k-images" class="nav-link" data-scroll-target="#k-images">50k images</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -296,7 +287,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./3_1_fid.html">Evaluation</a></li><li class="breadcrumb-item"><a href="./3_1_fid.html">Quality evaluation of an image generation model</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_2_fid.html">Quality evaluation of an image generation model</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Quality evaluation of an image generation model</h1>
 </div>
@@ -319,8 +310,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="fid">FID</h2>
 <p>The Chamfer distance that we used in the previous notebook is a distance between point clouds. It is based on Euclidean distance, which works for low-dimensional data such as 2D points. For high-dimensional data such as images, the Euclidean distance is not a good measure, because the distance between two images can be high even if they are very similar.</p>
 <p>The Fréchet Inception Distance (FID) is a metric that measures the distance between two distributions of images. A lower score means better quality. It is based on the Fréchet distance, which is a distance between Gaussian distributions. “Inception” here refers to a pre-trained Inception-v3 model, which is a convolutional neural network that was trained to classify images into 1000 categories. We can use the intermediate features of this model to measure the distance between two distributions of images.</p>
-<p>The limitations of FID include: - It assumes Gaussian distribution of features. - It is sensitive to sample size and requires large sample sizes for stable estimates, which means it is computationally expensive.</p>
-<p>Other metrics include: - Inception Score (IS): measures both the diversity and quality of generated images. It may give misleading scores for specialized datasets (e.g., medical images, abstract art). - LPIPS (Learned Perceptual Image Patch Similarity). It is good at measureing individual image quality, and more suitable for tasks like style transfer, image reconstruction. - PSNR (Peak Signal-to-Noise Ratio). It measures pixel-level reconstruction quality,and does not measure perceptual quality. - SSIM (Structural Similarity Index). It measures image quality based on luminance and contrast, and does not measure perceptual quality. - Arena-style human evaluation: compare generated images from different models side by side, and ask human experts to choose the better one.</p>
+<p>The limitations of FID include:</p>
+<ul>
+<li>It assumes Gaussian distribution of features.</li>
+<li>It is sensitive to sample size and requires large sample sizes for stable estimates, which means it is computationally expensive.</li>
+</ul>
+<p>Other metrics include:</p>
+<ul>
+<li>Inception Score (IS): measures both the diversity and quality of generated images. It may give misleading scores for specialized datasets (e.g., medical images, abstract art).</li>
+<li>LPIPS (Learned Perceptual Image Patch Similarity). It is good at measureing individual image quality, and more suitable for tasks like style transfer, image reconstruction.</li>
+<li>PSNR (Peak Signal-to-Noise Ratio). It measures pixel-level reconstruction quality,and does not measure perceptual quality.</li>
+<li>SSIM (Structural Similarity Index). It measures image quality based on luminance and contrast, and does not measure perceptual quality.</li>
+<li>Arena-style human evaluation: compare generated images from different models side by side, and ask human experts to choose the better one.</li>
+</ul>
 <p>We are going to use the package<code>clean-fid</code>. As a santity check for the metric, let’s take a pre-trained model from huggingface with known good quality, and see what the FID score looks like.</p>
 <section id="install-the-package" class="level4">
 <h4 class="anchored" data-anchor-id="install-the-package">Install the package</h4>
@@ -372,7 +374,7 @@ WARNING: Ignoring invalid distribution ~vidia-cusparse-cu12 (/home/ubuntu/.local
 </section>
 <section id="load-a-pre-trained-model" class="level3">
 <h3 class="anchored" data-anchor-id="load-a-pre-trained-model">Load a pre-trained model</h3>
-<p>This is the model released by Google, which is trained on CIFAR-10 dataset.</p>
+<p>We are using the model released by Google, which is trained on CIFAR-10 dataset.</p>
 <div id="f92e8c5f" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:44.114972Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:44.114600Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:00:46.276300Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:00:46.275873Z&quot;}" data-papermill="{&quot;duration&quot;:2.167763,&quot;end_time&quot;:&quot;2024-12-16T22:00:46.277192&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:44.109429&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch, transformers, diffusers, xformers, torchvision</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"torch version:"</span>, torch.__version__)</span>
@@ -420,6 +422,9 @@ Defaulting to unsafe serialization. Pass `allow_pickle=False` to raise an error 
 Wall time: 3.51 s</code></pre>
 </div>
 </div>
+</section>
+<section id="evaluate-on-100-images" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-on-100-images">Evaluate on 100 images</h3>
 <div id="ba2d2f6a" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:00:49.814184Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:00:49.813602Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:38.694846Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:38.694434Z&quot;}" data-papermill="{&quot;duration&quot;:828.892271,&quot;end_time&quot;:&quot;2024-12-16T22:14:38.700774&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:00:49.808503&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># run pipeline in inference (sample random noise and denoise)</span></span>
@@ -445,7 +450,7 @@ Wall time: 13min 48s</code></pre>
 <div class="cell-output cell-output-display" data-execution_count="5">
 <div>
 <figure class="figure">
-<p><img src="3_1_fid_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="2_2_fid_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -497,8 +502,9 @@ Wall time: 6.18 s</code></pre>
 </div>
 </div>
 </section>
-<section id="first-1000-images" class="level4">
-<h4 class="anchored" data-anchor-id="first-1000-images">First 1000 images</h4>
+</section>
+<section id="first-1000-images" class="level3">
+<h3 class="anchored" data-anchor-id="first-1000-images">First 1000 images</h3>
 <div id="c2b04fa6" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:44.959488Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:44.959133Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-16T22:14:45.129069Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-16T22:14:45.128642Z&quot;}" data-papermill="{&quot;duration&quot;:0.181906,&quot;end_time&quot;:&quot;2024-12-16T22:14:45.130190&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:44.948284&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Save images</span></span>
@@ -535,8 +541,9 @@ CPU times: user 50.7 s, sys: 7.36 s, total: 58.1 s
 Wall time: 7.92 s</code></pre>
 </div>
 </div>
-<section id="k-images" class="level5">
-<h5 class="anchored" data-anchor-id="k-images">50k images</h5>
+</section>
+<section id="k-images" class="level3">
+<h3 class="anchored" data-anchor-id="k-images">50k images</h3>
 <div id="03274106" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-16T22:14:53.092103Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-16T22:14:53.091653Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-17T10:51:25.319743Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-17T10:51:25.319319Z&quot;}" data-papermill="{&quot;duration&quot;:45392.242846,&quot;end_time&quot;:&quot;2024-12-17T10:51:25.326204&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-16T22:14:53.083358&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> tqdm(<span class="bu">range</span>(<span class="dv">490</span>)):</span>
@@ -584,8 +591,6 @@ Wall time: 2min 26s</code></pre>
 <p>As you can see, FID score is sensitive to the sample size. From 100 to 1000 and then to 50k sampled images, we see the FID score decreases from 150 to about 50 and then to roughly 10. The recommended sample size is 50k, however, it takes a long time to sample.</p>
 
 
-</section>
-</section>
 </section>
 </section>
 
