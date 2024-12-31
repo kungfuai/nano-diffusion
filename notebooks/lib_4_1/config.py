@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class TrainingConfig:
-    dataset: str = "zzsi/afhq64_16k"  # dataset name
+    dataset: str = "reese-green/afhq64_captions_64k"  # dataset name
+    caption_column: str = "caption_blip2-opt-2.7b"  # the column that contains the captions
     checkpoint_dir: str = "checkpoints"  # directory for checkpoints
     logger: str = None  # "wandb"  # logger
 
@@ -13,6 +14,7 @@ class TrainingConfig:
     num_denoising_steps: int = 1000  # number of timesteps
     device: str = "cuda"  # device
     resolution: int = 64  # resolution
+    text_embed_dim: int = 768  # text embedding dimension
     random_flip: bool = False  # random flip
 
     # Bookkeeping

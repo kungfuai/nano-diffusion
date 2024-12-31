@@ -39,6 +39,11 @@ website:
       - section: "Evaluation"
         contents:
           - href: "3_1_fid.ipynb"
+      - text: "---"
+      - section: "Text Conditioning"
+        contents:
+          - href: "4_1_text_conditioning.ipynb"
+          - href: "4_1a_generate.ipynb"
       
 format:
   html:
