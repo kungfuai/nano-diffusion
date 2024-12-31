@@ -603,6 +603,7 @@ class UNetModel(nn.Module):
         )
 
         self.text_embed_dim = text_embed_dim
+        self.null_text_embed = nn.Parameter(th.randn(1, text_embed_dim) * 0.02)
         if self.text_embed_dim is not None:
             # We project the text embeddings to the same dimension as the time embeddings
             self.text_proj = nn.Sequential(
@@ -748,8 +749,11 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
         )
+    
+    def get_null_text_embed(self, batch_size: int=1):
+        return self.null_text_embed.repeat(batch_size, 1)
 
-    def forward(self, t, x, text_embeddings=None, *args, **kwargs):
+    def forward(self, t, x, text_embeddings=None, p_uncond=None, *args, **kwargs):
         """
         Apply the model to an input batch.
         :param t: a 1-D batch of timesteps.
@@ -766,6 +770,10 @@ class UNetModel(nn.Module):
         
         if self.text_embed_dim is not None:
             assert text_embeddings.shape[1] == self.text_embed_dim
+            if p_uncond is not None and p_uncond > 0:
+                unconditional_mask = (th.rand(text_embeddings.shape[0]) < p_uncond)
+                text_embeddings[unconditional_mask] = self.null_text_embed
+                # text_embeddings = th.where(unconditional_mask, self.null_text_embed, text_embeddings)
             emb = emb + self.text_proj(text_embeddings)
 
         h = x.type(self.dtype)

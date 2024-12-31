@@ -35,6 +35,7 @@ This folder holds the educational notebooks to learn practical recipes for train
 	- Conditioning on other modalities (ControlNet)
 	- ROPE for long context
 	- Video gen
+	- Music/speech generation
 	- Using representation learning losses to improve training efficiency
 	- SANA (nvidia)
 	- VAE rotation trick

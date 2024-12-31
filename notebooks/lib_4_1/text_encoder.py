@@ -13,10 +13,11 @@ class TextEncoder(nn.Module):
         # Get the text embedding dimension from the config
         self.text_embed_dim = self.model.config.hidden_size
 
-    def forward(self, text: str) -> torch.Tensor:
-        tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
-        return self.model(**tokens).last_hidden_state
-
+    def forward(self, text: list[str]) -> torch.Tensor:
+        tokens = self.tokenizer(text, padding=True, truncation=True, return_tensors="pt").to(self.device)
+        output = self.model(**tokens)
+        # return output.last_hidden_state
+        return output.pooler_output
 
 if __name__ == "__main__":
     choices = [
@@ -26,9 +27,10 @@ if __name__ == "__main__":
         "google/paligemma2-3b-pt-224",
         "Salesforce/blip2-opt-2.7b",
     ]
-    name = choices[4]
+    name = choices[0]
     text_encoder = TextEncoder(name, "cuda:0")
     text = "a photo of a cat"
-    embeddings = text_encoder(text)
+    text2 = "a photo of a big wolf"
+    embeddings = text_encoder([text, text2])
     print(embeddings.shape)
     print("text_embed_dim:", text_encoder.text_embed_dim)
