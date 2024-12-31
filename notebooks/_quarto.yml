@@ -35,10 +35,7 @@ website:
         contents:
           - href: "2_1_diffusion_afhq.ipynb"
           - href: "2_1_a_move_off_notebook.qmd"
-      - text: "---"
-      - section: "Evaluation"
-        contents:
-          - href: "3_1_fid.ipynb"
+          - href: "2_2_fid.ipynb"
       - text: "---"
       - section: "Text Conditioning"
         contents:
