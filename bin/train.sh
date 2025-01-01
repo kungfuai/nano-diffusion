@@ -23,3 +23,6 @@ docker run --runtime nvidia -it --rm \
 	-e WANDB_PROJECT=$WANDB_PROJECT \
 	nanodiffusion \
 	python -m src.train $@
+
+# For diagnostic run, pass in the following args:
+# --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
