@@ -12,7 +12,8 @@ USER=nanodiffusion
 
 # Create a data/container_cache directory if it doesn't exist
 mkdir -p data/container_cache
-chmod a+rw -R data/container_cache
+# You may need to run this command to fix the permissions:
+# sudo chmod a+rw -R data/container_cache
 
 docker run --runtime nvidia -it --rm \
 	--shm-size 16G \
@@ -26,3 +27,5 @@ docker run --runtime nvidia -it --rm \
 
 # For diagnostic run, pass in the following args:
 # --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
+# or
+# --net dit_t0 --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61

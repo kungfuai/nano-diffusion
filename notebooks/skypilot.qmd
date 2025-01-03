@@ -1,0 +1,38 @@
+---
+title: "Skypilot"
+---
+
+- Install kind.
+- Install kubectl.
+- Install helm.
+- Install NVIDIA container toolkit.
+
+And configure containerd for kubenetes. `sudo nvidia-ctk runtime configure --runtime=containerd`
+`sudo systemctl restart containerd`.
+
+
+- Install NVIDIA visible devices as volume mounts.
+
+
+
+```
+> pip install skypilot[kubernetes]
+> sky local up
+```
+
+* kubectl is not installed. Please install kubectl and try again.
+Installation instructions: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+
+* NVIDIA is not set as the default runtime for Docker. To fix, run:
+sudo nvidia-ctk runtime configure --runtime=docker --set-as-default
+sudo systemctl restart docker
+
+* NVIDIA visible devices are not set as volume mounts in container runtime. To fix, run:
+sudo sed -i '/accept-nvidia-visible-devices-as-volume-mounts/c\accept-nvidia-visible-devices-as-volume-mounts = true' /etc/nvidia-container-runtime/config.toml
+
+* helm is not installed. Please install helm and try again.
+Installation instructions: https://helm.sh/docs/intro/install/. Or simply:
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
