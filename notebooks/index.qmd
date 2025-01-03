@@ -1,0 +1,36 @@
+---
+title: "Nano Diffusion: Diffusion and Flow Matching from Scratch"
+---
+
+Welcome to Nano Diffusion, a hands-on tutorial series that teaches you how to build diffusion models and flow matching from the ground up. These models are what powers the latest generative AI applications in creating high quality images, videos, audio, and more modalities.
+
+This course provides a minimal yet complete implementation of diffusion and flow matching models, making the complex topic accessible while maintaining practical utility.
+
+## What You'll Learn
+
+- Implementation of training recipes for diffusion and flow matching models from scratch
+- Working with popular model architectures like [UNet](https://arxiv.org/abs/1505.04597) and [DiT](https://arxiv.org/abs/2212.09748)
+- Training on various datasets including 2D point clouds, animal face images, minecraft gameplay videos, etc.
+- Experiment tracking and model evaluation.
+
+## Prerequisites
+
+- Access to a GPU (12GB VRAM or above)
+- Familiarity with PyTorch and deep learning basics
+- Docker and NVIDIA container toolkit installed
+
+## Tutorials
+
+Please use the sidebar to navigate through the tutorials.
+
+## References
+
+
+There are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:
+
+- [DDPM paper](https://arxiv.org/abs/2006.11239)
+- [Lillian Weng's blog](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)
+- [CVPR'22 tutorial](https://cvpr2022-tutorial-diffusion-models.github.io/)
+- [DiT paper](https://arxiv.org/abs/2212.09748)
+- [Flow matching paper](https://arxiv.org/abs/2210.02747)
+- [FAIR's flow matching guide](https://arxiv.org/abs/2412.06264)
