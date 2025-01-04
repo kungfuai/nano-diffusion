@@ -1,0 +1,288 @@
+---
+title: "Managing training jobs with SLURM"
+format: html
+highlight-style: github
+---
+
+We want to run many experiments as fast as possible, with minimal operational overhead and with the GPU resources available to us.
+
+To do this, we can use a job scheduler like SLURM. SLURM is a popular open-source job scheduler that allows us to manage and run many jobs on a single machine.
+
+## Set up SLURM
+
+Install dependencies:
+
+```bash
+sudo apt install -y build-essential munge libmunge-dev libmunge2 \
+    mariadb-server mariadb-client libmariadb-dev \
+    nfs-common ntp libcurl4-openssl-dev
+```
+
+Install slurm:
+
+```bash
+sudo apt install -y slurm-wlm
+```
+
+<!-- Download SLURM:
+
+```bash
+wget https://download.schedmd.com/slurm/slurm-24.11.0.tar.bz2
+tar -xjf slurm-24.11.0.tar.bz2
+cd slurm-24.11.0
+```
+
+Install SLURM:
+
+```bash
+./configure
+make -j 8
+sudo make install
+``` -->
+
+Create directories:
+
+```bash
+sudo mkdir -p /etc/slurm /var/spool/slurm /var/log/slurm
+sudo chown slurm:slurm /var/spool/slurm /var/log/slurm
+sudo chmod -R 755 /var/spool/slurm /var/log/slurm
+```
+
+Set Up the Configuration File: Create `/etc/slurm/slurm.conf` and populate it with the basic configuration.
+
+The 
+
+```
+ClusterName=mycluster
+ControlMachine=localhost  # please use `hostname` to get the hostname of the machine!
+SlurmUser=slurm
+AuthType=auth/munge
+StateSaveLocation=/var/spool/slurm
+SlurmdSpoolDir=/var/spool/slurm
+SchedulerType=sched/backfill
+SelectType=select/cons_res
+SelectTypeParameters=CR_Core_Memory
+NodeName=localhost Gres=gpu:1 CPUs=16 RealMemory=32000 State=UNKNOWN  # Change this according to the actual resources available
+PartitionName=gpu Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+SlurmdLogFile=/var/log/slurm/slurmd.log
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/cgroup
+``` 
+
+Create `/etc/slurm/cgroup.conf`:
+
+```
+CgroupAutomount=yes
+ConstrainCores=yes
+ConstrainRAMSpace=yes
+ConstrainDevices=yes
+```
+
+Check the cgroup version:
+```bash
+stat -fc %T /sys/fs/cgroup/
+```
+
+If the output is `cgroup2fs`, you are using cgroup v2.
+If the output is `tmpfs`, you are using cgroup v1.
+SLURM currently does not support the freezer subsystem in cgroup v2. To enable cgroup v1:
+
+Edit `/etc/default/grub` to have:   
+
+```bash
+GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=0"
+```
+
+Either reboot:
+
+```bash
+sudo update-grub
+sudo reboot
+```
+
+Or manually remount the cgroup:
+
+```bash
+sudo umount /sys/fs/cgroup
+sudo mount -t tmpfs cgroup_root /sys/fs/cgroup
+sudo mkdir -p /sys/fs/cgroup/{cpu,cpuacct,cpuset,memory,devices,freezer,blkio,pids}
+```
+
+Mount individual cgroup subsystems:
+
+```bash
+for subsystem in cpu cpuacct cpuset memory devices freezer blkio pids; do
+    sudo mount -t cgroup -o $subsystem cgroup /sys/fs/cgroup/$subsystem
+done
+```
+
+Verify Cgroup v1 Check if cgroup v1 is now active:
+
+```bash
+stat -fc %T /sys/fs/cgroup/
+```
+
+You should see `tmpfs` as the output, which indicates cgroup v1 is in use.
+
+Restart Systemd Services Restart systemd services to ensure they pick up the changes:
+
+```bash
+sudo systemctl daemon-reexec
+```
+
+Configure GPU Resources: Create a `gres.conf` file at `/etc/slurm/gres.conf`. The content of this file depends on the number of GPUs you have.
+
+```
+NodeName=localhost Name=gpu File=/dev/nvidia0  # please use `hostname` to get the hostname of the machine!
+NodeName=localhost Name=gpu File=/dev/nvidia1
+```
+
+Start munge:
+
+```bash
+sudo systemctl enable --now munge
+```
+
+To verify that munge is running, you can run:
+
+```bash
+munge -n | unmunge
+```
+
+Mount `freezer`:
+
+```bash
+sudo mkdir -p /sys/fs/cgroup/freezer
+sudo mount -t cgroup -o freezer freezer /sys/fs/cgroup/freezer
+```
+
+To verify, run:
+
+```bash
+mount | grep freezer
+```
+
+Start SLURM Services:
+
+```bash
+sudo systemctl start slurmctld
+sudo systemctl start slurmd
+```
+
+Enable Services on Boot:
+
+```bash
+sudo systemctl enable slurmctld
+sudo systemctl enable slurmd
+```
+
+If there is an error, you can check the logs with:
+
+```bash
+sudo cat /var/log/slurm/slurmd.log
+```
+
+## Modifying the training script
+
+The training script in `lib_2_1` looks like this:
+
+```bash
+docker run --runtime nvidia -it --rm \
+    --shm-size 16G \
+	--gpus 'device=0' \
+	-v $(pwd):/workspace/lib_2_1 \
+	-v $(pwd)/checkpoints:/workspace/checkpoints \
+	-v $(pwd)/data/container_cache:/home/$USER/.cache \
+	-e WANDB_API_KEY=$WANDB_API_KEY \
+	-e WANDB_PROJECT=$WANDB_PROJECT \
+	docker_lib_2_1 \
+	python -m lib_2_1.train $@
+```
+
+
+With SLURM, we can pass in the GPUs assigned to the SLURM job:
+
+```diff
++ # Retrieve the GPUs assigned by SLURM
++ ASSIGNED_GPUS=$(echo $SLURM_JOB_GPUS | tr ',' ',')
+
+# Create unique output directories using SLURM job ID
++ JOB_ID=${SLURM_JOB_ID:-default}  # Fallback to 'default' if not run in SLURM
++ CHECKPOINT_DIR=$(pwd)/checkpoints/$JOB_ID
++ mkdir -p $CHECKPOINT_DIR && chmod -R 777 $CHECKPOINT_DIR
+
+# Run the Docker container with the assigned GPUs
+docker run --runtime nvidia -it --rm \
+    --shm-size 16G \
+-   --gpus 'device=0' \
++   --gpus "device=$ASSIGNED_GPUS" \
+    -v $(pwd):/workspace/lib_2_1 \
+-   -v $(pwd)/checkpoints:/workspace/checkpoints \
++   -v $CHECKPOINT_DIR:/workspace/checkpoints \
+    -v $(pwd)/data/container_cache:/home/$USER/.cache \
+    -e WANDB_API_KEY=$WANDB_API_KEY \
+    -e WANDB_PROJECT=$WANDB_PROJECT \
+    docker_lib_2_1 \
+    python -m lib_2_1.train $@
+```
+
+## Defining a slurm job
+
+We can define a slurm job by creating a script in the `bin/sweep` directory.
+
+For example, we can define a job for the AFHQ dataset by creating a file called `afhq.slurm` in the `bin/sweep` directory.
+
+```bash
+touch bin/sweep/afhq.slurm
+```
+
+We can then add the following to the file:
+
+```bash
+#!/bin/bash
+#SBATCH --gres=gpu:1                         # Request 1 GPU
+#SBATCH --job-name=afhq_job
+#SBATCH --cpus-per-task=8                    # Number of CPU cores
+#SBATCH --mem=32G                            # Memory allocation
+#SBATCH --time=10:00:00                      # Maximum runtime
+#SBATCH --output=logs/slurm/afhq_job_%j.out
+#SBATCH --error=logs/slurm/afhq_job_%j.err
+
+
+# Run the training script
+bin/train.sh --logger wandb -d zzsi/afhq64_16k --resolution 64 --fid_every 20000 --sample_every 3000 --total_steps 100000
+```
+
+This slurm script will request 1 GPU, 8 CPU cores, 32GB of memory, and a maximum runtime of 10 hours.
+
+## Submitting a job
+
+We can submit a job to SLURM by running the `sbatch` command.
+
+```bash
+sbatch bin/sweep/afhq.slurm
+```
+
+If you want to submit another training job, you can edit this slurm script and run the `sbatch` command again.
+
+- Each job will request 1 GPU (`--gres=gpu:1`) and run independently.
+- If sufficient resources (GPUs) are available, SLURM will allocate them, and both jobs will run simultaneously.
+- If all GPUs are occupied, the new job will wait in the queue until a GPU becomes available.
+- The `#SBATCH --output=logs/slurm/afhq_job_%j.out` directive creates a unique output file for each job using `%j`, which represents the SLURM job ID. The output files will not overwrite each other, as they will have different names.
+- **Warning:** However, if both jobs write to the same output directories or files (e.g. `checkpoints`), there may be conflicts or overwriting. So we need to make sure that the output directories are unique for each job.
+
+
+## Monitoring jobs
+
+You can monitor the status of your jobs by running the `squeue` command.
+
+```bash
+squeue
+```
+
+You can also view the output of your jobs by running the `tail` command.
+
+```bash
+tail -f logs/slurm/afhq_job_%j.out
+```

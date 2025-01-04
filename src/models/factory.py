@@ -5,7 +5,7 @@ from src.models.dit import DiT
 def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
     if net == "dit_t0":
         return DiT(
-            input_size=32,
+            input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
             learn_sigma=False,
@@ -17,7 +17,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_t1":
         return DiT(
-            input_size=32,
+            input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
             learn_sigma=False,
@@ -29,7 +29,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_t2":
         return DiT(
-            input_size=32,
+            input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
             learn_sigma=False,
@@ -41,7 +41,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_t3":
         model = DiT(
-                input_size=32,
+                input_size=resolution,
                 patch_size=2,
                 in_channels=in_channels,
                 learn_sigma=False,
@@ -53,15 +53,17 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
             )
     elif net == "dit_s2":
         model = DiT(
-                depth=12,
-                in_channels=in_channels,
-                hidden_size=384,
-                patch_size=2,
-                num_heads=6,
-                learn_sigma=False,
+            input_size=resolution,
+            depth=12,
+            in_channels=in_channels,
+            hidden_size=384,
+            patch_size=2,
+            num_heads=6,
+            learn_sigma=False,
             )
     elif net == "dit_b2":
         model = DiT(
+            input_size=resolution,
             depth=12,
             in_channels=in_channels,
             hidden_size=384,
@@ -71,6 +73,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_b4":
         model = DiT(
+            input_size=resolution,
             depth=12,
             in_channels=in_channels,
             hidden_size=384,
@@ -80,6 +83,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_l2":
         model = DiT(
+            input_size=resolution,
             depth=12,
             in_channels=in_channels,
             hidden_size=768,
@@ -89,6 +93,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_l4":
         model = DiT(
+            input_size=resolution,
             depth=12,
             in_channels=in_channels,
             hidden_size=768,

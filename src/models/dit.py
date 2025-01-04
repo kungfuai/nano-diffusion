@@ -164,6 +164,7 @@ class TextEncoder(nn.Module):
         text_features = self.projector(text_features)
         return text_features
 
+
 class DiT(nn.Module):
     """
     Diffusion model with a Transformer backbone.
@@ -205,9 +206,8 @@ class DiT(nn.Module):
         self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(hidden_size)
         # self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
-        self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
+        # self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
         num_patches = self.x_embedder.num_patches
-        # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
 
         self.blocks = nn.ModuleList([
@@ -235,7 +235,7 @@ class DiT(nn.Module):
         nn.init.constant_(self.x_embedder.proj.bias, 0)
 
         # Initialize label embedding table:
-        nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
+        # nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
 
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
