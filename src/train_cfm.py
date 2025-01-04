@@ -34,7 +34,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
@@ -54,11 +54,13 @@ except ImportError:
 from src.plan.ot import OTPlanSampler
 from src.models.factory import create_model
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.train import create_model, log_training_step, \
-    compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
-    save_checkpoints, load_model_from_wandb, precompute_fid_stats_for_real_images
-
-
+from src.models.factory import create_model
+from src.datasets import load_data
+from src.bookkeeping.cfm_bookkeeping import log_training_step, \
+    compute_fid, save_model, \
+    save_checkpoints
+from src.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, get_real_images, precompute_fid_stats_for_real_images
+from src.bookkeeping.wandb_utils import load_model_from_wandb
 
 def pad_t_like_x(t, x):
     """Function to reshape the time vector t by the number of dimensions of x.
@@ -443,7 +445,8 @@ class TrainingConfig:
     validate_every: int # compute validation loss every N steps
     fid_every: int # compute FID every N steps
     num_samples_for_fid: int = 1000 # number of samples for FID
-    num_samples_for_logging: int = 16 # number of samples for logging
+    num_samples_for_logging: int = 8 # number of samples for logging
+    num_real_samples_for_fid: int = 10000 # number of real image samples for FID precomputation
 
     # Regularization
     max_grad_norm: float = -1 # maximum norm for gradient clipping
@@ -456,7 +459,8 @@ class TrainingConfig:
 
     # Logging
     logger: str = "wandb" # logging method
-    checkpoint_dir: str = "logs/train" # checkpoint directory
+    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
+    checkpoint_dir: str = "logs/train" # checkpoint directory, different for each run
     min_steps_for_final_save: int = 100 # minimum steps for final save
     watch_model: bool = False # watch the model with wandb
     init_from_wandb_run_path: str = None # initialize model from a wandb run path
@@ -490,7 +494,7 @@ def training_loop(
     lr_scheduler = model_components.lr_scheduler
 
     if config.dataset not in ["cifar10"]:
-        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
+        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.cache_dir) / "real_images_for_fid")
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
@@ -740,10 +744,11 @@ def parse_arguments():
     ], default="unet_small", help="Network architecture")
     parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
     parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
-    parser.add_argument("--num_samples_for_logging", type=int, default=16, help="Number of samples for logging")
+    parser.add_argument("--num_samples_for_logging", type=int, default=8, help="Number of samples for logging")
     parser.add_argument("--num_samples_for_fid", type=int, default=1000, help="Number of samples for FID")
-    parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
-    parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
+    parser.add_argument("--num_real_samples_for_fid", type=int, default=10000, help="Number of real image samples for FID precomputation")
+    parser.add_argument("--total_steps", type=int, default=100000, help="Total number of training steps")
+    parser.add_argument("--warmup_steps", type=int, default=1000, help="Number of warmup steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Initial learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-6, help="Weight decay")
