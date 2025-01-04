@@ -26,6 +26,7 @@ This folder holds the educational notebooks to learn practical recipes for train
 - VAE / tokenizer (to get to high res)
 	- SD VAE
 	- Cosmos
+- Scaling up (e.g. the [50-A100-hours train](https://github.com/apapiu/transformer_latent_diffusion))
 - Practical fine-tuning recipes
 	- Fine-tune StableDiffusion
 	- Fine-tune Flux

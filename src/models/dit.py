@@ -208,7 +208,6 @@ class DiT(nn.Module):
         # self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
         # self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
         num_patches = self.x_embedder.num_patches
-        # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
 
         self.blocks = nn.ModuleList([

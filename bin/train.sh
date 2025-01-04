@@ -9,6 +9,7 @@ fi
 
 # This is the username in Dockerfile.
 USER=nanodiffusion
+GPU_DEVICES=${GPU_DEVICES:-0}  # default GPU idx
 
 # Create a data/container_cache directory if it doesn't exist
 mkdir -p data/container_cache
@@ -17,7 +18,7 @@ mkdir -p data/container_cache
 
 docker run --runtime nvidia -it --rm \
 	--shm-size 16G \
-	--gpus 'device=0' \
+	--gpus "device=${GPU_DEVICES}" \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/home/$USER/.cache \
 	-e WANDB_API_KEY=$WANDB_API_KEY \
