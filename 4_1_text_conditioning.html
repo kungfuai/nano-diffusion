@@ -273,12 +273,30 @@ window.Quarto = {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Text Conditioning</span></a>
+ <span class="menu-text">Transformers as Denoising Mdels</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3_1_dit.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DiT: Diffusion Transformers</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Text Conditioning</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./4_1_text_conditioning.html" class="sidebar-item-text sidebar-link active">
@@ -289,6 +307,24 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="./4_1a_generate.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Generate images with text conditioning</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Additional resources</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./slurm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Managing training jobs with SLURM</span></a>
   </div>
 </li>
       </ul>
@@ -378,18 +414,18 @@ p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
 </ul>
 <section id="during-training" class="level4">
 <h4 class="anchored" data-anchor-id="during-training">During training</h4>
-<p>We train the same diffusion model to handle both modes by randomly dropping the text prompt some fraction of the time during training.</p>
+<p>We train <strong>the same diffusion model</strong> to handle both modes by randomly “dropping out” the text prompt some fraction of the time during training. This is so that we have a model that can do <code>\epsilon_{\theta}(x_t, t, \emptyset)</code> and <code>\epsilon_{\theta}(x_t, t, y)</code>, where <span class="math inline">\(y\)</span> is the text prompt and <span class="math inline">\(\emptyset\)</span> is the null text prompt.</p>
 </section>
 <section id="during-generation" class="level4">
 <h4 class="anchored" data-anchor-id="during-generation">During generation</h4>
 <p>At each reverse diffusion step, we make two predictions:</p>
 <ol type="1">
-<li>Unconditional noise prediction <span class="math inline">\(\mathbf\epsilon_{\theta}(x_t, t)\)</span> using the null text prompt.</li>
-<li>Conditional noise prediction: <span class="math inline">\(\mathbf\epsilon_{\theta}(x_t, t, y)\)</span> using real text prompt.</li>
+<li>Unconditional noise prediction <span class="math inline">\(\mathbf\epsilon_{\theta}(x_t, t, \emptyset)\)</span> using the null text prompt <span class="math inline">\(\emptyset\)</span>. <span class="math inline">\(t\)</span> is the denoising time step.</li>
+<li>Conditional noise prediction: <span class="math inline">\(\mathbf\epsilon_{\theta}(x_t, t, y)\)</span> using real text prompt <span class="math inline">\(y\)</span>.</li>
 </ol>
 <p>We then mix them:</p>
 <p><span class="math display">\[
-\mathbf\epsilon = \mathbf\epsilon_{\theta}(x_t, t) + s \cdot (\mathbf\epsilon_{\theta}(x_t, t, y) - \mathbf\epsilon_{\theta}(x_t, t))
+\mathbf\epsilon = \mathbf\epsilon_{\theta}(x_t, t, \emptyset) + s \cdot (\mathbf\epsilon_{\theta}(x_t, t, y) - \mathbf\epsilon_{\theta}(x_t, t, \emptyset))
 \]</span></p>
 <p>where <span class="math inline">\(s\)</span> is the guidance scale that controls how strongly the final output is “pushed” toward matching the text.</p>
 </section>
@@ -413,19 +449,18 @@ p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
 </ul></li>
 </ul>
 <p>The implementation also depends on whether we use the UNet or Transformer backbone. Let’s focus from UNet and linear modulation. The modulation can be done by simply adding the text embedding to the time embedding:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In __init__():</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.text_proj <span class="op">=</span> nn.Sequential(</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                linear(text_embed_dim, time_embed_dim),</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                linear(time_embed_dim, time_embed_dim),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            )</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode diff code-with-copy"><code class="sourceCode diff"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a># In UNetModel.__init__():</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ self.text_proj = nn.Sequential(</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">+                 linear(text_embed_dim, time_embed_dim),</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="va">+                 nn.SiLU(),</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="va">+                 linear(time_embed_dim, time_embed_dim),</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="va">+             )</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>...</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># In forward():</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>emb <span class="op">=</span> <span class="va">self</span>.time_embed(timestep_embedding(t, <span class="va">self</span>.model_channels))</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>emb <span class="op">=</span> <span class="va">self</span>.time_embed(timestep_embedding(t, <span class="va">self</span>.model_channels))</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>emb <span class="op">=</span> emb <span class="op">+</span> <span class="va">self</span>.text_proj(text_embeddings)  <span class="co"># add the text embedding to the image embedding</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Then both the time+text embedding <code>emb</code> and the intermediate hidden representations <code>h</code> passes through the regular UNet blocks:</p>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a># In forward():</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>emb = self.time_embed(timestep_embedding(t, self.model_channels))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="va">+ emb = emb + self.text_proj(text_embeddings)  # add the text embedding to the time embedding</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then both the time+text embedding <code>emb</code> and the intermediate hidden representations <code>h</code> passes through the regular UNet blocks (no changes to following UNet blocks):</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> module <span class="kw">in</span> <span class="va">self</span>.input_blocks:</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    h <span class="op">=</span> module(h, emb)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    hs.append(h)</span>
@@ -437,32 +472,40 @@ p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
 <section id="text-embedding-dropout" class="level3">
 <h3 class="anchored" data-anchor-id="text-embedding-dropout">Text embedding “dropout”</h3>
 <p>The recipe for classifier-free guidance requires us to randomly drop the text embedding some fraction of the time during training. This way we train a single model that can operates in both unconditional and conditional modes.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>unconditional_mask <span class="op">=</span> (th.rand(text_embeddings.shape[<span class="dv">0</span>]) <span class="op">&lt;</span> p_uncond)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>text_embeddings[unconditional_mask] <span class="op">=</span> <span class="va">self</span>.null_text_embed</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When computing the training loss in the forward pass, we need to randomly drop the text embedding some fraction of the time:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode diff code-with-copy"><code class="sourceCode diff"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a># In forward() of the denoising model (UNetModel), do the dropout randomly based on the `p_uncond` parameter:</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a># If p_uncond is 0.2, then 20% of the time we drop out the text embedding.</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="va">+ unconditional_mask = (th.rand(text_embeddings.shape[0]) &lt; p_uncond)  # this gets the indices of the texts that we want to drop out</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="va">+ text_embeddings[unconditional_mask] = self.null_text_embed  # this sets the text embeddings to the null text embedding</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And the <code>null_text_embed</code> is a learnable embedding for the null text prompt:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode diff code-with-copy"><code class="sourceCode diff"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a># In UNetModel.__init__():</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ self.text_embed_dim = text_embed_dim</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">+ self.null_text_embed = nn.Parameter(th.randn(1, text_embed_dim) * 0.02)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This way the model learns what the null text embedding means in the latent space.</p>
 </section>
 </section>
 <section id="text-encoder" class="level2">
 <h2 class="anchored" data-anchor-id="text-encoder">Text Encoder</h2>
 <p>To produce the text embedding, we can use a pre-trained CLIP model.</p>
 <div id="5c335045" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:04.923392Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:04.922869Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:09.137977Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:09.137545Z&quot;}" data-papermill="{&quot;duration&quot;:4.221995,&quot;end_time&quot;:&quot;2024-12-30T22:02:09.139270&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:04.917275&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="1">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> CLIPTextModel, CLIPTokenizer</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TextEncoder(nn.Module):</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, model_name: <span class="bu">str</span>, device: <span class="bu">str</span>):</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.model_name <span class="op">=</span> model_name</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.model <span class="op">=</span> CLIPTextModel.from_pretrained(model_name).to(device)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.tokenizer <span class="op">=</span> CLIPTokenizer.from_pretrained(model_name)</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.device <span class="op">=</span> device</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get the text embedding dimension from the config</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.text_embed_dim <span class="op">=</span> <span class="va">self</span>.model.config.hidden_size</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, text: <span class="bu">str</span>) <span class="op">-&gt;</span> torch.Tensor:</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        tokens <span class="op">=</span> <span class="va">self</span>.tokenizer(text, padding<span class="op">=</span><span class="va">True</span>, truncation<span class="op">=</span><span class="va">True</span>, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(<span class="va">self</span>.device)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.model(<span class="op">**</span>tokens).pooler_output</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> CLIPTextModel, CLIPTokenizer</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TextEncoder(nn.Module):</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, model_name: <span class="bu">str</span>, device: <span class="bu">str</span>):</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.model_name <span class="op">=</span> model_name</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.model <span class="op">=</span> CLIPTextModel.from_pretrained(model_name).to(device)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.tokenizer <span class="op">=</span> CLIPTokenizer.from_pretrained(model_name)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.device <span class="op">=</span> device</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get the text embedding dimension from the config</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.text_embed_dim <span class="op">=</span> <span class="va">self</span>.model.config.hidden_size</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, text: <span class="bu">str</span>) <span class="op">-&gt;</span> torch.Tensor:</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        tokens <span class="op">=</span> <span class="va">self</span>.tokenizer(text, padding<span class="op">=</span><span class="va">True</span>, truncation<span class="op">=</span><span class="va">True</span>, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(<span class="va">self</span>.device)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.model(<span class="op">**</span>tokens).pooler_output</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>2024-12-30 22:02:07.609824: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
 2024-12-30 22:02:07.622932: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:485] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
@@ -478,119 +521,121 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <h2 class="anchored" data-anchor-id="training-step">Training step</h2>
 <p>Now that the denoising model can handle text embeddings as an additional input, we also need to modify the training step to pass in the text embeddings. The main logic remains the same.</p>
 <div id="96fa1857" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:09.150110Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:09.149671Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:09.157619Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:09.157221Z&quot;}" data-papermill="{&quot;duration&quot;:0.01422,&quot;end_time&quot;:&quot;2024-12-30T22:02:09.158390&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:09.144170&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="2">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itertools</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.nn <span class="im">import</span> MSELoss</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm.auto <span class="im">import</span> tqdm</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Dict</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.diffusion <span class="im">import</span> forward_diffusion</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.bookkeeping <span class="im">import</span> Bookkeeping</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.config <span class="im">import</span> TrainingConfig</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> train(</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    config: TrainingConfig,</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    model: nn.Module,</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    text_encoder: TextEncoder,</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    train_dataloader: DataLoader,</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    val_dataloader: DataLoader,</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    noise_schedule: Dict,</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    optimizer: torch.optim.Optimizer,</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    steps: <span class="bu">int</span><span class="op">=</span><span class="dv">100</span>,</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    silent: <span class="bu">bool</span><span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    bookkeeping: Bookkeeping<span class="op">=</span><span class="va">None</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  device <span class="op">=</span> config.device</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  num_denoising_steps <span class="op">=</span> config.num_denoising_steps</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  model.train()</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">not</span> silent:</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Training on device:"</span>, device)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  max_train_steps <span class="op">=</span> steps</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  loss <span class="op">=</span> <span class="va">None</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  progress_bar <span class="op">=</span> tqdm(itertools.cycle(train_dataloader), total<span class="op">=</span>max_train_steps, disable<span class="op">=</span>silent)</span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  step <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  criterion <span class="op">=</span> MSELoss()</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> batch <span class="kw">in</span> progress_bar:</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> batch[<span class="dv">0</span>]  <span class="co"># x_0 is the clean image to teach the model to generate</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> batch[<span class="dv">1</span>][<span class="st">"text"</span>]  <span class="co"># text is the caption of the image</span></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(text) <span class="op">==</span> x_0.shape[<span class="dv">0</span>]</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># assert the type of text is a list of strings</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> x_0.<span class="bu">float</span>().to(device)  <span class="co"># x_0 is the clean data to teach the model to generate</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad()</span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Implement classifier-free guidance training</span></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Randomly drop out text conditioning with 10% probability</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># The dropout is applied to the batch as a whole.</span></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Alternatively, we could apply it to each image in the batch.</span></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>    text_drop_prob <span class="op">=</span> <span class="fl">0.2</span></span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    true_noise <span class="op">=</span> common_noise <span class="op">=</span> torch.randn(x_0.shape).to(device)</span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> torch.randint(<span class="dv">0</span>, num_denoising_steps, (x_0.shape[<span class="dv">0</span>],), device<span class="op">=</span>device).<span class="bu">long</span>()</span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    x_t, _ <span class="op">=</span> forward_diffusion(x_0, t, noise_schedule, noise<span class="op">=</span>common_noise)</span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>        text_embeddings <span class="op">=</span> text_encoder(text)</span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># A dropout is applied to the ``text_embeddings`` input:</span></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>    predicted_noise <span class="op">=</span> model(t<span class="op">=</span>t, x<span class="op">=</span>x_t, text_embeddings<span class="op">=</span>text_embeddings, p_uncond<span class="op">=</span>text_drop_prob)</span>
-<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> criterion(predicted_noise, true_noise)</span>
-<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>    torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="dv">1</span>)  <span class="co"># try commenting it out</span></span>
-<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>    step <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> silent:</span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>      progress_bar.set_postfix({<span class="st">"loss"</span>: loss.cpu().item()})</span>
-<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> bookkeeping:</span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>      bookkeeping.run_callbacks(config<span class="op">=</span>config, step<span class="op">=</span>step, loss<span class="op">=</span>loss, optimizer<span class="op">=</span>optimizer, val_dataloader<span class="op">=</span>val_dataloader)</span>
-<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="op">&gt;=</span> max_train_steps:</span>
-<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a>      <span class="cf">break</span></span>
-<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itertools</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.nn <span class="im">import</span> MSELoss</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm.auto <span class="im">import</span> tqdm</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Dict</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.diffusion <span class="im">import</span> forward_diffusion</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.bookkeeping <span class="im">import</span> Bookkeeping</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.config <span class="im">import</span> TrainingConfig</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> train(</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    config: TrainingConfig,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    model: nn.Module,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    text_encoder: TextEncoder,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    train_dataloader: DataLoader,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    val_dataloader: DataLoader,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    noise_schedule: Dict,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    optimizer: torch.optim.Optimizer,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    steps: <span class="bu">int</span><span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    silent: <span class="bu">bool</span><span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    bookkeeping: Bookkeeping<span class="op">=</span><span class="va">None</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  device <span class="op">=</span> config.device</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  num_denoising_steps <span class="op">=</span> config.num_denoising_steps</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  model.train()</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">not</span> silent:</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Training on device:"</span>, device)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  max_train_steps <span class="op">=</span> steps</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  loss <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>  progress_bar <span class="op">=</span> tqdm(itertools.cycle(train_dataloader), total<span class="op">=</span>max_train_steps, disable<span class="op">=</span>silent)</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  step <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  criterion <span class="op">=</span> MSELoss()</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> batch <span class="kw">in</span> progress_bar:</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> batch[<span class="dv">0</span>]  <span class="co"># x_0 is the clean image to teach the model to generate</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> batch[<span class="dv">1</span>][<span class="st">"text"</span>]  <span class="co"># text is the caption of the image</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(text) <span class="op">==</span> x_0.shape[<span class="dv">0</span>]</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># assert the type of text is a list of strings</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="op">=</span> x_0.<span class="bu">float</span>().to(device)  <span class="co"># x_0 is the clean data to teach the model to generate</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad()</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Implement classifier-free guidance training</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Randomly drop out text conditioning with 10% probability</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># The dropout is applied to the batch as a whole.</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Alternatively, we could apply it to each image in the batch.</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    text_drop_prob <span class="op">=</span> <span class="fl">0.2</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    true_noise <span class="op">=</span> common_noise <span class="op">=</span> torch.randn(x_0.shape).to(device)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> torch.randint(<span class="dv">0</span>, num_denoising_steps, (x_0.shape[<span class="dv">0</span>],), device<span class="op">=</span>device).<span class="bu">long</span>()</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    x_t, _ <span class="op">=</span> forward_diffusion(x_0, t, noise_schedule, noise<span class="op">=</span>common_noise)</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>        text_embeddings <span class="op">=</span> text_encoder(text)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># A dropout is applied to the ``text_embeddings`` input:</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   This means `predicted_noise` will be computed with 20% probability of the text embeddings being dropped out.</span></span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   The model learns to predict the noise both with and without the text embeddings.</span></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    predicted_noise <span class="op">=</span> model(t<span class="op">=</span>t, x<span class="op">=</span>x_t, text_embeddings<span class="op">=</span>text_embeddings, p_uncond<span class="op">=</span>text_drop_prob)</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> criterion(predicted_noise, true_noise)</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>    torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="dv">1</span>)  <span class="co"># try commenting it out</span></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    step <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> silent:</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>      progress_bar.set_postfix({<span class="st">"loss"</span>: loss.cpu().item()})</span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> bookkeeping:</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>      bookkeeping.run_callbacks(config<span class="op">=</span>config, step<span class="op">=</span>step, loss<span class="op">=</span>loss, optimizer<span class="op">=</span>optimizer, val_dataloader<span class="op">=</span>val_dataloader)</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="op">&gt;=</span> max_train_steps:</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>      <span class="cf">break</span></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div id="54084219" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:09.168447Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:09.168140Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:11.836651Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:11.836221Z&quot;}" data-papermill="{&quot;duration&quot;:2.674574,&quot;end_time&quot;:&quot;2024-12-30T22:02:11.837530&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:09.162956&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="3">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> optim</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.data <span class="im">import</span> load_data</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.model <span class="im">import</span> create_unet_model</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.diffusion <span class="im">import</span> create_noise_schedule</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> TrainingConfig(dataset<span class="op">=</span><span class="st">"reese-green/afhq64_captions_64k"</span>, caption_column<span class="op">=</span><span class="st">"caption_blip2-opt-2.7b"</span>, batch_size<span class="op">=</span><span class="dv">16</span>, resolution<span class="op">=</span><span class="dv">32</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>text_encoder <span class="op">=</span> TextEncoder(<span class="st">"openai/clip-vit-large-patch14"</span>, <span class="st">"cuda:0"</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>text_encoder.<span class="bu">eval</span>()</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>train_ds, val_ds <span class="op">=</span> load_data(config)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(n_T<span class="op">=</span>config.num_denoising_steps, device<span class="op">=</span>config.device)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>denoising_model <span class="op">=</span> create_unet_model(config, config.device)</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> optim.AdamW(denoising_model.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> optim</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.data <span class="im">import</span> load_data</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.model <span class="im">import</span> create_unet_model</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.diffusion <span class="im">import</span> create_noise_schedule</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> TrainingConfig(dataset<span class="op">=</span><span class="st">"reese-green/afhq64_captions_64k"</span>, caption_column<span class="op">=</span><span class="st">"caption_blip2-opt-2.7b"</span>, batch_size<span class="op">=</span><span class="dv">16</span>, resolution<span class="op">=</span><span class="dv">32</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>text_encoder <span class="op">=</span> TextEncoder(<span class="st">"openai/clip-vit-large-patch14"</span>, <span class="st">"cuda:0"</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>text_encoder.<span class="bu">eval</span>()</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>train_ds, val_ds <span class="op">=</span> load_data(config)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(n_T<span class="op">=</span>config.num_denoising_steps, device<span class="op">=</span>config.device)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>denoising_model <span class="op">=</span> create_unet_model(config, config.device)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> optim.AdamW(denoising_model.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>model params: 14.68 M</code></pre>
 </div>
 </div>
 <div id="814eccc7" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:11.848593Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:11.848119Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:11.852282Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:11.851916Z&quot;}" data-papermill="{&quot;duration&quot;:0.010402,&quot;end_time&quot;:&quot;2024-12-30T22:02:11.853026&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:11.842624&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> train_ds:</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">0</span>].shape)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">1</span>])</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">break</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> train_ds:</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">0</span>].shape)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">1</span>])</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">break</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>torch.Size([3, 32, 32])
 {'label': 0, 'text': 'a large white dog with brown eyes sitting on the grass'}</code></pre>
 </div>
 </div>
 <div id="17bfbbcd" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:11.863504Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:11.863236Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:12.249841Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:12.249410Z&quot;}" data-papermill="{&quot;duration&quot;:0.392913,&quot;end_time&quot;:&quot;2024-12-30T22:02:12.250718&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:11.857805&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>train_dataloader <span class="op">=</span> DataLoader(train_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>val_dataloader <span class="op">=</span> DataLoader(val_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> train_dataloader:</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">0</span>].shape)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">1</span>][<span class="st">"text"</span>])</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    text_embeddings <span class="op">=</span> text_encoder(x[<span class="dv">1</span>][<span class="st">"text"</span>])</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(text_embeddings.shape)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">break</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>train_dataloader <span class="op">=</span> DataLoader(train_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>val_dataloader <span class="op">=</span> DataLoader(val_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> train_dataloader:</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">0</span>].shape)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">1</span>][<span class="st">"text"</span>])</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    text_embeddings <span class="op">=</span> text_encoder(x[<span class="dv">1</span>][<span class="st">"text"</span>])</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(text_embeddings.shape)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">break</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>torch.Size([16, 3, 32, 32])
 ['a gray cat with green eyes sitting on a table', 'a close up of a cat with a sad expression', 'a black cat with green eyes standing in front of a fence', 'a gray and white dog with an orange collar', 'a gray cat is sitting on a red blanket', 'a leopard walking through the grass in the wild', 'a white dog with its tongue out and its tongue hanging out', 'a cheetah with its tongue out in the grass', 'a gray and white cat laying on a couch', 'a black french bulldog sitting down with his ears up', 'a brown dog running on the ground', 'a cat is sitting on a branch with green leaves', 'a small black and white dog wearing a purple harness', 'a white dog with a collar on sitting on a bed', 'a lion cub is sitting in a zoo enclosure', 'a golden retriever sitting on a bench with its owner']
@@ -598,18 +643,18 @@ torch.Size([16, 768])</code></pre>
 </div>
 </div>
 <div id="e286c632" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:12.261985Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:12.261585Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:41:37.430563Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:41:37.430152Z&quot;}" data-papermill="{&quot;duration&quot;:2365.175549,&quot;end_time&quot;:&quot;2024-12-30T22:41:37.431455&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:12.255906&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>train(</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>denoising_model,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    text_encoder<span class="op">=</span>text_encoder,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    train_dataloader<span class="op">=</span>train_dataloader,</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    val_dataloader<span class="op">=</span>val_dataloader,</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    noise_schedule<span class="op">=</span>noise_schedule,</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>optimizer,</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    steps<span class="op">=</span><span class="dv">20000</span>,</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    silent<span class="op">=</span><span class="va">False</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>train(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>denoising_model,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    text_encoder<span class="op">=</span>text_encoder,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    train_dataloader<span class="op">=</span>train_dataloader,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    val_dataloader<span class="op">=</span>val_dataloader,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    noise_schedule<span class="op">=</span>noise_schedule,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>optimizer,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    steps<span class="op">=</span><span class="dv">20000</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    silent<span class="op">=</span><span class="va">False</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Training on device: cuda</code></pre>
 </div>
@@ -623,8 +668,8 @@ torch.Size([16, 768])</code></pre>
 </div>
 </div>
 <div id="7177d292" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:41:37.442799Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:41:37.442472Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:41:37.544670Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:41:37.544230Z&quot;}" data-papermill="{&quot;duration&quot;:0.109173,&quot;end_time&quot;:&quot;2024-12-30T22:41:37.545906&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:41:37.436733&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the model</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>torch.save(denoising_model.state_dict(), <span class="st">"denoising_model_4_1.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the model</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>torch.save(denoising_model.state_dict(), <span class="st">"denoising_model_4_1.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="generate-images-with-text-conditioning" class="level2">
