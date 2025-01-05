@@ -29,6 +29,7 @@ def compute_fid(
 
         for i, img in enumerate(generated_images):
             assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
+            # TODO: do we need to assert that the image is in the range [0, 1]?
             img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
@@ -147,3 +148,119 @@ def make_dataset_name_safe_for_cleanfid(dataset_name: str):
     return dataset_name.replace("/", "__")
 
 
+def evaluate_pretrained_model(
+        wandb_run_path: str,
+        wandb_file_name: str,
+        is_cfm: bool = False,
+        dataset_name: str = "zzsi/afhq64_16k",
+        resolution: int = 64,
+        net: str = "unet_small",
+        num_denoising_steps: int = 1000,
+        fid_batch_size: int = 2,
+        n_samples: int = 50000,
+        device: str = "cuda:0",
+        seed: int = 0,
+    ):
+    from src.bookkeeping.wandb_utils import load_model_from_wandb
+    from src.models.factory import create_model
+    from src.datasets import load_data
+    from src.config.diffusion_training_config import DiffusionTrainingConfig
+    from src.train_cfm import TrainingConfig, generate_samples_with_flow_matching
+    from src.bookkeeping.diffusion_bookkeeping import generate_samples_by_denoising
+    from src.diffusion.diffusion_model_components import create_noise_schedule
+    
+    # create an empty model
+    denoising_model = create_model(net=net, resolution=resolution)
+    # load the pretrained weights from wandb into the model
+    load_model_from_wandb(
+        model=denoising_model, run_path=wandb_run_path, file_name=wandb_file_name
+    )
+    denoising_model = denoising_model.to(device)
+    denoising_model.eval()
+
+    if is_cfm:
+        config = TrainingConfig(
+            net=net,
+            resolution=resolution,
+            dataset=dataset_name,
+            device=device,
+        )
+    else:
+        config = DiffusionTrainingConfig(
+            net=net,
+            resolution=resolution,
+            dataset=dataset_name,
+            device=device,
+        )
+        noise_schedule = create_noise_schedule(n_T=num_denoising_steps, device=device)
+
+    train_dataloader, val_dataloader = load_data(config)
+
+    # precompute fid stats on real images
+    precompute_fid_stats_for_real_images(
+        dataloader=train_dataloader,
+        config=config,
+        real_images_dir=Path(config.cache_dir) / "real_images_for_fid"
+    )
+    # generate n_samples synthetic images
+    count = 0
+    sampled_images = []
+    generation_batch_size = 100
+    num_batches = (n_samples + generation_batch_size - 1) // generation_batch_size
+    for i in range(num_batches):
+        current_batch_size = min(generation_batch_size, n_samples - len(sampled_images))
+        if is_cfm:  
+            sampled_images.append(generate_samples_with_flow_matching(
+                denoising_model, device, current_batch_size, resolution=resolution,
+                in_channels=config.in_channels, seed=seed+i, num_denoising_steps=num_denoising_steps))
+        else:
+            x_t = torch.randn(current_batch_size, config.in_channels, resolution, resolution).to(device)
+            sampled_images.append(generate_samples_by_denoising(
+                denoising_model, x_t, noise_schedule=noise_schedule, n_T=num_denoising_steps, device=device, seed=seed+i))
+        count += current_batch_size
+        print(f"Generated {count} out of {n_samples} images. num_denoising_steps: {num_denoising_steps}")
+    sampled_images = torch.cat(sampled_images, dim=0)
+
+    # compute fid score
+    fid_score = compute_fid(
+        real_images=None,  # Not needed as we're using pre-computed stats
+        generated_images=sampled_images,
+        device=device,
+        dataset_name=dataset_name,
+        resolution=resolution,
+        batch_size=fid_batch_size,
+    )
+    print(f"FID Score: {fid_score:.4f}")
+    return fid_score
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+    # TODO: given the wandb run path, get the hyperparameters from the wandb run, e.g. resolution, net, etc.
+    parser = ArgumentParser()
+    parser.add_argument("--wandb_run_path", type=str, default="zzsi_kungfu/nano-diffusion/gsygnamk")
+    parser.add_argument("--wandb_file_name", type=str, default="logs/train/2025-01-05_03-13-30/final_model.pth")
+    parser.add_argument("--dataset_name", type=str, default="zzsi/afhq64_16k")
+    parser.add_argument("--resolution", type=int, default=64)
+    parser.add_argument("--net", type=str, default="unet_small")
+    parser.add_argument("--n_samples", type=int, default=1000)
+    parser.add_argument("--fid_batch_size", type=int, default=2)
+    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--is_cfm", action="store_true")
+    parser.add_argument("--num_denoising_steps", type=int, default=100)
+    args = parser.parse_args()
+
+    evaluate_pretrained_model(
+        wandb_run_path=args.wandb_run_path,
+        wandb_file_name=args.wandb_file_name,
+        dataset_name=args.dataset_name,
+        resolution=args.resolution,
+        net=args.net,
+        n_samples=args.n_samples,
+        fid_batch_size=args.fid_batch_size,
+        device=args.device,
+        seed=args.seed,
+        num_denoising_steps=args.num_denoising_steps,
+        is_cfm=args.is_cfm,
+    )

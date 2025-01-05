@@ -20,5 +20,4 @@ docker run --runtime nvidia -it --rm \
 	-v $(pwd)/data/container_cache:/home/$USER/.cache \
 	-e WANDB_API_KEY=$WANDB_API_KEY \
 	-e WANDB_PROJECT=$WANDB_PROJECT \
-	nanodiffusion \
-	$@
+	nanodiffusion "$@"

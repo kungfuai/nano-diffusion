@@ -669,7 +669,7 @@ def generate_and_log_samples(
 
     if config.logger == "wandb":
         wandb.log({
-            "num_batches_trained": step,
+            "test_samples_step": step,
             "test_samples": [wandb.Image(img) for img in images_processed],
         })
     else:

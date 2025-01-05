@@ -152,7 +152,7 @@ def generate_and_log_samples(
 
         wandb.log(
             {
-                "num_batches_trained": step,
+                "test_samples_step": step,
                 "test_samples": [wandb.Image(img) for img in images_processed],
             }
         )
@@ -179,7 +179,7 @@ def generate_and_log_samples(
             for i in range(ema_images_processed.shape[0]):
                 wandb.log(
                     {
-                        "num_batches_trained": step,
+                        "test_samples_step": step,
                         "ema_test_samples": [
                             wandb.Image(img) for img in ema_images_processed
                         ],
@@ -253,11 +253,14 @@ def compute_and_log_fid(
 
     if config.use_ema:
         ema_generated_images = []
+        count = 0
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
             batch_images = generate_samples_by_denoising(model_components.ema_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
             ema_generated_images.append(batch_images)
-        ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
+            count += current_batch_size
+            print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
+        ema_generated_images = torch.cat(ema_generated_images, dim=0) # [:config.num_samples_for_fid]
         ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
 
