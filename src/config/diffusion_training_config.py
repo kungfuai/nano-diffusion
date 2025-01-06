@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import os
 
 
 @dataclass
@@ -11,18 +12,18 @@ class DiffusionTrainingConfig:
     # Model architecture
     # TODO: the current assumption is that the data dimension is [in_channels, resolution, resolution]
     #   This can be more flexible.
-    in_channels: int  # number of input channels
-    resolution: int  # resolution of the image
-    net: str  # network architecture
-    num_denoising_steps: int  # number of timesteps
+    in_channels: int = 3  # number of input channels
+    resolution: int = 64  # resolution of the image
+    net: str = "unet_small"  # network architecture
+    num_denoising_steps: int = 1000  # number of timesteps
 
     # Training loop and optimizer
-    total_steps: int  # total number of training steps
-    batch_size: int  # batch size
-    learning_rate: float  # initial learning rate
-    weight_decay: float  # weight decay
-    lr_min: float  # minimum learning rate
-    warmup_steps: int  # number of warmup steps
+    total_steps: int = 100000  # total number of training steps
+    batch_size: int = 16  # batch size
+    learning_rate: float = 1e-4  # initial learning rate
+    weight_decay: float = 0.0  # weight decay
+    lr_min: float = 1e-6  # minimum learning rate
+    warmup_steps: int = 1000  # number of warmup steps
 
     # Logging and evaluation
     log_every: int = 50  # log every N steps
@@ -49,6 +50,7 @@ class DiffusionTrainingConfig:
 
     # Logging
     logger: str = "wandb"  # logging method
+    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
     checkpoint_dir: str = "logs/train"  # checkpoint directory
     min_steps_for_final_save: int = 100  # minimum steps for final save
     watch_model: bool = False  # watch the model with wandb

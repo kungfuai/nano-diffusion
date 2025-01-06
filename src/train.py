@@ -34,6 +34,7 @@ from src.config.diffusion_training_config import DiffusionTrainingConfig as Trai
 from src.datasets import load_data
 from src.diffusion.diffusion_model_components import create_diffusion_model_components
 from src.diffusion.diffusion_training_loop import training_loop
+from src.models.factory import choices
 
 
 def parse_arguments():
@@ -56,22 +57,7 @@ def parse_arguments():
     parser.add_argument(
         "--net",
         type=str,
-        choices=[
-            "dit_t0",
-            "dit_t1",
-            "dit_t2",
-            "dit_t3",
-            "dit_s2",
-            "dit_b2",
-            "dit_b4",
-            "dit_b2",
-            "dit_b4",
-            "dit_l2",
-            "dit_l4",
-            "unet_small",
-            "unet",
-            "unet_big",
-        ],
+        choices=choices(),
         default="unet_small",
         help="Network architecture",
     )

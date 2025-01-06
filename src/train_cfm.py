@@ -53,7 +53,7 @@ except ImportError:
 
 
 from src.plan.ot import OTPlanSampler
-from src.models.factory import create_model
+from src.models.factory import create_model, choices
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from src.models.factory import create_model
 from src.datasets import load_data
@@ -745,12 +745,7 @@ def parse_arguments():
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--logger", type=str, choices=["wandb", "none"], default="none", help="Logging method")
-    parser.add_argument("--net", type=str, choices=[
-        "dit_t0", "dit_t1", "dit_t2", "dit_t3",
-        "dit_s2", "dit_b2", "dit_b4", 
-        "dit_b2", "dit_b4", "dit_l2", "dit_l4",
-        "unet_small", "unet", "unet_big",
-    ], default="unet_small", help="Network architecture")
+    parser.add_argument("--net", type=str, choices=choices(), default="unet_small", help="Network architecture")
     parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
     parser.add_argument("--num_denoising_steps", type=int, default=100, help="Number of timesteps in the flow matching process")
     parser.add_argument("--num_samples_for_logging", type=int, default=8, help="Number of samples for logging")

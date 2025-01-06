@@ -1,9 +1,49 @@
 from src.models.unets import UNet, UNetBig, UNetSmall
 from src.models.dit import DiT
+from src.models.tld import Denoiser as TLD
 
+def choices():
+    return [
+        "tld_t2", "tld_s2", "tld_b2", "dit_t0", "dit_t1", "dit_t2", "dit_t3",
+        "dit_s2", "dit_b2", "dit_b4", "dit_l2", "dit_l4",
+        "unet_small", "unet", "unet_big", "unet_diffusers"
+    ]
 
 def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
-    if net == "dit_t0":
+    if net == "tld_t2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=128,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=3,
+            mlp_multiplier=2,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "tld_s2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=128,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=12,
+            mlp_multiplier=4,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "tld_b2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=768,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=12,
+            mlp_multiplier=4,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "dit_t0":
         return DiT(
             input_size=resolution,
             patch_size=2,

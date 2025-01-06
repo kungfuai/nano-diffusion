@@ -10,10 +10,11 @@ fi
 # This is the username in Dockerfile.
 USER=nanodiffusion
 GPU_DEVICES=${GPU_DEVICES:-0}  # default GPU idx
+DOCKER_ARGS=${DOCKER_ARGS:-""}
 
 mkdir -p data/container_cache
 
-docker run --runtime nvidia -it --rm \
+docker run --runtime nvidia -it --rm $DOCKER_ARGS \
 	--shm-size 16G \
     --gpus "device=${GPU_DEVICES}" \
 	-v $(pwd):/workspace \

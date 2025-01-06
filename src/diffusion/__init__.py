@@ -152,20 +152,21 @@ def denoising_step_direct(
     return pred_prev_sample
 
 
-def generate_samples_by_denoising(denoising_model, x_T, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop"):
+def generate_samples_by_denoising(denoising_model, x_T, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False):
     """
     This is the generation process.
     """
     torch.manual_seed(seed)
 
     x_t = x_T.to(device)
-    pbar = tqdm(range(n_T - 1, -1, -1))
+    pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
     for t in pbar:
         if method == "direct":
             x_t = denoising_step_direct(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
         else:
             x_t = denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
-        pbar.set_postfix({"std": x_t.std().item()})
+        if not quiet:
+            pbar.set_postfix({"std": x_t.std().item()})
 
     # print("raw x_t range", x_t.min(), x_t.max())
     x_t = (x_t / 2 + 0.5).clamp(0, 1)

@@ -197,11 +197,12 @@ def evaluate_pretrained_model(
     train_dataloader, val_dataloader = load_data(config)
 
     # precompute fid stats on real images
-    precompute_fid_stats_for_real_images(
-        dataloader=train_dataloader,
-        config=config,
-        real_images_dir=Path(config.cache_dir) / "real_images_for_fid"
-    )
+    if dataset_name not in ["cifar10"]:
+        precompute_fid_stats_for_real_images(
+            dataloader=train_dataloader,
+            config=config,
+            real_images_dir=Path(config.cache_dir) / "real_images_for_fid"
+        )
     # generate n_samples synthetic images
     count = 0
     sampled_images = []
@@ -216,7 +217,7 @@ def evaluate_pretrained_model(
         else:
             x_t = torch.randn(current_batch_size, config.in_channels, resolution, resolution).to(device)
             sampled_images.append(generate_samples_by_denoising(
-                denoising_model, x_t, noise_schedule=noise_schedule, n_T=num_denoising_steps, device=device, seed=seed+i))
+                denoising_model, x_t, noise_schedule=noise_schedule, n_T=num_denoising_steps, device=device, seed=seed+i, quiet=True))
         count += current_batch_size
         print(f"Generated {count} out of {n_samples} images. num_denoising_steps: {num_denoising_steps}")
     sampled_images = torch.cat(sampled_images, dim=0)
@@ -235,6 +236,8 @@ def evaluate_pretrained_model(
 
 
 if __name__ == "__main__":
+    # Example usage:
+    # GPU_DEVICES=0 bin/run.sh python -m src.eval.fid --wandb_run_path zzsi_kungfu/nano-diffusion/qixqrrc0 --wandb_file_name logs/train/2025-01-05_20-48-33/final_model.pth --dataset_name cifar10 --resolution 32 --net unet --n_samples 500 --fid_batch_size 2 --num_denoising_steps 1000  
     from argparse import ArgumentParser
     # TODO: given the wandb run path, get the hyperparameters from the wandb run, e.g. resolution, net, etc.
     parser = ArgumentParser()
