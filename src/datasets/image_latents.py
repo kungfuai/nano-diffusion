@@ -13,7 +13,7 @@ This dataset is used to store image latents. Several metadata fields are necessa
 from typing import Tuple, Iterable, List
 import numpy as np
 from tqdm import tqdm
-from datasets import load_dataset
+from datasets import load_dataset, Features, Value, Array2D, Array3D
 import torch
 from torch.utils.data import Dataset
 from diffusers import AutoencoderKL
@@ -22,7 +22,7 @@ from torchvision.transforms import ToTensor, Resize, Compose, Normalize
 
 class ImageLatentsDataset(Dataset):
     """
-    Dataset of image latents.
+    Dataset of image latents. This is used to convert a torch image dataset into a latents dataset.
 
     It includes a `from_image_dataset` method to create a latents dataset from an image dataset.
 
@@ -86,8 +86,23 @@ class ImageLatentsDataset(Dataset):
         mapping = {k: [] for k in self[0]} if self else {}
         for item in tqdm(self, desc="Converting to HF Dataset"):
             for k, v in item.items():
+                # v = np.array(v).ravel()
+                # print(v.shape)
+                # raise Exception("Stop")
                 mapping[k].append(v)
-        return HFDataset.from_dict(mapping)
+        # print(mapping['image_emb'][:2])
+        # mapping = {
+        #     "image_emb": [item['image_emb'] for item in self],
+        #     "text_emb": [item['text_emb'] for item in self],
+        #     # "text": [self._transform(item)['text'] for item in self.src_dataset],
+        # }
+        # print(mapping['image_emb'][:2])
+        # raise Exception("Stop")
+        return HFDataset.from_dict(mapping, features=Features({
+            "image_emb": Array3D(shape=(4, 8, 8), dtype="float16"),  # TODO: this is hard coded
+            "text_emb": Array2D(shape=(1, 768), dtype="float16"),  # TODO: this is hard coded
+            "text": Value("string")
+        }))
 
     def _transform(self, example):
         # Use the VAE and text encoder to get the latents and text encodings
@@ -117,8 +132,8 @@ class ImageLatentsDataset(Dataset):
         return self._transform(self.src_dataset[idx])
     
     def __len__(self):
-        # return 100
-        return len(self.src_dataset)
+        return 1000
+        # return len(self.src_dataset)
     
     def __iter__(self):
         for i in range(len(self)):
@@ -126,6 +141,7 @@ class ImageLatentsDataset(Dataset):
 
 
 if __name__ == "__main__":
+    # TODO: add the CLIP name, VAE name etc to the huggingface dataset info.
     from datasets import DatasetDict, Dataset as HFDataset
     # ds_name = 'zzsi/afhq64_16k'
     # text_column = 'text'
@@ -147,6 +163,8 @@ if __name__ == "__main__":
     dataset_dict = DatasetDict({
         'train': ds.to_hf_dataset()
     })
+
+    # print(dataset_dict['train'][0]['image_emb'])
 
     if False:
         # compute the std of the latents

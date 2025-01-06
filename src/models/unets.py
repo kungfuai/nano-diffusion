@@ -540,8 +540,6 @@ class UNetModel(nn.Module):
     :param conv_resample: if True, use learned convolutions for upsampling and
         downsampling.
     :param dims: determines if the signal is 1D, 2D, or 3D.
-    :param num_classes: if specified (as an int), then this model will be
-        class-conditional with `num_classes` classes.
     :param use_checkpoint: use gradient checkpointing to reduce memory usage.
     :param num_heads: the number of attention heads in each attention layer.
     :param num_heads_channels: if specified, ignore num_heads and instead use
@@ -567,7 +565,6 @@ class UNetModel(nn.Module):
         channel_mult=(1, 2, 4, 8),
         conv_resample=True,
         dims=2,
-        num_classes=None,
         use_checkpoint=False,
         use_fp16=False,
         num_heads=1,
@@ -576,6 +573,7 @@ class UNetModel(nn.Module):
         use_scale_shift_norm=False,
         resblock_updown=False,
         use_new_attention_order=False,
+        text_embed_dim=None,
     ):
         super().__init__()
 
@@ -591,7 +589,6 @@ class UNetModel(nn.Module):
         self.dropout = dropout
         self.channel_mult = channel_mult
         self.conv_resample = conv_resample
-        self.num_classes = num_classes
         self.use_checkpoint = use_checkpoint
         self.dtype = th.float16 if use_fp16 else th.float32
         self.num_heads = num_heads
@@ -605,8 +602,15 @@ class UNetModel(nn.Module):
             linear(time_embed_dim, time_embed_dim),
         )
 
-        if self.num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+        self.text_embed_dim = text_embed_dim
+        if text_embed_dim is not None:
+            self.null_text_embed = nn.Parameter(th.randn(1, text_embed_dim) * 0.02)
+            # We project the text embeddings to the same dimension as the time embeddings
+            self.text_proj = nn.Sequential(
+                linear(text_embed_dim, time_embed_dim),
+                nn.SiLU(),
+                linear(time_embed_dim, time_embed_dim),
+            )
 
         ch = input_ch = int(channel_mult[0] * model_channels)
         self.input_blocks = nn.ModuleList(
@@ -745,25 +749,33 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
         )
+    
+    def get_null_text_embed(self, batch_size: int=1):
+        return self.null_text_embed.repeat(batch_size, 1)
 
-    def forward(self, t, x, y=None, *args, **kwargs):
+    def forward(self, t, x, text_embeddings=None, p_uncond=None, *args, **kwargs):
         """
         Apply the model to an input batch.
         :param t: a 1-D batch of timesteps.
         :param x: an [N x C x ...] Tensor of inputs.
-        :param y: an [N] Tensor of labels, if class-conditional.
+        :param text_embeddings: an [N x D] Tensor of text embeddings.
         :return: an [N x C x ...] Tensor of outputs.
         """
-
-        assert (y is not None) == (
-            self.num_classes is not None
-        ), "must specify y if and only if the model is class-conditional"
+        assert (text_embeddings is not None) == (
+            self.text_embed_dim is not None
+        ), "must specify text_embeddings if and only if the model is text-conditional"
 
         hs = []
         emb = self.time_embed(timestep_embedding(t, self.model_channels))
-        if self.num_classes is not None:
-            assert y.shape == (x.shape[0],)
-            emb = emb + self.label_emb(y)
+        
+        if self.text_embed_dim is not None:
+            assert text_embeddings.shape[1] == self.text_embed_dim
+            if p_uncond is not None and p_uncond > 0:
+                unconditional_mask = (th.rand(text_embeddings.shape[0]) < p_uncond)
+                text_embeddings[unconditional_mask] = self.null_text_embed
+                # text_embeddings = th.where(unconditional_mask, self.null_text_embed, text_embeddings)
+            emb = emb + self.text_proj(text_embeddings)
+
         h = x.type(self.dtype)
         for module in self.input_blocks:
             h = module(h, emb)
@@ -781,7 +793,7 @@ def UNetBig(
     in_channels=3,
     out_channels=3,
     base_width=192,
-    num_classes=None,
+    text_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -811,7 +823,6 @@ def UNetBig(
         attention_resolutions=tuple(attention_ds),
         dropout=0.1,
         channel_mult=channel_mult,
-        num_classes=num_classes,
         use_checkpoint=False,
         use_fp16=False,
         num_heads=4,
@@ -820,6 +831,7 @@ def UNetBig(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
+        text_embed_dim=text_embed_dim,
     )
 
 
@@ -828,7 +840,7 @@ def UNet(
     in_channels=3,
     out_channels=3,
     base_width=64,
-    num_classes=None,
+    text_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -858,7 +870,6 @@ def UNet(
         attention_resolutions=tuple(attention_ds),
         dropout=0.1,
         channel_mult=channel_mult,
-        num_classes=num_classes,
         use_checkpoint=False,
         use_fp16=False,
         num_heads=4,
@@ -867,6 +878,7 @@ def UNet(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
+        text_embed_dim=text_embed_dim,
     )
 
 
@@ -875,7 +887,7 @@ def UNetSmall(
     in_channels=3,
     out_channels=3,
     base_width=32,
-    num_classes=None,
+    text_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -885,12 +897,16 @@ def UNetSmall(
         channel_mult = (1, 2, 2, 2)
     elif image_size == 28:
         channel_mult = (1, 2, 2, 2)
+    elif image_size == 8:
+        channel_mult = (1, 2, 2, 2)
     else:
         raise ValueError(f"unsupported image size: {image_size}")
 
     attention_ds = []
     if image_size == 28:
         attention_resolutions = "28,14,7"
+    elif image_size == 8:
+        attention_resolutions = "8,4,2"
     else:
         attention_resolutions = "32,16,8"
     for res in attention_resolutions.split(","):
@@ -906,7 +922,6 @@ def UNetSmall(
         time_emb_factor=2,
         dropout=0.1,
         channel_mult=channel_mult,
-        num_classes=num_classes,
         use_checkpoint=False,
         use_fp16=False,
         num_heads=4,
@@ -915,4 +930,5 @@ def UNetSmall(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
+        text_embed_dim=text_embed_dim,
     )

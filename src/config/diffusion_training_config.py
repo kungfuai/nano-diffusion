@@ -17,6 +17,14 @@ class DiffusionTrainingConfig:
     net: str = "unet_small"  # network architecture
     num_denoising_steps: int = 1000  # number of timesteps
 
+    # VAE (tokenizer) for compression
+    vae_use_fp16: bool = True  # use fp16 for the VAE
+    vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
+    vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
+
+    # Text conditioning
+    text_drop_prob: float = 1  # probability of dropping text conditioning during training
+
     # Training loop and optimizer
     total_steps: int = 100000  # total number of training steps
     batch_size: int = 16  # batch size

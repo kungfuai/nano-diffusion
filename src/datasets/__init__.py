@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, Callable
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
@@ -9,7 +9,7 @@ from src.config.diffusion_training_config import DiffusionTrainingConfig as Trai
 from src.datasets.hugging_face_dataset import HuggingFaceDataset
 
 
-def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
+def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
     # TODO: consider expanding the args from config to be a more explicit list of args
     resolution = config.resolution
     transforms_list = [
@@ -44,9 +44,9 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
     train_dataloader = DataLoader(
-        train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2
+        train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2, collate_fn=collate_fn
     )
     val_dataloader = DataLoader(
-        val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2
+        val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2, collate_fn=collate_fn
     )
     return train_dataloader, val_dataloader

@@ -5,6 +5,7 @@ from typing import Union
 import torch
 from torch.utils.data import DataLoader
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
+from torch.nn import Module
 
 try:
     from cleanfid import fid
@@ -60,12 +61,12 @@ def compute_fid(
     return score
 
 
-def _build_stats_filename(dataset_name: str, resolution: int, model_name: str = "inception_v3") -> str:
+def _build_stats_filename(dataset_name: str, resolution: int = None, model_name: str = "inception_v3") -> str:
     """Build the standardized filename for FID statistics.
     
     Args:
         dataset_name: Name of the dataset
-        resolution: Image resolution
+        resolution: Image resolution. This is not used for custom datasets.
         model_name: Name of the model used for FID computation
     
     Returns:
@@ -105,7 +106,7 @@ def fid_stats_exists(dataset_name: str, resolution: int, config: TrainingConfig,
     return outf if os.path.exists(outf) else None
 
 
-def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, resolution: int):
+def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, resolution: int = None):
     import shutil, os
     import cleanfid
     
@@ -140,7 +141,54 @@ def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: Trainin
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
     fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
     # also copy the stats to the real_images_dir
-    copy_stats_to_real_images_dir(real_images_dir, config.dataset, config.resolution)
+    copy_stats_to_real_images_dir(real_images_dir, config.dataset)
+
+
+def precompute_fid_stats_for_real_image_latents(
+    dataloader: DataLoader,
+    config: TrainingConfig,
+    real_images_dir: Path,
+    vae: Module,
+) -> None:
+    print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
+    dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
+    real_images_dir = real_images_dir / dataset_name_safe
+    real_images_dir.mkdir(exist_ok=True, parents=True)
+    existing_fid_stats_path = fid_stats_exists(config.dataset, config.resolution, config, real_images_dir)
+    if existing_fid_stats_path:
+        print(f"FID stats already exist for {config.dataset} at {existing_fid_stats_path}")
+        return
+    count = 0
+    for batch in dataloader:
+        # TODO: "image_emb" is hardcoded
+        latents = batch["image_emb"]
+        if isinstance(latents, list):
+            # print(latents)
+            # print(latents[0][0][0].shape)
+            latents = torch.stack(latents).to(config.device)
+
+        latents = latents.half()
+        # Decode latents to images using VAE
+        with torch.no_grad():
+            latents = latents.to(vae.device)
+            images = vae.decode(latents).sample
+            images = (images / 2 + 0.5).clamp(0, 1)  # Normalize to [0,1]
+        
+        # save individual images as npy files
+        for i, img in enumerate(images):
+            np_img = img.cpu().numpy().transpose(1, 2, 0)
+            # Scale to 0-255 range
+            np_img = (np_img * 255)
+            idx = count * len(images) + i
+            np.save(real_images_dir / f"real_images_{idx:06d}.npy", np_img)
+        count += len(images)
+        if count >= config.num_real_samples_for_fid:
+            break
+    
+    dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
+    fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
+    # also copy the stats to the real_images_dir
+    copy_stats_to_real_images_dir(real_images_dir, config.dataset)
 
 
 

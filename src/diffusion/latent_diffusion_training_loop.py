@@ -6,15 +6,15 @@ from torch.nn import MSELoss, Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
-from src.bookkeeping.diffusion_bookkeeping import DiffusionBookkeeping
-from src.diffusion.diffusion_model_components import DiffusionModelComponents
+from src.bookkeeping.latent_diffusion_bookkeeping import LatentDiffusionBookkeeping
+from src.diffusion.diffusion_model_components import LatentDiffusionModelComponents
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
-from src.eval.fid import precompute_fid_stats_for_real_images
+from src.eval.fid import precompute_fid_stats_for_real_image_latents
 from src.diffusion import forward_diffusion
 
 
 def training_loop(
-    model_components: DiffusionModelComponents,
+    model_components: LatentDiffusionModelComponents,
     train_dataloader: DataLoader,
     val_dataloader: Optional[DataLoader],
     config: TrainingConfig,
@@ -26,10 +26,15 @@ def training_loop(
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
-    bookkeeping = DiffusionBookkeeping(config, model_components)
+    bookkeeping = LatentDiffusionBookkeeping(config, model_components)
 
     if config.dataset not in ["cifar10"]:
-        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.cache_dir) / "real_images_for_fid")
+        precompute_fid_stats_for_real_image_latents(
+            train_dataloader, 
+            config, 
+            Path(config.cache_dir) / "real_images_for_fid",
+            vae=model_components.vae,
+        )
 
     bookkeeping.set_up_logger()
 
@@ -46,18 +51,19 @@ def training_loop(
     criterion = MSELoss()
 
     while step < config.total_steps:
-        for x, _ in train_dataloader:
+        for batch in train_dataloader:
             if step >= config.total_steps:
                 break
 
-            num_examples_trained += x.shape[0]
+            num_examples_trained += batch['image_emb'].shape[0]
 
-            # Move batch data to device
-            x = x.to(device)
+            # Get latents from batch
+            x = batch['image_emb'].float().to(device)
+            text_emb = batch["text_emb"].float().to(device)
 
             denoising_model.train()
             loss = train_step(
-                denoising_model, x, noise_schedule, optimizer, config, device, criterion
+                denoising_model, x, text_emb, noise_schedule, optimizer, config, device, criterion
             )
             denoising_model.eval()
 
@@ -90,6 +96,7 @@ def training_loop(
 def train_step(
     denoising_model: Module,
     x_0: torch.Tensor,
+    text_emb: torch.Tensor,
     noise_schedule: Dict[str, torch.Tensor],
     optimizer: Optimizer,
     config: TrainingConfig,
@@ -99,13 +106,17 @@ def train_step(
     optimizer.zero_grad()
     x_0 = x_0.to(device)
 
+    # print(f"before l2 norm of x_0: {x_0.norm(dim=1).mean().item()}, max: {x_0.norm(dim=1).max().item()}, min: {x_0.norm(dim=1).min().item()}")
+    x_0 = x_0 * config.vae_scale_factor
+    # print(f"after: l2 norm of x_0: {x_0.norm(dim=1).mean().item()}, max: {x_0.max().item()}, min: {x_0.min()}, mean: {x_0.mean().item()}, std: {x_0.std().item()}")
+
     noise = torch.randn(x_0.shape).to(device)
     t = torch.randint(
         0, config.num_denoising_steps, (x_0.shape[0],), device=device
     ).long()
     x_t, true_noise = forward_diffusion(x_0, t, noise_schedule, noise=noise)
 
-    predicted_noise = denoising_model(t=t, x=x_t)
+    predicted_noise = denoising_model(t=t, x=x_t, text_embeddings=text_emb, p_uncond=config.text_drop_prob)
     predicted_noise = (
         predicted_noise.sample
         if hasattr(predicted_noise, "sample")
@@ -133,7 +144,7 @@ def update_ema_model(ema_model: Module, model: Module, ema_beta: float):
 
 
 def save_checkpoints(
-    model_components: DiffusionModelComponents, step: int, config: TrainingConfig
+    model_components: LatentDiffusionModelComponents, step: int, config: TrainingConfig
 ):
     save_model(
         model_components.denoising_model,
@@ -149,7 +160,7 @@ def save_checkpoints(
 
 
 def save_final_models(
-    model_components: DiffusionModelComponents, config: TrainingConfig
+    model_components: LatentDiffusionModelComponents, config: TrainingConfig
 ):
     save_model(
         model_components.denoising_model,
@@ -196,13 +207,3 @@ def log_training_step(
     print(
         f"Step: {step}, Examples: {num_examples_trained}, Loss: {loss.item():.4f}, LR: {lr:.6f}"
     )
-
-
-def get_real_images(batch_size: int, dataloader: DataLoader) -> torch.Tensor:
-    batch = next(
-        iter(DataLoader(dataloader.dataset, batch_size=batch_size, shuffle=False))
-    )
-    assert len(batch) == 2, f"Batch must contain 2 elements. Got {len(batch)}"
-    assert isinstance(batch[0], torch.Tensor), f"First element of batch must be a tensor. Got {type(batch[0])}"
-    assert len(batch[0].shape) == 4, f"First element of batch must be a 4D tensor. Got shape {batch[0].shape}"
-    return batch[0]
