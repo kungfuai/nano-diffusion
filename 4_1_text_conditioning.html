@@ -373,7 +373,7 @@ window.Quarto = {
 </header>
 
 
-<p>So far, we have been doing unconditional image generation, or generation without prompting with any context information:</p>
+<p>Conditioning means prompting. So far, we have been doing unconditional image generation, or generation without prompting with any context information:</p>
 <p><span class="math display">\[
 \textrm{empty prompt} \rightarrow \textrm{image}
 \]</span></p>
@@ -383,7 +383,7 @@ window.Quarto = {
 \textrm{text} \rightarrow \textrm{image}
 \]</span></p>
 <p>so that a prompt like “a black cat with lots of fur” can actually trigger the model to follow the instruction and generate such an image.</p>
-<p>A popular approach to do Text-to-Image generation is “classifier-free guidance”. Historically, the first major technique along these lines was “classifier guidance”, which relies on a separate classifier to steer image synthesis.</p>
+<p>A popular approach to do text-to-Image generation is “classifier-free guidance”. Historically, the first major technique along these lines was “classifier guidance”, which relies on a separate classifier to steer image synthesis.</p>
 <p>Let <span class="math inline">\(x\)</span> be the image, and <span class="math inline">\(y\)</span> be the text prompt. There are 2 distributions we could sample from:</p>
 <ul>
 <li>unconditional distribution <span class="math inline">\(p_{\theta}(x)\)</span>: “what do images look like in general?”</li>
