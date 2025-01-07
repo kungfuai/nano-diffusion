@@ -1,9 +1,49 @@
 from src.models.unets import UNet, UNetBig, UNetSmall
 from src.models.dit import DiT
+from src.models.tld import Denoiser as TLD
 
+def choices():
+    return [
+        "tld_t2", "tld_s2", "tld_b2", "dit_t0", "dit_t1", "dit_t2", "dit_t3",
+        "dit_s2", "dit_b2", "dit_b4", "dit_l2", "dit_l4",
+        "unet_small", "unet", "unet_big", "unet_diffusers"
+    ]
 
-def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
-    if net == "dit_t0":
+def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, cond_embed_dim: int = None):
+    if net == "tld_t2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=128,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=3,
+            mlp_multiplier=2,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "tld_s2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=128,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=12,
+            mlp_multiplier=4,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "tld_b2":
+        return TLD(
+            image_size=resolution,
+            embed_dim=768,
+            noise_embed_dims=256,
+            patch_size=2,
+            n_layers=12,
+            mlp_multiplier=4,
+            n_channels=in_channels,
+            dropout=0,
+        )
+    elif net == "dit_t0":
         return DiT(
             input_size=resolution,
             patch_size=2,
@@ -104,22 +144,34 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
     elif net == "unet_small":
         model = UNetSmall(
             image_size=resolution,
+            in_channels=in_channels,
+            out_channels=in_channels,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "unet":
         model = UNet(
             image_size=resolution,
+            in_channels=in_channels,
+            out_channels=in_channels,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "unet_big":
         model = UNetBig(
             image_size=resolution,
+            in_channels=in_channels,
+            out_channels=in_channels,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "unet_diffusers":
+        if cond_embed_dim is not None:
+            raise ValueError("diffusers UNet does not support conditional models")
+        
         from diffusers import UNet2DModel
 
         model = UNet2DModel(
             sample_size=resolution,
-            in_channels=3,
-            out_channels=3,
+            in_channels=in_channels,
+            out_channels=in_channels,
             layers_per_block=2,
             block_out_channels=(128, 128, 256, 256, 512, 512),
             down_block_types=(

@@ -54,3 +54,4 @@ tmp/
 mlruns/
 notebooks/results/
 notebooks/data/
+*.npy

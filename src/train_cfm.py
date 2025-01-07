@@ -26,6 +26,7 @@ The CFM implementation is based on https://github.com/atong01/conditional-flow-m
 
 import argparse
 import copy
+from datetime import datetime
 from typing import Callable, Union
 import os
 from pathlib import Path
@@ -34,7 +35,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
@@ -52,13 +53,15 @@ except ImportError:
 
 
 from src.plan.ot import OTPlanSampler
-from src.models.factory import create_model
+from src.models.factory import create_model, choices
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.train import create_model, log_training_step, \
-    compute_fid, save_model, load_data, update_ema_model, save_final_models, get_real_images, \
-    save_checkpoints, load_model_from_wandb, precompute_fid_stats_for_real_images
-
-
+from src.models.factory import create_model
+from src.datasets import load_data
+from src.bookkeeping.cfm_bookkeeping import log_training_step, \
+    compute_fid, save_model, \
+    save_checkpoints
+from src.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, get_real_images, precompute_fid_stats_for_real_images
+from src.bookkeeping.wandb_utils import load_model_from_wandb
 
 def pad_t_like_x(t, x):
     """Function to reshape the time vector t by the number of dimensions of x.
@@ -359,7 +362,7 @@ class ExactOptimalTransportConditionalFlowMatcher(ConditionalFlowMatcher):
             return t, xt, ut, y0, y1
 
 
-def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, resolution: int = 32, in_channels: int = 3,  parallel: bool = False, seed: int = 0):
+def generate_samples_with_flow_matching(denoising_model, device, num_samples: int = 8, resolution: int = 32, in_channels: int = 3,  parallel: bool = False, seed: int = 0, num_denoising_steps: int = 100):
     """Generate samples.
 
     Parameters
@@ -387,7 +390,7 @@ def generate_samples_with_flow_matching(denoising_model, device, num_samples: in
         with torch.no_grad():
             traj = node.trajectory(
                 torch.randn(num_samples, in_channels, resolution, resolution, device=device),
-                t_span=torch.linspace(0, 1, 100, device=device),
+                t_span=torch.linspace(0, 1, num_denoising_steps, device=device),
             )
             traj = traj[-1, :].view([-1, in_channels, resolution, resolution]).clip(-1, 1)
             traj = traj / 2 + 0.5
@@ -421,29 +424,30 @@ class TrainingConfig:
     resolution: int # resolution of the image
     
     # Model architecture
-    in_channels: int # number of input channels
-    net: str # network architecture
-    num_denoising_steps: int # number of timesteps
+    in_channels: int = 3 # number of input channels
+    net: str = "unet_small" # network architecture
+    num_denoising_steps: int = 100 # number of timesteps
     
     # Flow plan algorithm
-    plan: str # flow matching plan
+    plan: str = "ot"  # flow matching plan
 
     # Training loop and optimizer
-    total_steps: int  # total number of training steps
-    batch_size: int # batch size
-    learning_rate: float # initial learning rate
-    weight_decay: float # weight decay
-    lr_min: float # minimum learning rate
-    warmup_steps: int # number of warmup steps
+    total_steps: int = 100000  # total number of training steps
+    batch_size: int = 128 # batch size
+    learning_rate: float = 1e-4 # initial learning rate
+    weight_decay: float = 0.0 # weight decay
+    lr_min: float = 1e-6 # minimum learning rate
+    warmup_steps: int = 1000 # number of warmup steps
 
     # Logging and evaluation
-    log_every: int # log every N steps
-    sample_every: int # sample every N steps
-    save_every: int # save model every N steps
-    validate_every: int # compute validation loss every N steps
-    fid_every: int # compute FID every N steps
+    log_every: int = 100 # log every N steps
+    sample_every: int = 1000 # sample every N steps
+    save_every: int = 50000 # save model every N steps
+    validate_every: int = 10000 # compute validation loss every N steps
+    fid_every: int = 10000 # compute FID every N steps
     num_samples_for_fid: int = 1000 # number of samples for FID
-    num_samples_for_logging: int = 16 # number of samples for logging
+    num_samples_for_logging: int = 8 # number of samples for logging
+    num_real_samples_for_fid: int = 10000 # number of real image samples for FID precomputation
 
     # Regularization
     max_grad_norm: float = -1 # maximum norm for gradient clipping
@@ -456,7 +460,8 @@ class TrainingConfig:
 
     # Logging
     logger: str = "wandb" # logging method
-    checkpoint_dir: str = "logs/train" # checkpoint directory
+    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
+    checkpoint_dir: str = "logs/train" # checkpoint directory, different for each run
     min_steps_for_final_save: int = 100 # minimum steps for final save
     watch_model: bool = False # watch the model with wandb
     init_from_wandb_run_path: str = None # initialize model from a wandb run path
@@ -464,6 +469,13 @@ class TrainingConfig:
 
     # Data augmentation
     random_flip: bool = False # randomly flip images horizontally
+
+    def update_checkpoint_dir(self):
+        # Update the checkpoint directory use a timestamp
+        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    
+    def __post_init__(self):
+        self.update_checkpoint_dir()
 
 
 @dataclass
@@ -490,7 +502,7 @@ def training_loop(
     lr_scheduler = model_components.lr_scheduler
 
     if config.dataset not in ["cifar10"]:
-        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
+        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.cache_dir) / "real_images_for_fid")
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
@@ -603,32 +615,29 @@ def generate_and_log_samples(model_components: FlowMatchingModelComponents, conf
     ema_model = model_components.ema_model
 
     # Generate random noise
-    # TODO: make this a config parameter
     n_samples = config.num_samples_for_logging
     # Sample using the main model
-    sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels, seed=seed)
+    sampled_images = generate_samples_with_flow_matching(denoising_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels, seed=seed, num_denoising_steps=config.num_denoising_steps)
     images_processed = (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
 
     if config.logger == "wandb":
-        for i in range(images_processed.shape[0]):
-            wandb.log({
-                "num_batches_trained": step,
-                "test_samples": [wandb.Image(img) for img in images_processed],
-            })
+        wandb.log({
+            "num_batches_trained": step,
+            "test_samples": [wandb.Image(img) for img in images_processed],
+        })
     else:
         grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
         save_image(grid, Path(config.checkpoint_dir) / f"generated_samples_step_{step}.png")
 
     if config.use_ema:
-        ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels)
+        ema_sampled_images = generate_samples_with_flow_matching(ema_model, device, n_samples, resolution=config.resolution, in_channels=config.in_channels, seed=seed, num_denoising_steps=config.num_denoising_steps)
         ema_images_processed = (ema_sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
         
         if config.logger == "wandb":
-            for i in range(ema_images_processed.shape[0]):
-                wandb.log({
-                    "num_batches_trained": step,
-                    "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
-                })
+            wandb.log({
+                "num_batches_trained": step,
+                "ema_test_samples": [wandb.Image(img) for img in ema_images_processed],
+            })
         else:
             # make grid
             grid = make_grid(ema_sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
@@ -641,20 +650,22 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
     if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
-    else:
-        real_images = get_real_images(config.num_samples_for_fid, train_dataloader)
     
-    batch_size = config.batch_size  # Adjust this value based on your GPU memory
+    batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
+    count = 0
     for i in range(num_batches):
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
-        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i)
+        batch_images = generate_samples_with_flow_matching(model_components.denoising_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i, num_denoising_steps=config.num_denoising_steps)
         generated_images.append(batch_images)
+        count += current_batch_size
+        print(f"Generated {count} out of {config.num_samples_for_fid} images")
 
-    generated_images = torch.cat(generated_images, dim=0)[:config.num_samples_for_fid]
+    generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
+    real_images = None
     fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
     print(f"FID Score: {fid_score:.4f}")
 
@@ -662,13 +673,15 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
         ema_generated_images = []
         batch_size = config.batch_size
         num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
-        
+        count = 0
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
-            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i)
+            batch_images = generate_samples_with_flow_matching(model_components.ema_model, device, current_batch_size, resolution=config.resolution, in_channels=config.in_channels, seed=i, num_denoising_steps=config.num_denoising_steps)
             ema_generated_images.append(batch_images)
+            count += current_batch_size
+            print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
         
-        ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
+        ema_generated_images = torch.cat(ema_generated_images, dim=0) # [:config.num_samples_for_fid]
         ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
@@ -732,18 +745,14 @@ def parse_arguments():
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument("--logger", type=str, choices=["wandb", "none"], default="none", help="Logging method")
-    parser.add_argument("--net", type=str, choices=[
-        "dit_t0", "dit_t1", "dit_t2", "dit_t3",
-        "dit_s2", "dit_b2", "dit_b4", 
-        "dit_b2", "dit_b4", "dit_l2", "dit_l4",
-        "unet_small", "unet", "unet_big",
-    ], default="unet_small", help="Network architecture")
+    parser.add_argument("--net", type=str, choices=choices(), default="unet_small", help="Network architecture")
     parser.add_argument("--plan", type=str, choices=["ot", "simple"], default="ot", help="The Flow Plan method")
-    parser.add_argument("--num_denoising_steps", type=int, default=1000, help="Number of timesteps in the diffusion process")
-    parser.add_argument("--num_samples_for_logging", type=int, default=16, help="Number of samples for logging")
+    parser.add_argument("--num_denoising_steps", type=int, default=100, help="Number of timesteps in the flow matching process")
+    parser.add_argument("--num_samples_for_logging", type=int, default=8, help="Number of samples for logging")
     parser.add_argument("--num_samples_for_fid", type=int, default=1000, help="Number of samples for FID")
-    parser.add_argument("--total_steps", type=int, default=300000, help="Total number of training steps")
-    parser.add_argument("--warmup_steps", type=int, default=500, help="Number of warmup steps")
+    parser.add_argument("--num_real_samples_for_fid", type=int, default=10000, help="Number of real image samples for FID precomputation")
+    parser.add_argument("--total_steps", type=int, default=100000, help="Total number of training steps")
+    parser.add_argument("--warmup_steps", type=int, default=1000, help="Number of warmup steps")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Initial learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-6, help="Weight decay")

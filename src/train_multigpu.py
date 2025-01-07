@@ -45,7 +45,7 @@ from src.datasets.pokemon_dataset import PokemonDataset
 from src.models.factory import create_model
 from src.utils.sample import threshold_sample, denoise_and_compare
 from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.train import precompute_fid_stats_for_real_images, make_dataset_name_safe_for_cleanfid
+from train_ddpm import precompute_fid_stats_for_real_images, make_dataset_name_safe_for_cleanfid
 
 @contextmanager
 def rank0_first():
@@ -669,7 +669,7 @@ def generate_and_log_samples(
 
     if config.logger == "wandb":
         wandb.log({
-            "num_batches_trained": step,
+            "test_samples_step": step,
             "test_samples": [wandb.Image(img) for img in images_processed],
         })
     else:

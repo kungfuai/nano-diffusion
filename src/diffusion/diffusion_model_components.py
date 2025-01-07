@@ -20,12 +20,22 @@ class DiffusionModelComponents:
     noise_schedule: Dict[str, torch.Tensor]
 
 
+@dataclass
+class LatentDiffusionModelComponents:
+    denoising_model: nn.Module
+    ema_model: Optional[nn.Module]
+    optimizer: optim.Optimizer
+    lr_scheduler: Any
+    noise_schedule: Dict[str, torch.Tensor]
+    vae: nn.Module
+
+
 def create_diffusion_model_components(
     config: DiffusionTrainingConfig,
 ) -> DiffusionModelComponents:
     device = torch.device(config.device)
     denoising_model = create_model(
-        net=config.net, in_channels=config.in_channels, resolution=config.resolution
+        net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
     )
     denoising_model = denoising_model.to(device)
     # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
@@ -52,4 +62,25 @@ def create_diffusion_model_components(
 
     return DiffusionModelComponents(
         denoising_model, ema_model, optimizer, lr_scheduler, noise_schedule
+    )
+
+
+def create_latent_diffusion_model_components(
+    config: DiffusionTrainingConfig,
+) -> LatentDiffusionModelComponents:
+    diffusion_model_components = create_diffusion_model_components(config)
+    from diffusers import AutoencoderKL
+
+    if config.vae_use_fp16:
+        vae = AutoencoderKL.from_pretrained(config.vae_model_name, torch_dtype=torch.float16).to(config.device)
+    else:
+        vae = AutoencoderKL.from_pretrained(config.vae_model_name).to(config.device)
+
+    return LatentDiffusionModelComponents(
+        diffusion_model_components.denoising_model,
+        diffusion_model_components.ema_model,
+        diffusion_model_components.optimizer,
+        diffusion_model_components.lr_scheduler,
+        diffusion_model_components.noise_schedule,
+        vae,
     )

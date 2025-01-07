@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import os
 
 
 @dataclass
@@ -11,18 +12,28 @@ class DiffusionTrainingConfig:
     # Model architecture
     # TODO: the current assumption is that the data dimension is [in_channels, resolution, resolution]
     #   This can be more flexible.
-    in_channels: int  # number of input channels
-    resolution: int  # resolution of the image
-    net: str  # network architecture
-    num_denoising_steps: int  # number of timesteps
+    in_channels: int = 3  # number of input channels
+    resolution: int = 64  # resolution of the image
+    net: str = "unet_small"  # network architecture
+    num_denoising_steps: int = 1000  # number of timesteps
 
+    # VAE (tokenizer) for compression
+    vae_use_fp16: bool = True  # use fp16 for the VAE
+    vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
+    vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
+
+    # Conditioning
+    cond_embed_dim: int = None  # dimension of the conditioning embedding (before the projection layer)
+    cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
+    guidance_scale: float = 7.5  # guidance scale for classifier-free guidance
+    
     # Training loop and optimizer
-    total_steps: int  # total number of training steps
-    batch_size: int  # batch size
-    learning_rate: float  # initial learning rate
-    weight_decay: float  # weight decay
-    lr_min: float  # minimum learning rate
-    warmup_steps: int  # number of warmup steps
+    total_steps: int = 100000  # total number of training steps
+    batch_size: int = 16  # batch size
+    learning_rate: float = 1e-4  # initial learning rate
+    weight_decay: float = 0.0  # weight decay
+    lr_min: float = 1e-6  # minimum learning rate
+    warmup_steps: int = 1000  # number of warmup steps
 
     # Logging and evaluation
     log_every: int = 50  # log every N steps
@@ -35,7 +46,7 @@ class DiffusionTrainingConfig:
     num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
 
     # Sampling
-    clip_sample_range: float = 1.0  # range for clipping sample. If 0 or less, no clipping
+    clip_sample_range: float = 2.0  # range for clipping sample. If 0 or less, no clipping
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -49,6 +60,7 @@ class DiffusionTrainingConfig:
 
     # Logging
     logger: str = "wandb"  # logging method
+    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
     checkpoint_dir: str = "logs/train"  # checkpoint directory
     min_steps_for_final_save: int = 100  # minimum steps for final save
     watch_model: bool = False  # watch the model with wandb

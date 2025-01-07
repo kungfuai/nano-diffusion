@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, Callable
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
@@ -7,9 +7,10 @@ from src.datasets.celeb_dataset import CelebDataset
 from src.datasets.pokemon_dataset import PokemonDataset
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from src.datasets.hugging_face_dataset import HuggingFaceDataset
+from src.datasets.mj_latents import MJLatentsDataset
 
 
-def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
+def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
     # TODO: consider expanding the args from config to be a more explicit list of args
     resolution = config.resolution
     transforms_list = [
@@ -36,6 +37,9 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
     elif config.dataset == "pokemon":
         print("Loading Pokemon dataset")
         full_dataset = PokemonDataset(transform=transform)
+    elif config.dataset == "mj_latents":
+        print("Loading MJ latents dataset")
+        full_dataset = MJLatentsDataset()
     else:
         print(f"Loading dataset from Hugging Face: {config.dataset}")
         full_dataset = HuggingFaceDataset(config.dataset, transform=transform)
@@ -44,9 +48,9 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
     train_dataloader = DataLoader(
-        train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2
+        train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2, collate_fn=collate_fn
     )
     val_dataloader = DataLoader(
-        val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2
+        val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2, collate_fn=collate_fn
     )
     return train_dataloader, val_dataloader

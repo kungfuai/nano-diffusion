@@ -7,7 +7,7 @@ from PIL import Image
 import wandb
 import torch
 from torchvision.utils import save_image, make_grid
-from src.train import generate_samples_by_denoising, create_noise_schedule, create_model
+from train_ddpm import generate_samples_by_denoising, create_noise_schedule, create_model
 
 
 def main():
