@@ -22,9 +22,11 @@ class DiffusionTrainingConfig:
     vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
     vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
 
-    # Text conditioning
-    text_drop_prob: float = 1  # probability of dropping text conditioning during training
-
+    # Conditioning
+    cond_embed_dim: int = None  # dimension of the conditioning embedding (before the projection layer)
+    cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
+    guidance_scale: float = 7.5  # guidance scale for classifier-free guidance
+    
     # Training loop and optimizer
     total_steps: int = 100000  # total number of training steps
     batch_size: int = 16  # batch size
@@ -44,7 +46,7 @@ class DiffusionTrainingConfig:
     num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
 
     # Sampling
-    clip_sample_range: float = 1.0  # range for clipping sample. If 0 or less, no clipping
+    clip_sample_range: float = 2.0  # range for clipping sample. If 0 or less, no clipping
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping

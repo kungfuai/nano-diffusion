@@ -573,13 +573,14 @@ class UNetModel(nn.Module):
         use_scale_shift_norm=False,
         resblock_updown=False,
         use_new_attention_order=False,
-        text_embed_dim=None,
+        cond_embed_dim=None,
     ):
         super().__init__()
 
         if num_heads_upsample == -1:
             num_heads_upsample = num_heads
 
+        self.conditioning = None
         self.image_size = image_size
         self.in_channels = in_channels
         self.model_channels = model_channels
@@ -602,12 +603,12 @@ class UNetModel(nn.Module):
             linear(time_embed_dim, time_embed_dim),
         )
 
-        self.text_embed_dim = text_embed_dim
-        if text_embed_dim is not None:
-            self.null_text_embed = nn.Parameter(th.randn(1, text_embed_dim) * 0.02)
-            # We project the text embeddings to the same dimension as the time embeddings
-            self.text_proj = nn.Sequential(
-                linear(text_embed_dim, time_embed_dim),
+        self.cond_embed_dim = cond_embed_dim
+        if cond_embed_dim is not None:
+            self.null_cond_embed = nn.Parameter(th.randn(1, cond_embed_dim) * 0.02)
+            # We project the conditioning (e.g. text) embeddings to the same dimension as the time embeddings
+            self.cond_proj = nn.Sequential(
+                linear(cond_embed_dim, time_embed_dim),
                 nn.SiLU(),
                 linear(time_embed_dim, time_embed_dim),
             )
@@ -750,31 +751,41 @@ class UNetModel(nn.Module):
             zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
         )
     
-    def get_null_text_embed(self, batch_size: int=1):
-        return self.null_text_embed.repeat(batch_size, 1)
+    def get_null_cond_embed(self, batch_size: int=1):
+        return self.null_cond_embed.repeat(batch_size, 1)
 
-    def forward(self, t, x, text_embeddings=None, p_uncond=None, *args, **kwargs):
+    def set_conditioning(self, conditioning):
+        """
+        Set the conditioning for the model.
+
+        The conditioning can be an embedding of a text prompt, a reference image, a pose skeleton, etc.
+        It can also contain the raw text, image etc.
+        A dictionary is a good way to pass multiple types of conditioning, but a single tensor is also supported.
+        As long as the conditionEncoder understands how to process it, it can be used to condition the model's generation.
+        """
+        self.conditioning = conditioning
+    
+    # def set_conditioning_encoder(self, condition_encoder):
+    #     self.condition_encoder = condition_encoder
+
+    def forward(self, t, x, y=None, p_uncond=None, *args, **kwargs):
         """
         Apply the model to an input batch.
         :param t: a 1-D batch of timesteps.
         :param x: an [N x C x ...] Tensor of inputs.
-        :param text_embeddings: an [N x D] Tensor of text embeddings.
+        :param y: an [N x D] Tensor of text embeddings.
         :return: an [N x C x ...] Tensor of outputs.
         """
-        assert (text_embeddings is not None) == (
-            self.text_embed_dim is not None
-        ), "must specify text_embeddings if and only if the model is text-conditional"
-
         hs = []
         emb = self.time_embed(timestep_embedding(t, self.model_channels))
         
-        if self.text_embed_dim is not None:
-            assert text_embeddings.shape[1] == self.text_embed_dim
+        if y is not None:
+            assert self.cond_embed_dim is not None, "You passed in the conditioning y, but the model is not conditional. Set cond_embed_dim in the model constructor."
+            assert y.shape[1] == self.cond_embed_dim, f"The conditioning (e.g. text) embedding must have shape [N x {self.cond_embed_dim}]. Got {y.shape}."
             if p_uncond is not None and p_uncond > 0:
-                unconditional_mask = (th.rand(text_embeddings.shape[0]) < p_uncond)
-                text_embeddings[unconditional_mask] = self.null_text_embed
-                # text_embeddings = th.where(unconditional_mask, self.null_text_embed, text_embeddings)
-            emb = emb + self.text_proj(text_embeddings)
+                unconditional_mask = (th.rand(y.shape[0]) < p_uncond)
+                y[unconditional_mask] = self.null_cond_embed
+            emb = emb + self.cond_proj(y)
 
         h = x.type(self.dtype)
         for module in self.input_blocks:
@@ -793,7 +804,7 @@ def UNetBig(
     in_channels=3,
     out_channels=3,
     base_width=192,
-    text_embed_dim=None,
+    cond_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -831,7 +842,7 @@ def UNetBig(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
-        text_embed_dim=text_embed_dim,
+        cond_embed_dim=cond_embed_dim,
     )
 
 
@@ -840,7 +851,7 @@ def UNet(
     in_channels=3,
     out_channels=3,
     base_width=64,
-    text_embed_dim=None,
+    cond_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -878,7 +889,7 @@ def UNet(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
-        text_embed_dim=text_embed_dim,
+        cond_embed_dim=cond_embed_dim,
     )
 
 
@@ -887,7 +898,7 @@ def UNetSmall(
     in_channels=3,
     out_channels=3,
     base_width=32,
-    text_embed_dim=None,
+    cond_embed_dim=None,
 ):
     if image_size == 128:
         channel_mult = (1, 1, 2, 3, 4)
@@ -930,5 +941,5 @@ def UNetSmall(
         use_scale_shift_norm=True,
         resblock_updown=True,
         use_new_attention_order=True,
-        text_embed_dim=text_embed_dim,
+        cond_embed_dim=cond_embed_dim,
     )

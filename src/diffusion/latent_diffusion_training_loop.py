@@ -116,12 +116,9 @@ def train_step(
     ).long()
     x_t, true_noise = forward_diffusion(x_0, t, noise_schedule, noise=noise)
 
-    predicted_noise = denoising_model(t=t, x=x_t, text_embeddings=text_emb, p_uncond=config.text_drop_prob)
-    predicted_noise = (
-        predicted_noise.sample
-        if hasattr(predicted_noise, "sample")
-        else predicted_noise
-    )
+    # predicted_noise = denoising_model(t=t, x=x_t)
+    predicted_noise = denoising_model(t=t, x=x_t, y=text_emb, p_uncond=config.cond_drop_prob)
+    predicted_noise = predicted_noise.sample if hasattr(predicted_noise, "sample") else predicted_noise
 
     loss = criterion(predicted_noise, true_noise)
     loss = loss.mean() if config.use_loss_mean else loss

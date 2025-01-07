@@ -7,6 +7,7 @@ from src.datasets.celeb_dataset import CelebDataset
 from src.datasets.pokemon_dataset import PokemonDataset
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from src.datasets.hugging_face_dataset import HuggingFaceDataset
+from src.datasets.mj_latents import MJLatentsDataset
 
 
 def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
@@ -36,6 +37,9 @@ def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> 
     elif config.dataset == "pokemon":
         print("Loading Pokemon dataset")
         full_dataset = PokemonDataset(transform=transform)
+    elif config.dataset == "mj_latents":
+        print("Loading MJ latents dataset")
+        full_dataset = MJLatentsDataset()
     else:
         print(f"Loading dataset from Hugging Face: {config.dataset}")
         full_dataset = HuggingFaceDataset(config.dataset, transform=transform)

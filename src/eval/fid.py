@@ -1,11 +1,11 @@
 import tempfile
 from pathlib import Path
 import numpy as np
-from typing import Union
 import torch
 from torch.utils.data import DataLoader
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from torch.nn import Module
+from tqdm.auto import tqdm
 
 try:
     from cleanfid import fid
@@ -159,7 +159,7 @@ def precompute_fid_stats_for_real_image_latents(
         print(f"FID stats already exist for {config.dataset} at {existing_fid_stats_path}")
         return
     count = 0
-    for batch in dataloader:
+    for batch in tqdm(dataloader, desc="Collecting real images for FID stats precomputation"):
         # TODO: "image_emb" is hardcoded
         latents = batch["image_emb"]
         if isinstance(latents, list):

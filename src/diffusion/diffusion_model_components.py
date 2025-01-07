@@ -35,7 +35,7 @@ def create_diffusion_model_components(
 ) -> DiffusionModelComponents:
     device = torch.device(config.device)
     denoising_model = create_model(
-        net=config.net, in_channels=config.in_channels, resolution=config.resolution
+        net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
     )
     denoising_model = denoising_model.to(device)
     # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None

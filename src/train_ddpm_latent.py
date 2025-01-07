@@ -42,6 +42,18 @@ def parse_arguments():
         help="Number of timesteps in the diffusion process",
     )
     parser.add_argument(
+        "--cond_embed_dim",
+        type=int,
+        default=None,
+        help="Dimension of the conditioning embedding (before the projection layer). This is required when training a conditional model.",
+    )
+    parser.add_argument(
+        "--cond_drop_prob",
+        type=float,
+        default=0.2,
+        help="Probability of dropping conditioning during training",
+    )
+    parser.add_argument(
         "--warmup_steps", type=int, default=1200, help="Number of warmup steps"
     )
     parser.add_argument(
@@ -77,7 +89,7 @@ def parse_arguments():
     parser.add_argument(
         "--clip_sample_range",
         type=float,
-        default=1.0,
+        default=2.0,
         help="Range for clipping sample",
     )
     parser.add_argument(
@@ -154,7 +166,6 @@ def collate_fn(batch):
     }
     if "text_emb" in batch[0]:
         data["text_emb"] = torch.stack([torch.from_numpy(np.array(item["text_emb"])) for item in batch])
-    assert data["image_emb"].shape == (len(batch), 4, 8, 8), f"Image emb shape is {data['image_emb'].shape}. Expected (len(batch), 4, 8, 8)."
     return data
 
 

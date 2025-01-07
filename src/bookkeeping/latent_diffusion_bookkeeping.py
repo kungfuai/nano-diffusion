@@ -60,7 +60,6 @@ class LatentDiffusionBookkeeping:
 
             if step % config.sample_every == 0:
                 generate_and_log_samples(model_components, config, step, val_dataloader)
-                # log_denoising_results(model_components, config, step, train_dataloader)
 
             if step % config.save_every == 0 and step > 0:
                 save_checkpoints(model_components, step, config)
@@ -149,10 +148,10 @@ def generate_and_log_samples(
     if val_dataloader:
         # TODO: This assumes n_samples <= batch_size. Get multiple batches until we have enough samples.
         batch = next(iter(val_dataloader))
-        if "text_embeddings" in batch:
-            text_embeddings = batch["text_embeddings"]
+        if "text_embeddings" in batch or "text_emb" in batch:
+            text_embeddings = batch["text_embeddings"] if "text_embeddings" in batch else batch["text_emb"]
             n_samples = min(n_samples, text_embeddings.shape[0])
-            text_embeddings = text_embeddings[:n_samples].to(device)
+            text_embeddings = text_embeddings[:n_samples].float().to(device)
         else:
             text_embeddings = None
 
@@ -161,6 +160,7 @@ def generate_and_log_samples(
         denoising_model, x, text_embeddings, noise_schedule, config.num_denoising_steps, device,
         clip_sample=config.clip_sample_range > 0,
         clip_sample_range=config.clip_sample_range,
+        guidance_scale=config.guidance_scale,
     )
     sampled_latents = sampled_latents / config.vae_scale_factor
     sampled_images = model_components.vae.decode(sampled_latents.half()).sample
@@ -275,7 +275,7 @@ def compute_and_log_fid(
     for i in range(num_batches):
         data_batch = next(batch_gen)
         if "text_embeddings" in data_batch:
-            text_embeddings = data_batch["text_embeddings"]
+            text_embeddings = data_batch["text_embeddings"].float().to(device)
         else:
             text_embeddings = None
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
@@ -301,7 +301,7 @@ def compute_and_log_fid(
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
             data_batch = next(batch_gen)
             if "text_embeddings" in data_batch:
-                text_embeddings = data_batch["text_embeddings"]
+                text_embeddings = data_batch["text_embeddings"].float().to(device)
             else:
                 text_embeddings = None
             batch_latents = generate_conditional_samples_by_denoising(model_components.ema_model, x_t, text_embeddings, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)

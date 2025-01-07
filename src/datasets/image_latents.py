@@ -132,8 +132,8 @@ class ImageLatentsDataset(Dataset):
         return self._transform(self.src_dataset[idx])
     
     def __len__(self):
-        return 1000
-        # return len(self.src_dataset)
+        # return 1000
+        return len(self.src_dataset)
     
     def __iter__(self):
         for i in range(len(self)):
@@ -166,16 +166,25 @@ if __name__ == "__main__":
 
     # print(dataset_dict['train'][0]['image_emb'])
 
-    if False:
+    save_to_npy = True
+    if save_to_npy:
         # compute the std of the latents
         # collect all image embeddings to a numpy array
         image_embeddings = np.array([item['image_emb'] for item in ds])
         print(image_embeddings.shape)
-        # flatten
-        image_embeddings = image_embeddings.reshape(image_embeddings.shape[0], -1)
-        # print(image_embeddings[:2, :10])
         print(f"Latents std of n vectors: {image_embeddings.std(axis=1).mean()}")
 
-    print("Pushing to hub...")
-    dataset_dict.push_to_hub(repo_id='zzsi/afhq64_16k_latents_sdxl_blip2', max_shard_size="1GB")
-    print("Done")
+        text_embeddings = np.array([item['text_emb'] for item in ds])
+        print(text_embeddings.shape)
+        print(f"Text embeddings std of n vectors: {text_embeddings.std(axis=1).mean()}")
+
+        val_text_embeddings = text_embeddings[0:16]
+
+        # Save to image_emb.npy, text_emb.npy, val_text_emb.npy
+        np.save('afhq64_16k_image_emb.npy', image_embeddings)
+        np.save('afhq64_16k_text_emb.npy', text_embeddings)
+        np.save('afhq64_16k_val_text_emb.npy', val_text_embeddings)
+
+    # print("Pushing to hub...")
+    # dataset_dict.push_to_hub(repo_id='zzsi/afhq64_16k_latents_sdxl_blip2', max_shard_size="1GB")
+    # print("Done")

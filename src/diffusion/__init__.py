@@ -99,20 +99,39 @@ def denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample=True, cl
     return pred_prev_sample
 
 
-def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample=True, clip_sample_range=1.0):
+def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample=True, clip_sample_range=1.0, guidance_scale=7.5):
     """
     This is the backward diffusion step, with the effect of denoising.
 
-    The prediction is conditioned on the text embeddings.
+    Implements classifier-free guidance by conditioning on both text embeddings and unconditional (null) embeddings.
     """
+    
     if isinstance(t, int):
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
     else:
         t_tensor = t
+
+    # Double the batch - first half conditioned on text, second half unconditioned
+    x_twice = torch.cat([x_t] * 2)
+    t_twice = torch.cat([t_tensor] * 2)
+    
+    # Create unconditional embeddings (zeros) and concatenate with text embeddings
+    if text_embeddings is not None:
+        uncond_embeddings = denoising_model.get_null_cond_embed(batch_size=x_t.shape[0])
+        embeddings_cat = torch.cat([uncond_embeddings, text_embeddings])
+    else:
+        embeddings_cat = None
+
     with torch.no_grad():
-        model_output = denoising_model(t=t_tensor, x=x_t, text_emb=text_embeddings, p_uncond=1)
+        model_output = denoising_model(t=t_twice, x=x_twice, text_embeddings=embeddings_cat)
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
+
+    # Split predictions and perform guidance
+    noise_pred_uncond, noise_pred_text = model_output.chunk(2)
+    adjustment = guidance_scale * (noise_pred_text - noise_pred_uncond)
+    # print("avg adjustment", adjustment.cpu().numpy().mean(), "guidance scale", guidance_scale)
+    model_output = noise_pred_uncond + adjustment
 
     # Extract relevant values from noise_schedule
     alpha_prod_t = noise_schedule["alphas_cumprod"][t_tensor]
@@ -153,6 +172,8 @@ def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_s
     variance = torch.clamp(variance, min=1e-20)
 
     pred_prev_sample = pred_prev_sample + (variance ** 0.5) * variance_noise
+
+    return pred_prev_sample
 
     return pred_prev_sample
 
@@ -234,7 +255,7 @@ def generate_samples_by_denoising(denoising_model, x_T, noise_schedule, n_T, dev
     return x_t
 
 
-def generate_conditional_samples_by_denoising(denoising_model, x_T, text_embeddings, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False):
+def generate_conditional_samples_by_denoising(denoising_model, x_T, text_embeddings, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False, guidance_scale=7.5):
     """
     Generate latent samples by denoising. Optionally, text embeddings are provided.
     """
@@ -245,11 +266,9 @@ def generate_conditional_samples_by_denoising(denoising_model, x_T, text_embeddi
     for t in pbar:
         if method == "direct":
             raise NotImplementedError("Direct denoising step no longer supported")
-            x_t = denoising_step_direct(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
-        else:
-            clip_sample = True
-            clip_sample_range = 3
-            x_t = conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample, clip_sample_range)
+        
+        x_t = conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample, clip_sample_range, guidance_scale)
+        
         if not quiet:
             pbar.set_postfix({"std": x_t.std().item()})
 
