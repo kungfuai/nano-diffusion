@@ -60,6 +60,7 @@ def training_loop(
             # Get latents from batch
             x = batch['image_emb'].float().to(device)
             text_emb = batch["text_emb"].float().to(device)
+            text_emb = text_emb.reshape(text_emb.shape[0], -1)
 
             denoising_model.train()
             loss = train_step(

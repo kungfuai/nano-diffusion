@@ -178,9 +178,8 @@ class DiT(nn.Module):
         depth=28,
         num_heads=16,
         mlp_ratio=4.0,
-        class_dropout_prob=0.1,
-        num_classes=1000,
         learn_sigma=True,
+        cond_embed_dim=None,
     ):
         """
         # Load the processor and model
@@ -215,6 +214,15 @@ class DiT(nn.Module):
         ])
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
         self.initialize_weights()
+
+        self.cond_embed_dim = cond_embed_dim
+        if cond_embed_dim is not None:
+            self.null_cond_embed = nn.Parameter(torch.randn(1, cond_embed_dim) * 0.02)
+            self.cond_proj = nn.Sequential(
+                nn.Linear(cond_embed_dim, hidden_size),
+                nn.SiLU(),
+                nn.Linear(hidden_size, hidden_size),
+            )
 
     def initialize_weights(self):
         # Initialize transformer layers:
@@ -267,20 +275,31 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    def forward(self, t, x, y=None, *args, **kwargs):
+    def get_null_cond_embed(self, batch_size: int=1):
+        return self.null_cond_embed.repeat(batch_size, 1)
+
+    def forward(self, t, x, y=None, p_uncond=None, *args, **kwargs):
         """
         Forward pass of DiT.
         t: (N,) tensor of diffusion timesteps
-        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
-        y: (N,) tensor of class labels
+        x: (N, C, H, W) tensor of spatial inputs
+        y: (N, D) tensor of conditioning embeddings
+        p_uncond: probability of using null conditioning (classifier-free guidance)
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
+
+        # Handle conditioning
         if y is not None:
-            y = self.y_embedder(y, self.training)    # (N, D)
-            c = t + y                                # (N, D)
+            assert self.cond_embed_dim is not None, "Model not configured for conditioning. Set cond_embed_dim in constructor."
+            assert y.shape[1] == self.cond_embed_dim, f"Conditioning embedding must have dim {self.cond_embed_dim}, got {y.shape[1]}"
+            if p_uncond is not None and p_uncond > 0:
+                unconditional_mask = (torch.rand(y.shape[0], device=y.device) < p_uncond)
+                y[unconditional_mask] = self.null_cond_embed
+            c = t + self.cond_proj(y)
         else:
             c = t
+            
         for block in self.blocks:
             x = block(x, c)                      # (N, T, D)
         x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)

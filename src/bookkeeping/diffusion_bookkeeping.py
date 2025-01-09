@@ -57,7 +57,6 @@ class DiffusionBookkeeping:
 
             if step % config.sample_every == 0:
                 generate_and_log_samples(model_components, config, step)
-                # log_denoising_results(model_components, config, step, train_dataloader)
 
             if step % config.save_every == 0 and step > 0:
                 save_checkpoints(model_components, step, config)
@@ -146,6 +145,7 @@ def generate_and_log_samples(
         clip_sample=config.clip_sample_range > 0,
         clip_sample_range=config.clip_sample_range,
     )
+    sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
     images_processed = (
         (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
     )
@@ -169,6 +169,7 @@ def generate_and_log_samples(
         ema_sampled_images = generate_samples_by_denoising(
             ema_model, x, noise_schedule, config.num_denoising_steps, device
         )
+        ema_sampled_images = (ema_sampled_images / 2 + 0.5).clamp(0, 1)
         ema_images_processed = (
             (ema_sampled_images * 255)
             .permute(0, 2, 3, 1)
@@ -244,6 +245,7 @@ def compute_and_log_fid(
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
+        batch_images = (batch_images / 2 + 0.5).clamp(0, 1)
         generated_images.append(batch_images)
         count += current_batch_size
         print(f"Generated {count} out of {config.num_samples_for_fid} images")
@@ -260,6 +262,7 @@ def compute_and_log_fid(
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
             batch_images = generate_samples_by_denoising(model_components.ema_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
+            batch_images = (batch_images / 2 + 0.5).clamp(0, 1)
             ema_generated_images.append(batch_images)
             count += current_batch_size
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")

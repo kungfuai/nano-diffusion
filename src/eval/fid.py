@@ -167,7 +167,7 @@ def precompute_fid_stats_for_real_image_latents(
             # print(latents[0][0][0].shape)
             latents = torch.stack(latents).to(config.device)
 
-        latents = latents.half()
+        latents = latents
         # Decode latents to images using VAE
         with torch.no_grad():
             latents = latents.to(vae.device)
@@ -264,8 +264,10 @@ def evaluate_pretrained_model(
                 in_channels=config.in_channels, seed=seed+i, num_denoising_steps=num_denoising_steps))
         else:
             x_t = torch.randn(current_batch_size, config.in_channels, resolution, resolution).to(device)
-            sampled_images.append(generate_samples_by_denoising(
-                denoising_model, x_t, noise_schedule=noise_schedule, n_T=num_denoising_steps, device=device, seed=seed+i, quiet=True))
+            samples = generate_samples_by_denoising(
+                denoising_model, x_t, noise_schedule=noise_schedule, n_T=num_denoising_steps, device=device, seed=seed+i, quiet=True)
+            samples = (samples / 2 + 0.5).clamp(0, 1)
+            sampled_images.append(samples)
         count += current_batch_size
         print(f"Generated {count} out of {n_samples} images. num_denoising_steps: {num_denoising_steps}")
     sampled_images = torch.cat(sampled_images, dim=0)

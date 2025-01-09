@@ -234,7 +234,7 @@ class Denoiser(nn.Module):
         embed_dim: int,
         dropout: float,
         n_layers: int,
-        text_emb_size: int = 768,
+        cond_embed_dim: int = 768,
         mlp_multiplier: int = 4,
         n_channels: int = 4
     ):
@@ -254,9 +254,12 @@ class Denoiser(nn.Module):
 
         self.denoiser_trans_block = DenoiserTransBlock(patch_size, image_size, embed_dim, dropout, n_layers, mlp_multiplier, n_channels)
         self.norm = nn.LayerNorm(self.embed_dim)
-        self.label_proj = nn.Linear(text_emb_size, self.embed_dim)
+        self.label_proj = nn.Linear(cond_embed_dim, self.embed_dim)
+    
+    def get_null_cond_embed(self, batch_size: int=1):
+        return torch.zeros(batch_size, self.embed_dim)
 
-    def forward(self, t, x, y=None, *args, **kwargs):
+    def forward(self, t, x, y=None, p_uncond=None, *args, **kwargs):
         if t.ndim == 0:
             t = t.unsqueeze(0)[:, None].float()
         elif t.ndim == 1:
@@ -265,11 +268,13 @@ class Denoiser(nn.Module):
 
         if y is not None:
             y = self.label_proj(y).unsqueeze(1)
+            if p_uncond is not None and p_uncond > 0:
+                unconditional_mask = (torch.rand(y.shape[0], device=y.device) < p_uncond)
+                y[unconditional_mask] = 0
 
-        if y is not None:
-            noise_label_emb = torch.cat([t, y], dim=1)  # bs, 2, d
-        else:
-            noise_label_emb = torch.cat([t, t], dim=1)  # bs, 2, d
+        if y is None:
+            y = torch.zeros_like(t)
+        noise_label_emb = torch.cat([t, y], dim=1)  # bs, 2, d
 
         # print(f"noise_label_emb: {noise_label_emb.shape}")
         noise_label_emb = self.norm(noise_label_emb)

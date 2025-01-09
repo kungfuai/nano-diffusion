@@ -13,9 +13,6 @@ from ..diffusion.diffusion_model_components import LatentDiffusionModelComponent
 from ..eval.fid import compute_fid
 
 
-# TODO: generate_samples_by_denoising should use text_emb if it's provided
-
-
 class LatentDiffusionBookkeeping:
     def __init__(self, config: DiffusionTrainingConfig, model_components: LatentDiffusionModelComponents): #, denoising_model: nn.Module, noise_schedule: Dict):
         self.config = config
@@ -147,11 +144,13 @@ def generate_and_log_samples(
     # Optionally, prepare the text embeddings
     if val_dataloader:
         # TODO: This assumes n_samples <= batch_size. Get multiple batches until we have enough samples.
-        batch = next(iter(val_dataloader))
+        it = iter(val_dataloader)
+        batch = next(it)
         if "text_embeddings" in batch or "text_emb" in batch:
             text_embeddings = batch["text_embeddings"] if "text_embeddings" in batch else batch["text_emb"]
             n_samples = min(n_samples, text_embeddings.shape[0])
             text_embeddings = text_embeddings[:n_samples].float().to(device)
+            text_embeddings = text_embeddings.reshape(text_embeddings.shape[0], -1)
         else:
             text_embeddings = None
 
@@ -163,7 +162,7 @@ def generate_and_log_samples(
         guidance_scale=config.guidance_scale,
     )
     sampled_latents = sampled_latents / config.vae_scale_factor
-    sampled_images = model_components.vae.decode(sampled_latents.half()).sample
+    sampled_images = model_components.vae.decode(sampled_latents).sample
     print(f"sampled_images: min={sampled_images.min()}, max={sampled_images.max()}, std={sampled_images.std()}")
     # sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)  # Normalize to [0,1]
     sampled_images = (sampled_images - sampled_images.min()) / (sampled_images.max() - sampled_images.min())
@@ -191,7 +190,7 @@ def generate_and_log_samples(
             ema_model, x, text_embeddings, noise_schedule, config.num_denoising_steps, device
         )
         ema_sampled_latents = ema_sampled_latents / config.vae_scale_factor
-        ema_sampled_images = model_components.vae.decode(ema_sampled_latents.half()).sample
+        ema_sampled_images = model_components.vae.decode(ema_sampled_latents).sample
         ema_images_processed = (
             (ema_sampled_images * 255)
             .permute(0, 2, 3, 1)
@@ -276,13 +275,14 @@ def compute_and_log_fid(
         data_batch = next(batch_gen)
         if "text_embeddings" in data_batch:
             text_embeddings = data_batch["text_embeddings"].float().to(device)
+            text_embeddings = text_embeddings.reshape(text_embeddings.shape[0], -1)
         else:
             text_embeddings = None
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_latents = generate_conditional_samples_by_denoising(model_components.denoising_model, x_t, text_embeddings, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
         batch_latents = batch_latents / config.vae_scale_factor
-        batch_images = model_components.vae.decode(batch_latents.half()).sample
+        batch_images = model_components.vae.decode(batch_latents).sample
         generated_images.append(batch_images)
         count += current_batch_size
         print(f"Generated {count} out of {config.num_samples_for_fid} images")
@@ -302,11 +302,12 @@ def compute_and_log_fid(
             data_batch = next(batch_gen)
             if "text_embeddings" in data_batch:
                 text_embeddings = data_batch["text_embeddings"].float().to(device)
+                text_embeddings = text_embeddings.reshape(text_embeddings.shape[0], -1)
             else:
                 text_embeddings = None
             batch_latents = generate_conditional_samples_by_denoising(model_components.ema_model, x_t, text_embeddings, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
             batch_latents = batch_latents / config.vae_scale_factor
-            batch_images = model_components.vae.decode(batch_latents.half()).sample
+            batch_images = model_components.vae.decode(batch_latents).sample
             ema_generated_images.append(batch_images)
             count += current_batch_size
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
