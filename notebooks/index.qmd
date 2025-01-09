@@ -21,7 +21,7 @@ This course provides a minimal yet complete implementation of diffusion and flow
 
 ## Tutorials
 
-Please use the sidebar to navigate through the tutorials.
+Please use the sidebar to navigate through the tutorials. To start, checkout [Training a Diffusion Model on 2D Points](https://kungfuai.github.io/nano-diffusion/1_1_Diffusion%202D%20Toy.html).
 
 ## References
 

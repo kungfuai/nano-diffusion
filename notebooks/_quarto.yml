@@ -43,8 +43,10 @@ website:
       - text: "---"
       - section: "Text Conditioning"
         contents:
-          - href: "4_1_text_conditioning.ipynb"
-          - href: "4_1a_generate.ipynb"
+          - href: "4_1_text_conditioning_ddpm.ipynb"
+          - href: "4_1a_generate_t2i_ddpm.ipynb"
+          - href: "4_2_text_conditioning_cfm.ipynb"
+          - href: "4_2a_generate_t2i_cfm.ipynb"
       - text: "---"
       - section: "Additional resources"
         contents:

@@ -13,9 +13,6 @@ from ..diffusion.diffusion_model_components import LatentDiffusionModelComponent
 from ..eval.fid import compute_fid
 
 
-# TODO: generate_samples_by_denoising should use text_emb if it's provided
-
-
 class LatentDiffusionBookkeeping:
     def __init__(self, config: DiffusionTrainingConfig, model_components: LatentDiffusionModelComponents): #, denoising_model: nn.Module, noise_schedule: Dict):
         self.config = config

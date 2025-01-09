@@ -1,0 +1,15 @@
+---
+title: "Compare GPUs"
+---
+
+As each training run goes from hours to days or weeks, the choice of GPU becomes more important.
+We want to get a high quality model. We want to have fast iteration speed: time is valuable. We want to keep all the training experiments
+under a budget.
+
+Here is a comparison training on two popular GPUs on Lambda Labs: A10 and H100.
+
+## A10
+
+## H100
+
+

@@ -7,7 +7,7 @@ from PIL import Image
 import wandb
 import torch
 from torchvision.utils import save_image, make_grid
-from train_ddpm import generate_samples_by_denoising, create_noise_schedule, create_model
+from src.diffusion import generate_samples_by_denoising, create_noise_schedule, create_model
 
 
 def main():
@@ -39,6 +39,7 @@ def main():
     samples = generate_samples_by_denoising(
         denoising_model=model, x_T=x_T,
         noise_schedule=noise_schedule, n_T=1000, device=device)
+    samples = (samples / 2 + 0.5).clamp(0, 1)
     print(samples.min(), samples.max())
     images_processed = (samples * 255).cpu()
     # save to a file
