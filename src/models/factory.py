@@ -20,6 +20,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_multiplier=2,
             n_channels=in_channels,
             dropout=0,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "tld_s2":
         return TLD(
@@ -31,6 +32,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_multiplier=4,
             n_channels=in_channels,
             dropout=0,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "tld_b2":
         return TLD(
@@ -42,6 +44,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_multiplier=4,
             n_channels=in_channels,
             dropout=0,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_t0":
         return DiT(
@@ -53,7 +56,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_ratio=2,
             depth=3,
             num_heads=1,
-            class_dropout_prob=0.1,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_t1":
         return DiT(
@@ -65,7 +68,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_ratio=2,
             depth=3,
             num_heads=6,
-            class_dropout_prob=0.1,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_t2":
         return DiT(
@@ -77,7 +80,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             mlp_ratio=2,
             depth=12,
             num_heads=1,
-            class_dropout_prob=0.1,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_t3":
         model = DiT(
@@ -89,7 +92,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
                 mlp_ratio=2,
                 depth=12,
                 num_heads=6,
-                class_dropout_prob=0.1,
+                cond_embed_dim=cond_embed_dim,
             )
     elif net == "dit_s2":
         model = DiT(
@@ -100,46 +103,51 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             patch_size=2,
             num_heads=6,
             learn_sigma=False,
-            )
+            cond_embed_dim=cond_embed_dim,
+        )
     elif net == "dit_b2":
         model = DiT(
             input_size=resolution,
             depth=12,
             in_channels=in_channels,
-            hidden_size=384,
+            hidden_size=768,
             patch_size=2,
-            num_heads=6,
+            num_heads=12,
             learn_sigma=False,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_b4":
         model = DiT(
             input_size=resolution,
             depth=12,
             in_channels=in_channels,
-            hidden_size=384,
+            hidden_size=768,
             patch_size=4,
-            num_heads=6,
+            num_heads=12,
             learn_sigma=False,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_l2":
         model = DiT(
             input_size=resolution,
-            depth=12,
+            depth=24,
             in_channels=in_channels,
-            hidden_size=768,
+            hidden_size=1024,
             patch_size=2,
-            num_heads=12,
+            num_heads=16,
             learn_sigma=False,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_l4":
         model = DiT(
             input_size=resolution,
-            depth=12,
+            depth=24,
             in_channels=in_channels,
-            hidden_size=768,
+            hidden_size=1024,
             patch_size=4,
-            num_heads=12,
+            num_heads=16,
             learn_sigma=False,
+            cond_embed_dim=cond_embed_dim,
         )
     elif net == "unet_small":
         model = UNetSmall(

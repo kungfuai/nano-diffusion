@@ -118,12 +118,12 @@ def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_s
     # Create unconditional embeddings (zeros) and concatenate with text embeddings
     if text_embeddings is not None:
         uncond_embeddings = denoising_model.get_null_cond_embed(batch_size=x_t.shape[0])
-        embeddings_cat = torch.cat([uncond_embeddings, text_embeddings])
+        embeddings_cat = torch.cat([uncond_embeddings.to(text_embeddings.device), text_embeddings])
     else:
         embeddings_cat = None
 
     with torch.no_grad():
-        model_output = denoising_model(t=t_twice, x=x_twice, text_embeddings=embeddings_cat)
+        model_output = denoising_model(t=t_twice, x=x_twice, y=embeddings_cat)
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
 
@@ -323,12 +323,16 @@ def compute_validation_loss_for_latents(
             x = batch['image_emb']
             x = x.float().to(device)
             x = x * config.vae_scale_factor
-            text_emb = batch['text_emb'].float().to(device)
+            if 'text_emb' in batch:
+                text_emb = batch['text_emb'].float().to(device)
+                text_emb = text_emb.reshape(text_emb.shape[0], -1)
+            else:
+                text_emb = None
             t = torch.randint(0, n_T, (x.shape[0],)).to(device)
             noise = torch.randn(x.shape).to(device)
             x_t, true_noise = forward_diffusion(x, t, noise_schedule, noise=noise)
 
-            predicted_noise = denoising_model(t=t, x=x_t, text_emb=text_emb, p_uncond=0.1)  # TODO: this is hardcoded. The syntax is also wrong.
+            predicted_noise = denoising_model(t=t, x=x_t, y=text_emb, p_uncond=0.1)  # TODO: this is hardcoded. The syntax is also wrong.
             if hasattr(predicted_noise, "sample"):
                 predicted_noise = predicted_noise.sample
 

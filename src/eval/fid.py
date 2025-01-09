@@ -167,7 +167,7 @@ def precompute_fid_stats_for_real_image_latents(
             # print(latents[0][0][0].shape)
             latents = torch.stack(latents).to(config.device)
 
-        latents = latents.half()
+        latents = latents
         # Decode latents to images using VAE
         with torch.no_grad():
             latents = latents.to(vae.device)

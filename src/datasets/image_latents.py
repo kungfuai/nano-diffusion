@@ -109,7 +109,7 @@ class ImageLatentsDataset(Dataset):
         import clip
 
         with torch.no_grad():
-            img = self.image_transform(example[self.image_column]).unsqueeze(0).half().to(self.device)
+            img = self.image_transform(example[self.image_column]).unsqueeze(0).to(self.device)
             latents = self.vae.encode(img).latent_dist.sample().detach().cpu().numpy().astype(np.float16)[0]
 
             if self.text_column in example:

@@ -18,14 +18,14 @@ class DiffusionTrainingConfig:
     num_denoising_steps: int = 1000  # number of timesteps
 
     # VAE (tokenizer) for compression
-    vae_use_fp16: bool = True  # use fp16 for the VAE
+    vae_use_fp16: bool = False  # use fp16 for the VAE
     vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
     vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
 
     # Conditioning
     cond_embed_dim: int = None  # dimension of the conditioning embedding (before the projection layer)
     cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
-    guidance_scale: float = 7.5  # guidance scale for classifier-free guidance
+    guidance_scale: float = 4.5  # guidance scale for classifier-free guidance
     
     # Training loop and optimizer
     total_steps: int = 100000  # total number of training steps
