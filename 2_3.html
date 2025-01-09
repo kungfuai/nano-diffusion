@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Time to move off of the notebook – Nano Diffusion</title>
+<title>Compare GPUs – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,40 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -137,7 +103,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Compare GPUs</li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -224,7 +190,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link active">
+  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Time to move off of the notebook</span></a>
   </div>
 </li>
@@ -318,26 +284,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#running-the-training-job" id="toc-running-the-training-job" class="nav-link active" data-scroll-target="#running-the-training-job">Running the training job</a></li>
-  <li><a href="#the-refactoring" id="toc-the-refactoring" class="nav-link" data-scroll-target="#the-refactoring">The refactoring</a>
-  <ul class="collapse">
-  <li><a href="#code-in-the-notebook" id="toc-code-in-the-notebook" class="nav-link" data-scroll-target="#code-in-the-notebook">Code in the notebook</a></li>
-  <li><a href="#the-refactored-code" id="toc-the-refactored-code" class="nav-link" data-scroll-target="#the-refactored-code">The refactored code</a></li>
-  <li><a href="#adding-scripts-to-manage-the-training-job" id="toc-adding-scripts-to-manage-the-training-job" class="nav-link" data-scroll-target="#adding-scripts-to-manage-the-training-job">Adding scripts to manage the training job</a>
-  <ul class="collapse">
-  <li><a href="#the-dockerfile" id="toc-the-dockerfile" class="nav-link" data-scroll-target="#the-dockerfile">The <code>Dockerfile</code></a></li>
-  <li><a href="#the-train.py-script" id="toc-the-train.py-script" class="nav-link" data-scroll-target="#the-train.py-script">The <code>train.py</code> script</a></li>
-  </ul></li>
-  </ul></li>
+  <li><a href="#a10" id="toc-a10" class="nav-link active" data-scroll-target="#a10">A10</a></li>
+  <li><a href="#h100" id="toc-h100" class="nav-link" data-scroll-target="#h100">H100</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Time to move off of the notebook</h1>
+<h1 class="title">Compare GPUs</h1>
 </div>
 
 
@@ -354,172 +311,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>As our model training becomes more complex, we need to transition from notebooks to production scripts for several reasons:</p>
-<ol type="1">
-<li>Training times are now in hours, making experimentation in notebooks impractical</li>
-<li>We need robust experiment tracking and reproducibility</li>
-<li>We want to run many experiments and would like each experiment to be a clean, separate run</li>
-</ol>
-<p>To make training jobs robust, some extra work is needed: dependency management, monitoring, logging, and checkpointing.</p>
-<p>The <code>lib_2_1</code> directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:</p>
-<ul>
-<li>A GPU machine (e.g.&nbsp;A10 on <a href="https://lambdalabs.com/">Lambda Labs</a>)</li>
-<li><a href="https://www.docker.com/">Docker</a></li>
-<li><a href="https://github.com/NVIDIA/nvidia-container-toolkit">NVIDIA Container Toolkit</a></li>
-</ul>
-<section id="running-the-training-job" class="level2">
-<h2 class="anchored" data-anchor-id="running-the-training-job">Running the training job</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> notebooks/lib_2_1</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> build.sh</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> train.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>By default, the results will be saved in the <code>checkpoints</code> directory. If you like to use a hosted experiment tracking service like <a href="https://wandb.ai/">Weights &amp; Biases</a>, you can set the <code>WANB_API_KEY</code> and <code>WANDB_PROJECT</code> environment variables, and the results will be logged to Weights &amp; Biases.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">WANB_API_KEY</span><span class="op">=</span>...</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">WANDB_PROJECT</span><span class="op">=</span>...</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> train.sh <span class="at">--logger</span> wandb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As each training run goes from hours to days or weeks, the choice of GPU becomes more important. We want to get a high quality model. We want to have fast iteration speed: time is valuable. We want to keep all the training experiments under a budget.</p>
+<p>Here is a comparison training on two popular GPUs on Lambda Labs: A10 and H100.</p>
+<section id="a10" class="level2">
+<h2 class="anchored" data-anchor-id="a10">A10</h2>
 </section>
-<section id="the-refactoring" class="level1">
-<h1>The refactoring</h1>
-<section id="code-in-the-notebook" class="level2">
-<h2 class="anchored" data-anchor-id="code-in-the-notebook">Code in the notebook</h2>
-<p>Similar to the <a href="./1_1_a_refactor.html">refactoring for the 2D point clouds</a>, the notebook is a mix of stable and experimental code.</p>
-<section id="stable-library-code" class="level4">
-<h4 class="anchored" data-anchor-id="stable-library-code">Stable (library) code</h4>
-<ol type="1">
-<li>Main components of the diffusion model training pipeline:
-<ul>
-<li>Data and model setup:
-<ul>
-<li>DataLoader setup (<code>load_data</code>)</li>
-<li><strong>Model architectures (<code>UnetModel</code>)</strong></li>
-<li>The training loop (<code>train</code>)</li>
-</ul></li>
-<li>Diffusion specific components:
-<ul>
-<li>Forward diffusion (<code>forward_diffusion</code>)</li>
-<li>Denoising step (<code>denoising_step</code>)</li>
-<li>Noise schedule creation (<code>create_noise_schedule</code>)</li>
-<li>Sample generation (<code>generate_samples_by_denoising</code>)</li>
-</ul></li>
-</ul></li>
-<li>Evaluation and visualization tools:
-<ul>
-<li><strong>Visualization utilities (<code>visualize_sampled_images</code>)</strong></li>
-</ul></li>
-</ol>
-<p>The bolded parts are different from the 2D point clouds notebook.</p>
-</section>
-<section id="experimental-code" class="level4">
-<h4 class="anchored" data-anchor-id="experimental-code">Experimental code</h4>
-<ul>
-<li>Custom and flexible visualization of intermediate results</li>
-<li>Hyperparameter choices and training configurations</li>
-</ul>
-<p>We will also be adding code for bookkeeping: setting up logging, checkpointing, monitoring, and evaluation. Bookkeeping code is not part of the training recipe, and it does not impact how the model is trained. However, it is essential for producing the experiments data that helps us understand the behavior of the training process, and identify the winning ingredients of a good training recipe. For evaluation, we need to add FID score calculation (more about this in the <a href="3_1_fid_score">next section</a>).</p>
-</section>
-</section>
-<section id="the-refactored-code" class="level2">
-<h2 class="anchored" data-anchor-id="the-refactored-code">The refactored code</h2>
-<p>First, let’s make a copy of <code>lib_1_1</code>. The diffusion part of the logic remains almost the same. The function <code>denoising_step</code> is updated to allow for clipping the denoised sample.</p>
-<p>A new file <code>unets.py</code> is added to hold the UNet models. And <code>model.py</code> is updated to use the new models.</p>
-<p><code>data.py</code> is updated with a new class <code>HuggingFaceDataset</code> as a convenience class to load image datasets from HuggingFace.</p>
-<p><code>training_loop.py</code> remains very similar.</p>
-<p><code>config.py</code> is updated to add some new hyperparameters.</p>
-<p><code>bookkeeping.py</code> is added to handle the bookkeeping logic. A <code>Bookkeeping</code> class is implemented with the following interface:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Bookkeeping:</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config: TrainingConfig, denoising_model: nn.Module, noise_schedule: Dict):</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> set_up_logger(<span class="va">self</span>):</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> run_callbacks(<span class="va">self</span>, config: TrainingConfig, step: <span class="bu">int</span>, loss: <span class="bu">float</span>, optimizer: torch.optim.Optimizer, val_dataloader: DataLoader):</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="adding-scripts-to-manage-the-training-job" class="level2">
-<h2 class="anchored" data-anchor-id="adding-scripts-to-manage-the-training-job">Adding scripts to manage the training job</h2>
-<p>Several files are added to manage the environment and run the training job in a Docker container:</p>
-<ul>
-<li><code>build.sh</code>: Builds the Docker image.</li>
-<li><code>train.sh</code>: Runs the training job.</li>
-<li><code>Dockerfile</code>: Defines the Docker image.</li>
-<li><code>train.py</code>: The training script.</li>
-</ul>
-<section id="the-dockerfile" class="level3">
-<h3 class="anchored" data-anchor-id="the-dockerfile">The <code>Dockerfile</code></h3>
-<p>We use the <code>Dockerfile</code> to define the environment for the training job. When we run the <code>build.sh</code> script, it will build the Docker image that has all the dependencies installed.</p>
-<p>It is minimal but complete:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Non-root user</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">useradd</span> <span class="at">-m</span> <span class="at">-s</span> /bin/bash <span class="at">-G</span> sudo <span class="at">-u</span> 1000 nanodiffusion</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> nanodiffusion</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 <span class="dt">\</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Let’s break down the Dockerfile:</p>
-<section id="base-image" class="level4">
-<h4 class="anchored" data-anchor-id="base-image">Base image</h4>
-<ul>
-<li><code>FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime</code>: This is the base image. It is a PyTorch image with CUDA 12.1 and cuDNN 8.0 installed.</li>
-</ul>
-</section>
-<section id="user-management" class="level4">
-<h4 class="anchored" data-anchor-id="user-management">User management</h4>
-<ul>
-<li><code>RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion</code>: This creates a non-root user named <code>nanodiffusion</code>. It is a good practice to run the training job as a non-root user.</li>
-<li><code>USER nanodiffusion</code>: This switches to the <code>nanodiffusion</code> user.</li>
-</ul>
-</section>
-<section id="dependencies" class="level4">
-<h4 class="anchored" data-anchor-id="dependencies">Dependencies</h4>
-<ul>
-<li><code>RUN pip install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 \     clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2</code>: This installs the dependencies.</li>
-</ul>
-</section>
-</section>
-<section id="the-train.py-script" class="level3">
-<h3 class="anchored" data-anchor-id="the-train.py-script">The <code>train.py</code> script</h3>
-<p>The <code>train.py</code> script is the main script for the training job. It is a simple script that loads the model, sets the hyperparameters, and starts the training.</p>
-<p>We use a <code>TrainingPipeline</code> class to represent the logical flow of model training.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TrainingPipeline:</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config: TrainingConfig):</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.config <span class="op">=</span> config</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, dataset_builder: DatasetBuilder, train_steps: <span class="bu">int</span><span class="op">=</span><span class="dv">10000</span>):</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        train_dataloader, val_dataloader <span class="op">=</span> <span class="va">self</span>._create_dataloaders(dataset_builder)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.noise_schedule <span class="op">=</span> create_noise_schedule(n_T<span class="op">=</span><span class="va">self</span>.config.num_denoising_steps, device<span class="op">=</span><span class="va">self</span>.config.device)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.denoising_model <span class="op">=</span> <span class="va">self</span>._create_model(device<span class="op">=</span><span class="va">self</span>.config.device)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.optimizer <span class="op">=</span> <span class="va">self</span>._create_optimizer(<span class="va">self</span>.denoising_model)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        bookkeeping <span class="op">=</span> Bookkeeping(config<span class="op">=</span><span class="va">self</span>.config, denoising_model<span class="op">=</span><span class="va">self</span>.denoising_model, noise_schedule<span class="op">=</span><span class="va">self</span>.noise_schedule)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        bookkeeping.set_up_logger()</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        train(</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span><span class="va">self</span>.config,</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="va">self</span>.denoising_model,</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>            train_dataloader<span class="op">=</span>train_dataloader,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>            val_dataloader<span class="op">=</span>val_dataloader,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            noise_schedule<span class="op">=</span><span class="va">self</span>.noise_schedule,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            optimizer<span class="op">=</span><span class="va">self</span>.optimizer,</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>            steps<span class="op">=</span>train_steps,</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>            silent<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            bookkeeping<span class="op">=</span>bookkeeping,</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.denoising_model</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> generate_samples(<span class="va">self</span>, num_samples: <span class="bu">int</span>):</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_model(<span class="va">self</span>, device: <span class="bu">str</span>):</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_optimizer(<span class="va">self</span>, denoising_model: nn.Module):</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_dataloaders(<span class="va">self</span>, dataset_builder: DatasetBuilder):</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>        ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="h100" class="level2">
+<h2 class="anchored" data-anchor-id="h100">H100</h2>
 
 
-</section>
-</section>
 </section>
 
 </main> <!-- /main -->

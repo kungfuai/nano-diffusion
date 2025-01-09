@@ -299,14 +299,26 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./4_1_text_conditioning.html" class="sidebar-item-text sidebar-link">
+  <a href="./4_1_text_conditioning_ddpm.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Text Conditioning (text2image)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./4_1a_generate.html" class="sidebar-item-text sidebar-link">
+  <a href="./4_1a_generate_t2i_ddpm.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Generate images with text conditioning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_2_text_conditioning_cfm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Text conditioning for Flow Matching</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_2a_generate_t2i_cfm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Load pretrained model</span></a>
   </div>
 </li>
       </ul>
@@ -415,7 +427,12 @@ window.Quarto = {
 </section>
 <section id="why-2d-points" class="level2">
 <h2 class="anchored" data-anchor-id="why-2d-points">Why 2D Points?</h2>
-<p>Working with 2D points offers several advantages: - Fast training on CPU - Easy visualization of the entire process - Clear understanding of how diffusion models work</p>
+<p>Working with 2D points offers several advantages:</p>
+<ul>
+<li>Fast training on CPU</li>
+<li>Easy visualization of the entire process</li>
+<li>Clear understanding of how diffusion models work</li>
+</ul>
 <p>We’ll explore the different components of diffusion models and their functions, as well as compare the quality of generated results using different model architectures.</p>
 <div id="cell-2" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
@@ -750,6 +767,7 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="additional-utilities">Additional utilities</h3>
 <section id="tools-for-visualizing-trajectories" class="level4">
 <h4 class="anchored" data-anchor-id="tools-for-visualizing-trajectories">Tools for visualizing trajectories</h4>
+<p>Here are some utility functions to plot the trajectories of the diffusion process.</p>
 <div id="cell-17" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Tuple</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1015,7 +1033,7 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 <span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>traj <span class="op">=</span> torch.stack(x_t_list).cpu().numpy()</span>
 <span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>traj_set <span class="op">=</span> TrajectorySet(traj)</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span>traj_set.plot_trajectories(n<span class="op">=</span><span class="dv">60</span>, show_figure<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> traj_set.plot_trajectories(n<span class="op">=</span><span class="dv">60</span>, show_figure<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
@@ -1031,12 +1049,25 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 </section>
 <section id="denoising-reverse-diffusion" class="level2">
 <h2 class="anchored" data-anchor-id="denoising-reverse-diffusion">Denoising: Reverse diffusion</h2>
-<p>We train a denoising model to reverse this process by predicting the noise at each time step (or noise level) <span class="math inline">\(t\)</span> and the current state of the data <span class="math inline">\(x_t\)</span>:</p>
+<p>We train a model to reverse this process by predicting the noise at each time step (or noise level) <span class="math inline">\(t\)</span> and the current state of the data <span class="math inline">\(x_t\)</span>. This is called a denoising model:</p>
 <p><span class="math display">\[
 \mathbf\epsilon_{\theta}(\mathbf{x_t}, t)
 \]</span></p>
 <p><span class="math inline">\(\theta\)</span> is the parameters of the denoising model.</p>
 <p>When we generate data, we use this denoising model to iteratively remove noise from the data point and move it back towards <span class="math inline">\(x_0\)</span>. This is the reverse diffusion process. We’ll define the individual denoising step for this process now.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Side note: There are other ways to parameterize the problem. For example, some train a model to predict the previous state <span class="math inline">\(x_{t-1}\)</span> directly. In this tutorial, we focus on the standard noise prediction formulation.</p>
+</div>
+</div>
 <div id="cell-29" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> denoising_step(denoising_model, x_t, t, noise_schedule, thresholding<span class="op">=</span><span class="va">False</span>):</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
