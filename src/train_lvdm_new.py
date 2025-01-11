@@ -5,8 +5,11 @@ Adapted from https://github.com/apapiu/transformer_latent_diffusion.
 """
 
 from dataclasses import dataclass, field, asdict
+from datetime import datetime
 import copy
 from dataclasses import dataclass, asdict
+import os
+from typing import Optional, Callable, Tuple
 from pathlib import Path
 import numpy as np
 import torch
@@ -23,10 +26,86 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from einops import rearrange
 from einops.layers.torch import Rearrange
+from torch.utils.data import random_split
+from torchvision import transforms
 
+from src.models.factory import create_model, choices
+from src.datasets import load_data
+from src.datasets.mj_latents import MJLatentsDataset, collate_fn
+from src.datasets.hugging_face_dataset import HuggingFaceDataset
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 to_pil = transforms.ToPILImage()
+
+
+@dataclass
+class TrainingConfig:
+    # Dataset
+    dataset: str = "zzsi/afhq64_16k_latents_sdxl_blip2" # dataset name
+    resolution: int = 8 # resolution of the image
+    
+    # Model architecture
+    in_channels: int = 3 # number of input channels
+    net: str = "unet_small" # network architecture
+    num_denoising_steps: int = 100 # number of timesteps
+    
+    # Flow plan algorithm
+    plan: str = "ot"  # flow matching plan
+
+    # Training loop and optimizer
+    total_steps: int = 100000  # total number of training steps
+    batch_size: int = 128 # batch size
+    learning_rate: float = 1e-4 # initial learning rate
+    weight_decay: float = 0.0 # weight decay
+    lr_min: float = 1e-6 # minimum learning rate
+    warmup_steps: int = 1000 # number of warmup steps
+
+    # Logging and evaluation
+    log_every: int = 100 # log every N steps
+    sample_every: int = 1000 # sample every N steps
+    save_every: int = 50000 # save model every N steps
+    validate_every: int = 10000 # compute validation loss every N steps
+    fid_every: int = 10000 # compute FID every N steps
+    num_samples_for_fid: int = 1000 # number of samples for FID
+    num_samples_for_logging: int = 8 # number of samples for logging
+    num_real_samples_for_fid: int = 10000 # number of real image samples for FID precomputation
+
+    # Regularization
+    max_grad_norm: float = -1 # maximum norm for gradient clipping
+    use_loss_mean: bool = False # use loss.mean() instead of just loss
+    use_ema: bool = False # use EMA for the model
+    ema_beta: float = 0.9999 # EMA decay factor
+
+    # Accelerator
+    device: str = "cuda" # device to use for training
+
+    # Logging
+    logger: str = "wandb" # logging method
+    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
+    checkpoint_dir: str = "logs/train" # checkpoint directory, different for each run
+    min_steps_for_final_save: int = 100 # minimum steps for final save
+    watch_model: bool = False # watch the model with wandb
+    init_from_wandb_run_path: str = None # initialize model from a wandb run path
+    init_from_wandb_file: str = None # initialize model from a wandb file
+
+    # Data augmentation
+    random_flip: bool = False # randomly flip images horizontally
+
+    # VAE and conditioning
+    vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
+    vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
+    cond_embed_dim: int = 768  # dimension of the conditioning embedding (before the projection layer)
+    cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
+    guidance_scale: float = 4.5  # guidance scale for classifier-free guidance
+
+
+    def update_checkpoint_dir(self):
+        # Update the checkpoint directory use a timestamp
+        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    
+    def __post_init__(self):
+        self.update_checkpoint_dir()
+
 
 @dataclass
 class DenoiserConfig:
@@ -84,6 +163,17 @@ class TrainConfig:
     use_wandb: bool = True
     checkpoint_dir: str = "logs/checkpoints"
 
+    def update_checkpoint_dir(self):
+        """ Update the checkpoint directory use a timestamp
+        """
+        from datetime import datetime
+        
+        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+        
+    def __post_init__(self):
+        self.update_checkpoint_dir()
+
 
 @dataclass
 class LTDConfig:
@@ -102,6 +192,7 @@ class ModelConfig:
     train_config: TrainConfig = field(default_factory=TrainConfig)
     vae_cfg: VaeConfig = field(default_factory=VaeConfig)
     clip_cfg: ClipConfig = field(default_factory=ClipConfig)
+    net: str = "tld_b2"
 
 @dataclass
 class ModelComponents:
@@ -110,6 +201,7 @@ class ModelComponents:
     vae: AutoencoderKL
     optimizer: torch.optim.Optimizer
     diffuser: "DiffusionGenerator"
+    ema_diffuser: "DiffusionGenerator"
 
 
 def forward_diffusion(x_0: Tensor, t: Tensor, beta_a: float, beta_b: float, noise: Tensor | None = None) -> tuple[Tensor, Tensor]:
@@ -457,11 +549,17 @@ class DiffusionGenerator:
 
     def pred_image(self, noisy_image, labels, noise_level, class_guidance):
         num_imgs = noisy_image.size(0)
-        noises = torch.full((2 * num_imgs, 1), noise_level)
-        x0_pred = self.model(
-            torch.cat([noisy_image, noisy_image]),
-            noises.to(self.device, self.model_dtype),
-            labels.to(self.device, self.model_dtype),
+        noises = torch.full((2 * num_imgs, ), noise_level)
+        # x0_pred = self.model(
+        #     torch.cat([noisy_image, noisy_image]),
+        #     noises.to(self.device, self.model_dtype),
+        #     labels.to(self.device, self.model_dtype),
+        # )
+        x0_pred= self.model(
+            t=noises.to(self.device, self.model_dtype),
+            x=torch.cat([noisy_image, noisy_image]),
+            y=labels.to(self.device, self.model_dtype),
+            p_uncond=0,
         )
         x0_pred = self.apply_classifier_free_guidance(x0_pred, num_imgs, class_guidance)
         return x0_pred
@@ -473,7 +571,7 @@ class DiffusionGenerator:
             generator.manual_seed(seed)
             return torch.randn(
                 num_imgs,
-                self.model.n_channels,
+                4,  # TODO: pass this from config
                 img_size,
                 img_size,
                 dtype=self.model_dtype,
@@ -558,25 +656,6 @@ def count_parameters_per_layer(model: nn.Module):
         print(f"{name}: {param.numel()} parameters")
 
 
-def eval_gen(diffuser: DiffusionGenerator, labels: Tensor, img_size: int) -> Image:
-    class_guidance = 4.5
-    seed = 10
-    out, _ = diffuser.generate(
-        labels=torch.repeat_interleave(labels, 2, dim=0),
-        num_imgs=16,
-        class_guidance=class_guidance,
-        seed=seed,
-        n_iter=40,
-        exponent=1,
-        sharp_f=0.1,
-        img_size=img_size
-    )
-
-    out = to_pil((vutils.make_grid((out + 1) / 2, nrow=8, padding=4)).float().clip(0, 1))
-
-    return out
-
-
 def update_ema(ema_model: nn.Module, model: nn.Module, alpha: float = 0.999):
     with torch.no_grad():
         for ema_param, model_param in zip(ema_model.parameters(), model.parameters()):
@@ -601,22 +680,23 @@ def train_step(
     ).float()
     t = noise_level
     # t = torch.randint(0, config.denoiser_config.n_layers, (x_0.shape[0],)).to(device)
-    x_t, true_noise = forward_diffusion(x_0, t, config.train_config.beta_a, config.train_config.beta_b, noise=noise)
+    x_t, _ = forward_diffusion(x_0, t, config.train_config.beta_a, config.train_config.beta_b, noise=noise)
 
     # Random label masking
-    prob = 0.15
-    mask = torch.rand(label.size(0), device=device) < prob
-    label[mask] = 0
+    # prob = 0.15
+    # mask = torch.rand(label.size(0), device=device) < prob
+    # label[mask] = 0
 
     # predicted_noise = model(t=t, x=x_t, label=label)
     # print(f"t: {t.shape}, x_t: {x_t.shape}, label: {label.shape}")
     with accelerator.accumulate():
         optimizer.zero_grad()
-        predicted_noise = model(x_t, t.view(-1, 1), label=label)
-        if hasattr(predicted_noise, "sample"):
-            predicted_noise = predicted_noise.sample
+        # predicted_data = model(x_t, t.view(-1, 1), label=label)
+        predicted_data = model(x=x_t, t=t, y=label, p_uncond=0.15)
+        if hasattr(predicted_data, "sample"):
+            predicted_data = predicted_data.sample
 
-        loss = criterion(predicted_noise, true_noise)
+        loss = criterion(predicted_data, x_0)
         accelerator.backward(loss)
         optimizer.step()
 
@@ -625,7 +705,8 @@ def train_step(
 
 def create_model_components(config: ModelConfig, device: torch.device) -> ModelComponents:
     """Initialize all model components."""
-    denoiser = Denoiser(**asdict(config.denoiser_config))
+    # denoiser = Denoiser(**asdict(config.denoiser_config))
+    denoiser = create_model(net=config.net, resolution=32, in_channels=4, cond_embed_dim=768)
     denoiser = denoiser.to(device)
     
     ema_model = copy.deepcopy(denoiser) if config.train_config.use_ema else None
@@ -640,17 +721,17 @@ def create_model_components(config: ModelConfig, device: torch.device) -> ModelC
         lr=config.train_config.lr
     )
 
-    diffuser = DiffusionGenerator(ema_model, vae, device, torch.float32)
-        
-    return ModelComponents(denoiser, ema_model, vae, optimizer, diffuser)
+    diffuser = DiffusionGenerator(denoiser, vae, device, torch.float32)
+    ema_diffuser = DiffusionGenerator(ema_model, vae, device, torch.float32)
+    return ModelComponents(denoiser, ema_model, vae, optimizer, diffuser, ema_diffuser)
 
 
 def save_model(model: nn.Module, path: str | Path, use_wandb: bool = False):
     """Save model checkpoint."""
     torch.save(model.state_dict(), path)
     print(f"Model saved at {path}")
-    if use_wandb:
-        wandb.save(str(path))
+    # if use_wandb:
+    #     wandb.save(str(path))
 
 def save_and_evaluate(
     model_components: ModelComponents,
@@ -661,25 +742,54 @@ def save_and_evaluate(
 ):
     """Save checkpoints and generate evaluation samples."""
     # Generate and save samples
-    out = eval_gen(
-        diffuser=model_components.diffuser,
-        labels=emb_val,
-        img_size=config.denoiser_config.image_size
+    diffuser = model_components.diffuser
+    ema_diffuser = model_components.ema_diffuser
+    out, _ = diffuser.generate(
+        labels=emb_val, # torch.repeat_interleave(labels, 2, dim=0),
+        num_imgs=len(emb_val),
+        class_guidance=4.5,
+        seed=10,
+        n_iter=40,
+        exponent=1,
+        sharp_f=0.1,
+        img_size=config.denoiser_config.image_size,
     )
-    Path(config.train_config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    out.save(Path(config.train_config.checkpoint_dir) / "img.jpg")
+    out = ((out + 1) / 2).clamp(0, 1)
+    images_processed = (out * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
+    # out = to_pil(vutils.make_grid((out + 1) / 2, nrow=8, padding=4).float().clip(0, 1))
+    # Path(config.train_config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+    # out.save(Path(config.train_config.checkpoint_dir) / "img.jpg")
     
     if config.train_config.use_wandb:
         wandb.log({
-            "test_samples": wandb.Image("logs/train/img.jpg"),
-            "test_samples_step": step
+            "step": step,
+            # "test_samples_step": step,
+            "test_samples": [wandb.Image(img) for img in images_processed],
+        })
+
+    ema_out, _ = ema_diffuser.generate(
+        labels=emb_val, # torch.repeat_interleave(labels, 2, dim=0),
+        num_imgs=len(emb_val),
+        class_guidance=4.5,
+        seed=10,
+        n_iter=40,
+        exponent=1,
+        sharp_f=0.1,
+        img_size=config.denoiser_config.image_size,
+    )
+    ema_out = ((ema_out + 1) / 2).clamp(0, 1)
+    images_processed = (ema_out * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
+    if config.train_config.use_wandb:
+        wandb.log({
+            "step": step,
+            "ema_samples": [wandb.Image(img) for img in images_processed],
         })
 
     # Save model checkpoints
     if config.train_config.save_model:
         save_model(
             model_components.denoising_model,
-            config.train_config.model_name,
+            Path(config.train_config.checkpoint_dir) / f"model_{step}.pth",
             config.train_config.use_wandb
         )
 
@@ -688,12 +798,9 @@ def training_loop(
     train_dataloader: DataLoader,
     config: ModelConfig,
     device: torch.device,
+    accelerator: Accelerator,
 ) -> int:
     """Main training loop."""
-    accelerator = Accelerator(
-        mixed_precision="fp16",
-        log_with="wandb" if config.train_config.use_wandb else None
-    )
     
     model = model_components.denoising_model
     ema_model = model_components.ema_model
@@ -719,7 +826,10 @@ def training_loop(
     for epoch in range(config.train_config.n_epoch):
         accelerator.print(f"epoch: {epoch + 1}")
         
-        for x, y in tqdm(train_dataloader):
+        pbar = tqdm(train_dataloader)
+        for batch in pbar:
+            x = batch['image_emb']
+            y = batch['text_emb']
             num_examples_trained += x.shape[0]
             x = x.float() / config.vae_cfg.vae_scale_factor
             
@@ -728,6 +838,7 @@ def training_loop(
                 model, x, y.float(),
                 optimizer, config, device, criterion
             )
+            pbar.set_postfix(loss=f"{loss.item():.4f}")
             
             if global_step % config.train_config.save_and_eval_every_iters == 0:
                 accelerator.wait_for_everyone()
@@ -749,130 +860,46 @@ def training_loop(
     return num_examples_trained
 
 
-def main(config: ModelConfig) -> None:
-    """main train loop to be used with accelerate"""
-    denoiser_config = config.denoiser_config
-    train_config = config.train_config
-    dataconfig = config.data_config
+def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
+    # TODO: consider expanding the args from config to be a more explicit list of args
+    resolution = config.resolution
+    transforms_list = [
+        transforms.Resize((resolution, resolution)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ]
+    if config.random_flip:
+        transforms_list.insert(0, transforms.RandomHorizontalFlip())
 
-    log_with="wandb" if train_config.use_wandb else None
-    accelerator = Accelerator(mixed_precision="fp16", log_with=log_with)
+    transform = transforms.Compose(transforms_list)
 
-    accelerator.print("Loading Data:")
-    latent_train_data = torch.tensor(np.load(dataconfig.latent_path), dtype=torch.float32)
-    train_label_embeddings = torch.tensor(np.load(dataconfig.text_emb_path), dtype=torch.float32)
-    val_offset = int(len(train_label_embeddings) * 0.8)
-    emb_val = train_label_embeddings[val_offset:val_offset+8]
-    dataset = TensorDataset(latent_train_data, train_label_embeddings)
-    train_loader = DataLoader(dataset, batch_size=train_config.batch_size, shuffle=True)
-
-    vae = AutoencoderKL.from_pretrained(config.vae_cfg.vae_name, torch_dtype=config.vae_cfg.vae_dtype)
-
-    if accelerator.is_main_process:
-        vae = vae.to(accelerator.device)
-
-    model = Denoiser(**asdict(denoiser_config))
-
-    loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=train_config.lr)
-
-    if train_config.compile:
-        accelerator.print("Compiling model:")
-        model = torch.compile(model)
-
-    if not train_config.from_scratch:
-        accelerator.print("Loading Model:")
-        wandb.restore(
-            train_config.model_name,
-            run_path=None, replace=True
-        )
-        full_state_dict = torch.load(train_config.model_name)
-        model.load_state_dict(full_state_dict["model_ema"])
-        optimizer.load_state_dict(full_state_dict["opt_state"])
-        global_step = full_state_dict["global_step"]
+    if config.dataset == "mj_latents":
+        print("Loading MJ latents dataset")
+        full_dataset = MJLatentsDataset()
     else:
-        global_step = 0
+        print(f"Loading dataset from Hugging Face: {config.dataset}")
+        full_dataset = HuggingFaceDataset(config.dataset, transform=transform)
 
-    if accelerator.is_local_main_process:
-        ema_model = copy.deepcopy(model).to(accelerator.device)
-        diffuser = DiffusionGenerator(ema_model, vae, accelerator.device, torch.float32)
+    train_size = int(0.9 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2, collate_fn=collate_fn
+    )
+    val_dataloader = DataLoader(
+        val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2, collate_fn=collate_fn
+    )
+    return train_dataloader, val_dataloader
 
-    accelerator.print("model prep")
-    model, train_loader, optimizer = accelerator.prepare(model, train_loader, optimizer)
-
-    if train_config.use_wandb:
-        accelerator.init_trackers(project_name="nano-diffusion", config=asdict(config))
-
-    accelerator.print(count_parameters(model))
-    accelerator.print(count_parameters_per_layer(model))
-
-    ### Train:
-    for i in range(1, train_config.n_epoch + 1):
-        accelerator.print(f"epoch: {i}")
-
-        for x, y in tqdm(train_loader):
-            x = x / config.vae_cfg.vae_scale_factor
-
-            noise_level = torch.tensor(
-                np.random.beta(train_config.beta_a, train_config.beta_b, len(x)), device=accelerator.device
-            )
-            signal_level = 1 - noise_level
-            noise = torch.randn_like(x)
-
-            x_noisy = noise_level.view(-1, 1, 1, 1) * noise + signal_level.view(-1, 1, 1, 1) * x
-
-            x_noisy = x_noisy.float()
-            noise_level = noise_level.float()
-            label = y
-
-            prob = 0.15
-            mask = torch.rand(y.size(0), device=accelerator.device) < prob
-            label[mask] = 0  # OR replacement_vector
-
-            if global_step % train_config.save_and_eval_every_iters == 0:
-                accelerator.wait_for_everyone()
-                if accelerator.is_main_process:
-                    ##eval and saving:
-                    out = eval_gen(diffuser=diffuser, labels=emb_val, img_size=denoiser_config.image_size)
-                    out.save("logs/train/img.jpg")
-                    if train_config.use_wandb:
-                        accelerator.log({"test_samples": wandb.Image("logs/train/img.jpg"), "test_samples_step": global_step})
-
-                    opt_unwrapped = accelerator.unwrap_model(optimizer)
-                    full_state_dict = {
-                        "model_ema": ema_model.state_dict(),
-                        "opt_state": opt_unwrapped.state_dict(),
-                        "global_step": global_step,
-                    }
-                    if train_config.save_model:
-                        accelerator.save(full_state_dict, train_config.model_name)
-                        if train_config.use_wandb:
-                            wandb.save(train_config.model_name)
-
-            model.train()
-
-            with accelerator.accumulate():
-                ###train loop:
-                optimizer.zero_grad()
-
-                pred = model(x_noisy, noise_level.view(-1, 1), label)
-                loss = loss_fn(pred, x)
-                if global_step % 100 == 0:
-                    accelerator.log({"train_loss": loss.item()}, step=global_step)
-                accelerator.backward(loss)
-                optimizer.step()
-
-                if accelerator.is_main_process:
-                    update_ema(ema_model, model, alpha=train_config.alpha)
-
-            global_step += 1
-    accelerator.end_training()
 
 if __name__ == "__main__":
 
     from argparse import ArgumentParser
+
     parser = ArgumentParser()
     parser.add_argument("--logger", type=str, default=None)
+    parser.add_argument("--net", type=str, default="tld_b2", choices=choices())
+    parser.add_argument("--fp16", action="store_true")
     args = parser.parse_args()
 
     data_config = DataConfig(
@@ -886,8 +913,9 @@ if __name__ == "__main__":
     )
 
     config = ModelConfig(
+        net=args.net,
         data_config=data_config,
-        train_config=TrainConfig(n_epoch=500, save_model=True, compile=False, use_wandb=args.logger == "wandb"),
+        train_config=TrainConfig(n_epoch=500, save_model=False, compile=False, use_wandb=args.logger == "wandb"),
     )
 
     denoiser_config = config.denoiser_config
@@ -895,19 +923,25 @@ if __name__ == "__main__":
     dataconfig = config.data_config
 
     log_with="wandb" if train_config.use_wandb else None
-    accelerator = Accelerator(mixed_precision="fp16", log_with=log_with)
+    accelerator = Accelerator(
+        mixed_precision="fp16" if args.fp16 else "no",
+        log_with=log_with
+    )
 
     accelerator.print("Loading Data:")
-    latent_train_data = torch.tensor(np.load(dataconfig.latent_path), dtype=torch.float32)
-    train_label_embeddings = torch.tensor(np.load(dataconfig.text_emb_path), dtype=torch.float32)
-    val_offset = int(len(train_label_embeddings) * 0.8)
-    emb_val = train_label_embeddings[val_offset:val_offset+8]
-    dataset = TensorDataset(latent_train_data, train_label_embeddings)
-    train_loader = DataLoader(dataset, batch_size=train_config.batch_size, shuffle=True)
+    new_config = TrainingConfig(dataset="mj_latents", batch_size=256, resolution=32)
+    train_dataloader, val_dataloader = load_data(new_config, collate_fn=collate_fn)
+    emb_val = next(iter(val_dataloader))['text_emb'][:8]
+    # latent_train_data = torch.tensor(np.load(dataconfig.latent_path), dtype=torch.float32)
+    # train_label_embeddings = torch.tensor(np.load(dataconfig.text_emb_path), dtype=torch.float32)
+    # val_offset = int(len(train_label_embeddings) * 0.8)
+    # emb_val = train_label_embeddings[val_offset:val_offset+8]
+    # dataset = TensorDataset(latent_train_data, train_label_embeddings)
+    # train_loader = DataLoader(dataset, batch_size=train_config.batch_size, shuffle=True)
 
     model_components = create_model_components(config, device)
 
     num_examples_trained = training_loop(
-        model_components, train_loader, config, device
+        model_components, train_dataloader, config, device, accelerator
     )
     print(f"Training completed. Total examples trained: {num_examples_trained}")

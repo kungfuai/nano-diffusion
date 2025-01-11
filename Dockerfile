@@ -14,4 +14,4 @@ RUN pip install transformers==4.47.1 einops==0.8.0
 RUN pip install diffusers==0.32.1  # for loading pretrained models
 RUN pip install git+https://github.com/openai/CLIP.git  # for loading CLIP models
 
-
+RUN pip install accelerate==1.2.1

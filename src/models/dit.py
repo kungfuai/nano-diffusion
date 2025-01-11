@@ -2,7 +2,6 @@
 Adapted from https://github.com/facebookresearch/DiT/blob/main/models.py
 """
 
-from types import SimpleNamespace
 import torch
 import torch.nn as nn
 import numpy as np
@@ -49,7 +48,7 @@ class TimestepEmbedder(nn.Module):
         if t.dim() == 0:
             t = t.unsqueeze(0)
         # make sure the device of t and embedding are the same
-        # assert t.dim() == 1, f"t must be 1-D Tensor, but got {t.dim()}-D Tensor"
+        assert t.dim() == 1, f"t must be 1-D Tensor, but got {t.dim()}-D Tensor"
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         # assert embedding.shape == (t.shape[0], dim), f"embedding must be of shape {t.shape[0]} x {dim}, but got {embedding.shape}"

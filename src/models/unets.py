@@ -777,7 +777,12 @@ class UNetModel(nn.Module):
         :return: an [N x C x ...] Tensor of outputs.
         """
         hs = []
-        emb = self.time_embed(timestep_embedding(t, self.model_channels))
+        emb = timestep_embedding(t, self.model_channels)
+        # print(f"emb: {emb.shape}, {emb.dtype}")
+        # print(f"y: {y.shape}, {y.dtype}")
+        emb = self.time_embed(emb)
+        # When accelerator uses fp16, the emb is in fp16, even when emb and y are in fp32 before the time_embed().
+        # print(f"after time_embed, emb: {emb.shape}, {emb.dtype}")
         
         if y is not None:
             assert self.cond_embed_dim is not None, "You passed in the conditioning y, but the model is not conditional. Set cond_embed_dim in the model constructor."
@@ -788,6 +793,7 @@ class UNetModel(nn.Module):
             emb = emb + self.cond_proj(y)
 
         h = x.type(self.dtype)
+        # print(f"h: {h.shape}, {h.dtype}, emb: {emb.shape}, {emb.dtype}")
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
