@@ -78,6 +78,7 @@ def denoising_step(
     denoising_model,
     x_t,
     t,
+    y,
     noise_schedule,
     clip_sample=True,
     clip_sample_range=1.0,
@@ -87,7 +88,9 @@ def denoising_step(
 
     And explanation here: https://github.com/taehoon-yoon/Diffusion/blob/master/src/diffusion.py#L93
     """
-    return denoising_step_one_stop(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
+    return denoising_step_one_stop(
+        denoising_model, x_t, t, y, noise_schedule, clip_sample, clip_sample_range
+    )
 
 
 def denoising_step_direct(
@@ -140,12 +143,14 @@ def denoising_step_direct(
     noise = torch.randn_like(x_t)
     beta_t = 1 - alpha_t
     variance = beta_t * (1 - alpha_t_cumprod / alpha_t) / (1 - alpha_t_cumprod)
-    variance = torch.clamp(variance, min=1e-20)  # Add clamp to prevent numerical instability
-    
+    variance = torch.clamp(
+        variance, min=1e-20
+    )  # Add clamp to prevent numerical instability
+
     # Mask out noise for t=0 timesteps
     non_zero_mask = (t_tensor > 0).float().view(*view_shape)
     noise_scale = torch.sqrt(variance) * non_zero_mask
-    
+
     pred_prev_sample = mean + noise_scale * noise
 
     return pred_prev_sample
@@ -155,6 +160,7 @@ def denoising_step_one_stop(
     denoising_model,
     x_t,
     t,
+    y,
     noise_schedule,
     clip_sample=True,
     clip_sample_range=1.0,
@@ -177,7 +183,7 @@ def denoising_step_one_stop(
     else:
         t_tensor = t
     with torch.no_grad():
-        model_output = denoising_model(t=t_tensor, x=x_t)
+        model_output = denoising_model(t=t_tensor, x=x_t, y=y)
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
 
@@ -238,6 +244,7 @@ def generate_samples_by_denoising(
     noise_schedule,
     n_T,
     device,
+    y=None,
     clip_sample=True,
     clip_sample_range=1.0,
     seed=0,
@@ -253,6 +260,7 @@ def generate_samples_by_denoising(
             denoising_model,
             x_t,
             t,
+            y,
             noise_schedule,
             clip_sample,
             clip_sample_range,
@@ -310,7 +318,9 @@ def compute_fid(
         gen_path.mkdir(exist_ok=True)
 
         for i, img in enumerate(generated_images):
-            assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
+            assert (
+                len(img.shape) == 3
+            ), f"Image must have 3 dimensions, got {len(img.shape)}"
             img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
@@ -345,8 +355,12 @@ def make_dataset_name_safe_for_cleanfid(dataset_name: str):
     return dataset_name.replace("/", "__")
 
 
-def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: "TrainingConfig", real_images_dir: Path):
-    print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
+def precompute_fid_stats_for_real_images(
+    dataloader: DataLoader, config: "TrainingConfig", real_images_dir: Path
+):
+    print(
+        f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}"
+    )
     count = 0
     real_images_dir.mkdir(exist_ok=True, parents=True)
     for images, _ in dataloader:
@@ -354,20 +368,22 @@ def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: "Traini
         for i, img in enumerate(images):
             np_img = img.cpu().numpy().transpose(1, 2, 0)
             # do we need to scale to 0-255?
-            np_img = (np_img * 255)
+            np_img = np_img * 255
             idx = count * len(images) + i
             np.save(real_images_dir / f"real_images_{idx:06d}.npy", np_img)
         count += len(images)
         if count >= config.num_real_samples_for_fid:
             break
-    
+
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
     fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
+
 
 @dataclass
 class TrainingConfig:
     # Dataset
     dataset: str  # dataset name
+    label_key: str  # key to use for labels in the Hugging Face dataset
     resolution: int  # resolution of the image
 
     # Model architecture
@@ -391,10 +407,14 @@ class TrainingConfig:
     validate_every: int  # compute validation loss every N steps
     fid_every: int  # compute FID every N steps
     num_samples_for_fid: int = 1000  # number of samples for FID
-    num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
+    num_real_samples_for_fid: int = (
+        100  # number of real samples for FID when not using CIFAR
+    )
 
     # Sampling
-    clip_sample_range: float = 1.0  # range for clipping sample. If 0 or less, no clipping
+    clip_sample_range: float = (
+        1.0  # range for clipping sample. If 0 or less, no clipping
+    )
 
     # Regularization
     max_grad_norm: float = -1  # maximum norm for gradient clipping
@@ -421,8 +441,10 @@ class TrainingConfig:
 
     def update_checkpoint_dir(self):
         # Update the checkpoint directory use a timestamp
-        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-    
+        self.checkpoint_dir = (
+            f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        )
+
     def __post_init__(self):
         self.update_checkpoint_dir()
 
@@ -451,7 +473,9 @@ def training_loop(
     lr_scheduler = model_components.lr_scheduler
 
     if config.dataset not in ["cifar10"]:
-        precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.checkpoint_dir) / "real_images")
+        precompute_fid_stats_for_real_images(
+            train_dataloader, config, Path(config.checkpoint_dir) / "real_images"
+        )
 
     if config.logger == "wandb":
         project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
@@ -478,7 +502,7 @@ def training_loop(
     criterion = MSELoss()
 
     while step < config.total_steps:
-        for x, _ in train_dataloader:
+        for x, y in train_dataloader:
             if step >= config.total_steps:
                 break
 
@@ -489,7 +513,14 @@ def training_loop(
 
             denoising_model.train()
             loss = train_step(
-                denoising_model, x, noise_schedule, optimizer, config, device, criterion
+                denoising_model,
+                x,
+                y,
+                noise_schedule,
+                optimizer,
+                config,
+                device,
+                criterion,
             )
             denoising_model.eval()
 
@@ -536,6 +567,7 @@ def training_loop(
 def train_step(
     denoising_model: Module,
     x_0: torch.Tensor,
+    y: tuple[str],
     noise_schedule: Dict[str, torch.Tensor],
     optimizer: Optimizer,
     config: TrainingConfig,
@@ -551,7 +583,7 @@ def train_step(
     ).long()
     x_t, true_noise = forward_diffusion(x_0, t, noise_schedule, noise=noise)
 
-    predicted_noise = denoising_model(t=t, x=x_t)
+    predicted_noise = denoising_model(t=t, x=x_t, y=y)
     predicted_noise = (
         predicted_noise.sample
         if hasattr(predicted_noise, "sample")
@@ -691,7 +723,11 @@ def generate_and_log_samples(
 
     # Sample using the main model
     sampled_images = generate_samples_by_denoising(
-        denoising_model, x, noise_schedule, config.num_denoising_steps, device,
+        denoising_model,
+        x,
+        noise_schedule,
+        config.num_denoising_steps,
+        device,
         clip_sample=config.clip_sample_range > 0,
         clip_sample_range=config.clip_sample_range,
     )
@@ -752,7 +788,7 @@ def compute_and_log_fid(
 ):
     print(f"Generating samples and computing FID. This can be slow.")
     device = torch.device(config.device)
-    
+
     if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
@@ -767,34 +803,62 @@ def compute_and_log_fid(
     #         real_images.append(batch.cpu())  # Move to CPU immediately
     #         remaining -= curr_batch_size
     #     real_images = torch.cat(real_images, dim=0)
-    
+
     batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
     count = 0
     for i in range(num_batches):
-        current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
-        x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
-        batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
+        current_batch_size = min(
+            batch_size, config.num_samples_for_fid - len(generated_images)
+        )
+        x_t = torch.randn(
+            current_batch_size, config.in_channels, config.resolution, config.resolution
+        ).to(device)
+        batch_images = generate_samples_by_denoising(
+            model_components.denoising_model,
+            x_t,
+            model_components.noise_schedule,
+            config.num_denoising_steps,
+            device=device,
+            seed=i,
+        )
         generated_images.append(batch_images)
         count += current_batch_size
         print(f"Generated {count} out of {config.num_samples_for_fid} images")
 
-    generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
-    
+    generated_images = torch.cat(
+        generated_images, dim=0
+    )  # [:config.num_samples_for_fid]
+
     real_images = None
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
+    fid_score = compute_fid(
+        real_images, generated_images, device, config.dataset, config.resolution
+    )
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
         ema_generated_images = []
         for i in range(num_batches):
-            current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
-            batch_images = generate_samples_by_denoising(model_components.ema_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
+            current_batch_size = min(
+                batch_size, config.num_samples_for_fid - len(ema_generated_images)
+            )
+            batch_images = generate_samples_by_denoising(
+                model_components.ema_model,
+                x_t,
+                model_components.noise_schedule,
+                config.num_denoising_steps,
+                device=device,
+                seed=i,
+            )
             ema_generated_images.append(batch_images)
-        ema_generated_images = torch.cat(ema_generated_images, dim=0)[:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
+        ema_generated_images = torch.cat(ema_generated_images, dim=0)[
+            : config.num_samples_for_fid
+        ]
+        ema_fid_score = compute_fid(
+            real_images, ema_generated_images, device, config.dataset, config.resolution
+        )
         print(f"EMA FID Score: {ema_fid_score:.4f}")
 
     if config.logger == "wandb":
@@ -809,9 +873,14 @@ def get_real_images(batch_size: int, dataloader: DataLoader) -> torch.Tensor:
         iter(DataLoader(dataloader.dataset, batch_size=batch_size, shuffle=False))
     )
     assert len(batch) == 2, f"Batch must contain 2 elements. Got {len(batch)}"
-    assert isinstance(batch[0], torch.Tensor), f"First element of batch must be a tensor. Got {type(batch[0])}"
-    assert len(batch[0].shape) == 4, f"First element of batch must be a 4D tensor. Got shape {batch[0].shape}"
+    assert isinstance(
+        batch[0], torch.Tensor
+    ), f"First element of batch must be a tensor. Got {type(batch[0])}"
+    assert (
+        len(batch[0].shape) == 4
+    ), f"First element of batch must be a 4D tensor. Got shape {batch[0].shape}"
     return batch[0]
+
 
 def generate_images(
     model: Module,
@@ -856,7 +925,9 @@ def load_data(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         full_dataset = PokemonDataset(transform=transform)
     else:
         print(f"Loading dataset from Hugging Face: {config.dataset}")
-        full_dataset = HuggingFaceDataset(config.dataset, transform=transform)
+        full_dataset = HuggingFaceDataset(
+            config.dataset, transform=transform, label_key=config.label_key
+        )
 
     train_size = int(0.9 * len(full_dataset))
     val_size = len(full_dataset) - train_size
@@ -938,13 +1009,27 @@ def create_noise_schedule(n_T: int, device: torch.device) -> Dict[str, torch.Ten
 def parse_arguments():
     parser = argparse.ArgumentParser(description="DDPM training for images")
     parser.add_argument(
-        "-d", "--dataset",
+        "-d",
+        "--dataset",
         type=str,
         default="cifar10",
         help="Dataset to use: e.g. cifar10, flowers, celeb, pokemon, or any huggingface dataset that has an image field.",
     )
-    parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
-    parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
+    parser.add_argument(
+        "--label_key",
+        type=str,
+        default=None,
+        help="Key to use for labels in the Hugging Face dataset",
+    )
+    parser.add_argument(
+        "--in_channels", type=int, default=3, help="Number of input channels"
+    )
+    parser.add_argument(
+        "--resolution",
+        type=int,
+        default=32,
+        help="Resolution of the image. Only used for unet.",
+    )
     parser.add_argument(
         "--logger",
         type=str,

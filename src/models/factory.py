@@ -1,5 +1,8 @@
 from src.models.unets import UNet, UNetBig, UNetSmall
+
 from src.models.dit import DiT
+
+# from src.models.dit_cond import DiT
 
 
 def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
@@ -41,25 +44,25 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     elif net == "dit_t3":
         model = DiT(
-                input_size=32,
-                patch_size=2,
-                in_channels=in_channels,
-                learn_sigma=False,
-                hidden_size=32 * 6,
-                mlp_ratio=2,
-                depth=12,
-                num_heads=6,
-                class_dropout_prob=0.1,
-            )
+            input_size=32,
+            patch_size=2,
+            in_channels=in_channels,
+            learn_sigma=False,
+            hidden_size=32 * 6,
+            mlp_ratio=2,
+            depth=12,
+            num_heads=6,
+            class_dropout_prob=0.1,
+        )
     elif net == "dit_s2":
         model = DiT(
-                depth=12,
-                in_channels=in_channels,
-                hidden_size=384,
-                patch_size=2,
-                num_heads=6,
-                learn_sigma=False,
-            )
+            depth=12,
+            in_channels=in_channels,
+            hidden_size=384,
+            patch_size=2,
+            num_heads=6,
+            learn_sigma=False,
+        )
     elif net == "dit_b2":
         model = DiT(
             depth=12,
@@ -136,6 +139,6 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3):
         )
     else:
         raise ValueError(f"Unsupported network architecture: {net}")
-    
+
     print(f"model params: {sum(p.numel() for p in model.parameters()) / 1e6:.2f} M")
     return model

@@ -237,7 +237,7 @@ class UNetModel(nn.Module):
             zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
         )
 
-    def forward(self, t, x, y=None, context=None, *args, **kwargs):
+    def forward(self, t, x, y=None, cond=None, *args, **kwargs):
         """
         Apply the model to an input batch.
         :param t: a 1-D batch of timesteps.
@@ -245,12 +245,12 @@ class UNetModel(nn.Module):
         :param y: an [N] Tensor of labels, if class-conditional
         :return: an [N x C x ...] Tensor of outputs.
         """
-        if context is None:
+        if cond is None:
             return self.forward_unconditonal(t, x, y, *args, **kwargs)
         else:
-            return self.forward_cross_attention(t, x, y, context, *args, **kwargs)
+            return self.forward_cross_attention(t, x, y, cond, *args, **kwargs)
 
-    def forward_cross_attention(self, t, x, y=None, context=None, *args, **kwargs):
+    def forward_cross_attention(self, t, x, y=None, cond=None, *args, **kwargs):
         """
         Apply the model to an input batch.
         :param t: a 1-D batch of timesteps.
@@ -265,6 +265,11 @@ class UNetModel(nn.Module):
 
         hs = []
         emb = self.time_embed(timestep_embedding(t, self.model_channels))
+
+        if cond:
+
+
+
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
@@ -272,19 +277,19 @@ class UNetModel(nn.Module):
         for module in self.input_blocks:
             if isinstance(module, CrossAttentionBlock):
                 print(f"type of module: {type(module)}")
-                h = module(h, context)
+                h = module(h, cond)
             else:
                 print(f"type of module: {type(module)}")
-                h = module(h, emb, context)
+                h = module(h, emb, cond)
             hs.append(h)
-        # h = self.middle_block(h, emb, context=context)
+        # h = self.middle_block(h, emb, cond=cond)
         h = self.middle_block(h, emb)
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
             if isinstance(module, CrossAttentionBlock):
-                h = module(h, context)
+                h = module(h, cond)
             else:
-                h = module(h, emb, context)
+                h = module(h, emb, cond)
         h = h.type(x.dtype)
         return self.out(h)
 

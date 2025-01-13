@@ -9,4 +9,4 @@ RUN pip install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 \
 # torchdyn for neural ODEs, and POT for optimal transport
 RUN pip install torchdyn==1.0.6 POT==0.9.4
 # RUN pip install diffusers  # optional
-
+RUN pip install transformers
