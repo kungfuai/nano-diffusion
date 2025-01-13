@@ -10,13 +10,14 @@ fi
 # This is the username in Dockerfile.
 USER=nanodiffusion
 GPU_DEVICES=${GPU_DEVICES:-0}  # default GPU idx
+DOCKER_ARGS=${DOCKER_ARGS:-""}
 
 # Create a data/container_cache directory if it doesn't exist
 mkdir -p data/container_cache
 # You may need to run this command to fix the permissions:
 # sudo chmod a+rw -R data/container_cache
 
-docker run --runtime nvidia -it --rm \
+docker run --runtime nvidia -it --rm $DOCKER_ARGS \
 	--shm-size 16G \
 	--gpus "device=${GPU_DEVICES}" \
 	-v $(pwd):/workspace \
@@ -27,6 +28,7 @@ docker run --runtime nvidia -it --rm \
 	python -m src.train_ddpm "$@"
 
 # For diagnostic run, pass in the following args:
-# --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
-# or
-# --net dit_t0 --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
+# bin/train.sh --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
+# or (with latents)
+# bin/train.sh -d zzsi/afhq64_16k_latents_sdxl_blip2 --data_shape 4,8,8 --data_is_latent --net unet_small --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61
+

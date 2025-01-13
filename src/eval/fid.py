@@ -30,8 +30,9 @@ def compute_fid(
 
         for i, img in enumerate(generated_images):
             assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
-            # TODO: do we need to assert that the image is in the range [0, 1]?
-            img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
+            img_np = img.cpu().numpy()
+            img_np = (img_np - img_np.min()) / (img_np.max() - img_np.min())
+            img_np = (img_np * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
         if dataset_name in ["cifar10"]:

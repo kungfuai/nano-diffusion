@@ -11,6 +11,9 @@ from src.diffusion.diffusion_model_components import DiffusionModelComponents
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from src.eval.fid import precompute_fid_stats_for_real_images
 from src.diffusion import forward_diffusion
+from src.bookkeeping import MiniBatch
+from src.utils import scale_input
+from src.diffusion.noise_scheduler import sample_timesteps
 
 
 def training_loop(
@@ -22,7 +25,7 @@ def training_loop(
     print(f"Training on {config.device}")
 
     device = torch.device(config.device)
-    denoising_model = model_components.denoising_model.to(device)
+    denoising_model = model_components.denoising_model  # .to(device)
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
@@ -33,11 +36,6 @@ def training_loop(
 
     bookkeeping.set_up_logger()
 
-    # Move noise_schedule to device
-    noise_schedule = {
-        k: v.to(device) for k, v in model_components.noise_schedule.items()
-    }
-
     checkpoint_dir = Path(config.checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -46,19 +44,19 @@ def training_loop(
     criterion = MSELoss()
 
     while step < config.total_steps:
-        for x, _ in train_dataloader:
+        for batch in train_dataloader:
             if step >= config.total_steps:
                 break
 
-            num_examples_trained += x.shape[0]
-
-            # Move batch data to device
-            x = x.to(device)
+            batch = MiniBatch.from_dataloader_batch(batch)
+            num_examples_trained += batch.num_examples
 
             denoising_model.train()
             loss = train_step(
-                denoising_model, x, noise_schedule, optimizer, config, device, criterion
+                denoising_model, batch, model_components.noise_schedule, optimizer, config, device, criterion
             )
+            # TODO: add gradient norm logging
+            # grad_norm = torch.norm(torch.stack([torch.norm(p.grad) for p in denoising_model.parameters() if p.grad is not None]), 2)
             denoising_model.eval()
 
             lr_scheduler.step()
@@ -89,7 +87,7 @@ def training_loop(
 
 def train_step(
     denoising_model: Module,
-    x_0: torch.Tensor,
+    batch: MiniBatch,
     noise_schedule: Dict[str, torch.Tensor],
     optimizer: Optimizer,
     config: TrainingConfig,
@@ -97,20 +95,21 @@ def train_step(
     criterion: Module,
 ) -> torch.Tensor:
     optimizer.zero_grad()
-    x_0 = x_0.to(device)
+    x_0 = batch.x.to(device)
+    x_0 = scale_input(x_0, config)
 
-    noise = torch.randn(x_0.shape).to(device)
-    t = torch.randint(
-        0, config.num_denoising_steps, (x_0.shape[0],), device=device
-    ).long()
-    x_t, true_noise = forward_diffusion(x_0, t, noise_schedule, noise=noise)
+    true_noise = common_noise = torch.randn(x_0.shape).to(device)
+    t = sample_timesteps(num_examples=x_0.shape[0], config=config)
+    x_t, _ = forward_diffusion(x_0, t, noise_schedule, noise=common_noise)
 
-    predicted_noise = denoising_model(t=t, x=x_t)
-    predicted_noise = (
-        predicted_noise.sample
-        if hasattr(predicted_noise, "sample")
-        else predicted_noise
-    )
+    model_kwargs = {"t": t, "x": x_t}
+    if config.conditional and batch.text_emb is not None:
+        model_kwargs.update({
+            "y": batch.text_emb.to(device),
+            "p_uncond": config.cond_drop_prob
+        })
+    predicted_noise = denoising_model(**model_kwargs)
+    predicted_noise = predicted_noise.sample if hasattr(predicted_noise, "sample") else predicted_noise
 
     loss = criterion(predicted_noise, true_noise)
     loss = loss.mean() if config.use_loss_mean else loss

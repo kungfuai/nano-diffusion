@@ -31,9 +31,10 @@ bin/run.sh python -m src.train_cfm
 ## Features
 
 - Datasets
-  - [x] CIFAR-10
-  - [x] Flowers, CelebA-HQ, AFHQ
+  - [x] AFHQ (low resolution subset), CIFAR-10
+  - [x] Flowers, CelebA-HQ
   - [ ] Video frames from DeepMind Lab videos
+  - [ ] Openvid with Cosmos tokens
   - [ ] Comics (TBD)
   - [ ] SAB
   - [ ] LAION-Aesthetics
@@ -43,13 +44,22 @@ bin/run.sh python -m src.train_cfm
 - Training algorithms and scaling:
   - [x] DDPM
   - [x] Conditional flow matching
-  - [ ] Text conditioning
-  - [ ] Multi-GPU training
-  - [ ] Mixed precision training
+  - [x] Text conditioning
+  - [x] Multi-GPU training
+  - [x] Mixed precision training
+- Tokenziers (VAE)
+  - [ ] [Cosmos]
+  - [ ] [Reducio-VAE](https://github.com/microsoft/Reducio-VAE)
+- Conditioning
+  - [ ] [BLIP-2](https://github.com/salesforce/BLIP)
+  - [ ] [QWEN-VL](https://github.com/QwenLM/Qwen-VL)
+  - [ ] [PaliGemma 2]
+- Test time techniques:
+  - [ ] [Fast inversion for Rectified Flow](https://github.com/HolmesShuan/FireFlow-Fast-Inversion-of-Rectified-Flow-for-Image-Semantic-Editing/tree/4fb7ca0a16d01e113e1a079bfb9da2b6d8c1e7b8)
 - Experiment tracking (using `wandb`)
   - [x] Validation loss (this is missing in many other implementations, and much more informative than the training loss)
   - [x] Log samples
   - [x] Log FID score
-  - [ ] Log Denoising results
-  - [ ] Visualize denoising path with dimension reduction
+  - [x] Visualize denoising path with dimension reduction
   - [x] Resume training from a wandb run
+  - [ ] Visualize trajectories in latent space with dimension reduction

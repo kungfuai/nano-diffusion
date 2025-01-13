@@ -10,7 +10,7 @@ This dataset is used to store image latents. Several metadata fields are necessa
 - Any other configuration of the tokenizer and the image dataset.
 """
 
-from typing import Tuple, Iterable, List
+# TODO: also convert validation set to latents
 import numpy as np
 from tqdm import tqdm
 from datasets import load_dataset, Features, Value, Array2D, Array3D
@@ -49,7 +49,7 @@ class ImageLatentsDataset(Dataset):
         self.text_column = text_column
         
         # Initialize models
-        self.vae = AutoencoderKL.from_pretrained(tokenizer_name, torch_dtype=torch.float16).to('cuda')
+        self.vae = AutoencoderKL.from_pretrained(tokenizer_name, torch_dtype=torch.float32).to('cuda')
 
         import clip
 
@@ -86,18 +86,8 @@ class ImageLatentsDataset(Dataset):
         mapping = {k: [] for k in self[0]} if self else {}
         for item in tqdm(self, desc="Converting to HF Dataset"):
             for k, v in item.items():
-                # v = np.array(v).ravel()
-                # print(v.shape)
-                # raise Exception("Stop")
                 mapping[k].append(v)
-        # print(mapping['image_emb'][:2])
-        # mapping = {
-        #     "image_emb": [item['image_emb'] for item in self],
-        #     "text_emb": [item['text_emb'] for item in self],
-        #     # "text": [self._transform(item)['text'] for item in self.src_dataset],
-        # }
-        # print(mapping['image_emb'][:2])
-        # raise Exception("Stop")
+
         return HFDataset.from_dict(mapping, features=Features({
             "image_emb": Array3D(shape=(4, 8, 8), dtype="float16"),  # TODO: this is hard coded
             "text_emb": Array2D(shape=(1, 768), dtype="float16"),  # TODO: this is hard coded
@@ -151,6 +141,8 @@ if __name__ == "__main__":
     resolution = 64
     ds = ImageLatentsDataset.from_image_dataset(
         ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='train', text_column=text_column)
+    val_ds = ImageLatentsDataset.from_image_dataset(
+        ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='val', text_column=text_column)
     print(f"{ds_name}: {len(ds)} examples")
     first_item = ds[0]
     for k, v in first_item.items():
@@ -161,12 +153,13 @@ if __name__ == "__main__":
     
     # upload to huggingface
     dataset_dict = DatasetDict({
-        'train': ds.to_hf_dataset()
+        'train': ds.to_hf_dataset(),
+        'val': val_ds.to_hf_dataset()
     })
 
     # print(dataset_dict['train'][0]['image_emb'])
 
-    save_to_npy = True
+    save_to_npy = False
     if save_to_npy:
         # compute the std of the latents
         # collect all image embeddings to a numpy array
@@ -185,6 +178,6 @@ if __name__ == "__main__":
         np.save('afhq64_16k_text_emb.npy', text_embeddings)
         np.save('afhq64_16k_val_text_emb.npy', val_text_embeddings)
 
-    # print("Pushing to hub...")
-    # dataset_dict.push_to_hub(repo_id='zzsi/afhq64_16k_latents_sdxl_blip2', max_shard_size="1GB")
-    # print("Done")
+    print("Pushing to hub...")
+    dataset_dict.push_to_hub(repo_id='zzsi/afhq64_16k_latents_sdxl_blip2', max_shard_size="1GB")
+    print("Done")

@@ -3,6 +3,7 @@ data/
 /results/
 wandb/
 logs/
+*.pth
 
 # Python bytecode files
 __pycache__/

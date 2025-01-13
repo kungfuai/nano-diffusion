@@ -18,6 +18,7 @@ class DiffusionModelComponents:
     optimizer: optim.Optimizer
     lr_scheduler: Any
     noise_schedule: Dict[str, torch.Tensor]
+    vae: Optional[nn.Module] = None
 
 
 @dataclass
@@ -38,7 +39,6 @@ def create_diffusion_model_components(
         net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
     )
     denoising_model = denoising_model.to(device)
-    # ema_model = create_ema_model(denoising_model, config.ema_beta) if config.use_ema else None
     ema_model = copy.deepcopy(denoising_model) if config.use_ema else None
     optimizer = optim.AdamW(
         denoising_model.parameters(),
@@ -59,9 +59,18 @@ def create_diffusion_model_components(
             config.init_from_wandb_run_path,
             config.init_from_wandb_file,
         )
+    
+    vae = None
+    if config.data_is_latent:
+        from diffusers import AutoencoderKL
+
+        if config.vae_use_fp16:
+            vae = AutoencoderKL.from_pretrained(config.vae_model_name, torch_dtype=torch.float16).to(config.device)
+        else:
+            vae = AutoencoderKL.from_pretrained(config.vae_model_name).to(config.device)
 
     return DiffusionModelComponents(
-        denoising_model, ema_model, optimizer, lr_scheduler, noise_schedule
+        denoising_model, ema_model, optimizer, lr_scheduler, noise_schedule, vae
     )
 
 

@@ -1,29 +1,32 @@
 from dataclasses import dataclass
 from datetime import datetime
 import os
+from typing import List, Tuple
 
 
 @dataclass
 class DiffusionTrainingConfig:
     # Dataset
     dataset: str  # dataset name
-    resolution: int  # resolution of the image
-
-    # Model architecture
-    # TODO: the current assumption is that the data dimension is [in_channels, resolution, resolution]
-    #   This can be more flexible.
+    data_is_latent: bool = False  # whether the data is already in latent space
     in_channels: int = 3  # number of input channels
     resolution: int = 64  # resolution of the image
+    data_shape: List[int] = None  # data shape (e.g., [3, 64, 64] for RGB images, [16, 3, 64, 64] for video). When specified, this overrides in_channels and resolution.
+
+    # Model architecture
     net: str = "unet_small"  # network architecture
+
+    # Denoising settings
     num_denoising_steps: int = 1000  # number of timesteps
 
     # VAE (tokenizer) for compression
     vae_use_fp16: bool = False  # use fp16 for the VAE
     vae_model_name: str = "madebyollin/sdxl-vae-fp16-fix"  # VAE model name
-    vae_scale_factor: float = 0.18215  # scale factor for the VAE encoding outputs (so that the std is close to 1)
+    vae_scale_multiplier: float = 0.18215  # scale multiplier for the VAE encoding outputs (so that the std is close to 1)
 
     # Conditioning
-    cond_embed_dim: int = None  # dimension of the conditioning embedding (before the projection layer)
+    conditional: bool = False  # whether to use conditional training
+    cond_embed_dim: int = 768  # dimension of the conditioning embedding (before the projection layer)
     cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
     guidance_scale: float = 4.5  # guidance scale for classifier-free guidance
     
@@ -75,6 +78,27 @@ class DiffusionTrainingConfig:
     def update_checkpoint_dir(self):
         # Update the checkpoint directory use a timestamp
         self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        if self.resolution is not None:
+            return (self.in_channels, self.resolution, self.resolution)
+        return tuple(self.data_shape)
     
     def __post_init__(self):
         self.update_checkpoint_dir()
+
+        if self.resolution is not None:
+            if self.in_channels is None:
+                raise ValueError("If resolution is specified, in_channels must also be specified")
+        elif self.data_shape is None:
+            raise ValueError("Must specify either resolution or data_shape")
+        
+        if self.data_shape is not None:
+            print(f"Overriding in_channels and resolution from data_shape: {self.data_shape}")
+            # Override the in_channels and resolution from the data_shape
+            self.in_channels = self.data_shape[0]
+            if len(self.data_shape) == 3:
+                self.resolution = self.data_shape[1]
+            else:
+                self.resolution = None

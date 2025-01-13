@@ -23,30 +23,41 @@ The variance β at each timestep defines how much noise to add. It can be a fixe
 
 import argparse
 
-
-try:
-    import wandb
-except ImportError:
-    print("wandb not installed, skipping")
-
-
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from src.datasets import load_data
 from src.diffusion.diffusion_model_components import create_diffusion_model_components
 from src.diffusion.diffusion_training_loop import training_loop
 from src.models.factory import choices
+from src.bookkeeping import parse_shape
+from src.bookkeeping.mini_batch import collate_fn_for_latents
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="DDPM training for images")
+    parser = argparse.ArgumentParser(description="DDPM training")
     parser.add_argument(
         "-d", "--dataset",
         type=str,
         default="cifar10",
         help="Dataset to use: e.g. cifar10, flowers, celeb, pokemon, or any huggingface dataset that has an image field.",
     )
+    parser.add_argument(
+        "--data_is_latent",
+        action="store_true",
+        help="Whether the data is already in latent space",
+    )
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
+    parser.add_argument(
+        "--data_shape",
+        type=parse_shape,  # Custom type function
+        help="Comma-separated input shape (e.g., '3,32,32' for RGB images, '16,3,64,64' for video). When specified, this overrides in_channels and resolution.",
+    )
+    parser.add_argument(
+        "--cond_embed_dim",
+        type=int,
+        default=768,
+        help="Dimension of the conditioning embedding. This assume there is only one conditioning embedding (e.g. text prompt).",
+    )
     parser.add_argument(
         "--logger",
         type=str,
@@ -71,7 +82,7 @@ def parse_arguments():
         "--warmup_steps", type=int, default=1200, help="Number of warmup steps"
     )
     parser.add_argument(
-        "--total_steps", type=int, default=300000, help="Total number of training steps"
+        "--total_steps", type=int, default=10100, help="Total number of training steps"
     )
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument(
@@ -175,7 +186,7 @@ def main():
     args = parse_arguments()
     config = TrainingConfig(**vars(args))
 
-    train_dataloader, val_dataloader = load_data(config)
+    train_dataloader, val_dataloader = load_data(config, collate_fn=collate_fn_for_latents if config.data_is_latent else None)
     model_components = create_diffusion_model_components(config)
 
     num_examples_trained = training_loop(

@@ -10,6 +10,7 @@ def choices():
     ]
 
 def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, cond_embed_dim: int = None):
+    print(f"Creating model {net} with resolution {resolution} and in_channels {in_channels} and cond_embed_dim {cond_embed_dim}")
     if net == "tld_t2":
         return TLD(
             image_size=resolution,
