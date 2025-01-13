@@ -266,27 +266,6 @@ def generate_samples_by_denoising(
     return x_t
 
 
-def generate_conditional_samples_by_denoising(denoising_model, x_T, text_embeddings, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False, guidance_scale=7.5):
-    """
-    Generate latent samples by denoising. Optionally, text embeddings are provided.
-    """
-    torch.manual_seed(seed)
-
-    x_t = x_T.to(device)
-    pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
-    for t in pbar:
-        if method == "direct":
-            raise NotImplementedError("Direct denoising step no longer supported")
-        
-        x_t = conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample, clip_sample_range, guidance_scale)
-        
-        if not quiet:
-            pbar.set_postfix({"std": x_t.std().item()})
-
-    # print(f"x_t: min={x_t.min()}, max={x_t.max()}, l2 norm={x_t.norm(dim=1).mean().item()}, mean={x_t.mean()}, std={x_t.std()}")
-    return x_t
-
-
 def compute_validation_loss(
     denoising_model: nn.Module,
     val_dataloader: DataLoader,
