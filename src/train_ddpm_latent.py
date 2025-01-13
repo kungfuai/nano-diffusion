@@ -9,6 +9,7 @@ from src.datasets import load_data
 from src.diffusion.diffusion_model_components import create_latent_diffusion_model_components
 from src.diffusion.latent_diffusion_training_loop import training_loop
 from src.models.factory import choices
+from src.bookkeeping.mini_batch import MiniBatch
 
 
 def parse_arguments():
@@ -174,8 +175,6 @@ def main():
     config = TrainingConfig(**vars(args))
 
     train_dataloader, val_dataloader = load_data(config, collate_fn=collate_fn)
-    # first_batch = next(iter(val_dataloader))
-    # assert "image_emb" in first_batch, f"Data must be a dict that contains 'image_emb'. Got {type(first_batch)}"
     model_components = create_latent_diffusion_model_components(config)
 
     num_examples_trained = training_loop(

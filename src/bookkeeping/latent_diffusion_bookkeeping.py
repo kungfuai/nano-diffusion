@@ -161,7 +161,7 @@ def generate_and_log_samples(
         clip_sample_range=config.clip_sample_range,
         guidance_scale=config.guidance_scale,
     )
-    sampled_latents = sampled_latents / config.vae_scale_factor
+    sampled_latents = sampled_latents / config.vae_scale_multiplier
     sampled_images = model_components.vae.decode(sampled_latents).sample
     print(f"sampled_images: min={sampled_images.min()}, max={sampled_images.max()}, std={sampled_images.std()}")
     # sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)  # Normalize to [0,1]
@@ -189,7 +189,7 @@ def generate_and_log_samples(
         ema_sampled_latents = generate_conditional_samples_by_denoising(
             ema_model, x, text_embeddings, noise_schedule, config.num_denoising_steps, device
         )
-        ema_sampled_latents = ema_sampled_latents / config.vae_scale_factor
+        ema_sampled_latents = ema_sampled_latents / config.vae_scale_multiplier
         ema_sampled_images = model_components.vae.decode(ema_sampled_latents).sample
         ema_images_processed = (
             (ema_sampled_images * 255)
@@ -265,7 +265,7 @@ def compute_and_log_fid(
         for batch in train_dataloader:
             yield batch
 
-    batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
+    batch_size = config.batch_size  # Adjust this value based on your GPU memory
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
@@ -281,7 +281,7 @@ def compute_and_log_fid(
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
         x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
         batch_latents = generate_conditional_samples_by_denoising(model_components.denoising_model, x_t, text_embeddings, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
-        batch_latents = batch_latents / config.vae_scale_factor
+        batch_latents = batch_latents / config.vae_scale_multiplier
         batch_images = model_components.vae.decode(batch_latents).sample
         generated_images.append(batch_images)
         count += current_batch_size
@@ -306,7 +306,7 @@ def compute_and_log_fid(
             else:
                 text_embeddings = None
             batch_latents = generate_conditional_samples_by_denoising(model_components.ema_model, x_t, text_embeddings, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
-            batch_latents = batch_latents / config.vae_scale_factor
+            batch_latents = batch_latents / config.vae_scale_multiplier
             batch_images = model_components.vae.decode(batch_latents).sample
             ema_generated_images.append(batch_images)
             count += current_batch_size

@@ -108,7 +108,7 @@ def train_step(
     x_0 = x_0.to(device)
 
     # print(f"before l2 norm of x_0: {x_0.norm(dim=1).mean().item()}, max: {x_0.norm(dim=1).max().item()}, min: {x_0.norm(dim=1).min().item()}")
-    x_0 = x_0 * config.vae_scale_factor
+    x_0 = x_0 * config.vae_scale_multiplier
     # print(f"after: l2 norm of x_0: {x_0.norm(dim=1).mean().item()}, max: {x_0.max().item()}, min: {x_0.min()}, mean: {x_0.mean().item()}, std: {x_0.std().item()}")
 
     noise = torch.randn(x_0.shape).to(device)
