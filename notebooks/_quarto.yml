@@ -6,32 +6,53 @@ project:
 
 website:
   title: "Nano Diffusion"
-  sidebar:
+  
+  navbar:
     background: primary
-    # logo: "images/logo.png"
-    pinned: true
-    align: center
+    search: true
+    left:
+      - text: "Home"
+        href: index.qmd
     tools:
       - icon: github
         href: https://github.com/kungfuai/nano-diffusion.git
         text: GitHub
-    style: docked
-    contents:
-      - href: "1_1_Diffusion 2D Toy.ipynb"
-        text: 1.1 Diffusion for a 2D Point Cloud
-      - href: "1_1_a_refactor.ipynb"
-        text: 1.1a Refactor
-      - href: "1_1_b_Diffusion_2D_hyperparams.ipynb"
-        text: 1.1b Experimenting with diffusion recipes
-      - href: "1_2_Flow Matching 2D Toy.ipynb"
-        text: 1.2 Flow Matching for a 2D Point Cloud
-      - href: "2_1_nano_diffusion_afhq.ipynb"
-        text: 2.1 Diffusion for Animal Face Images
-      - href: "3_1_fid.ipynb"
-        text: "3.1 Evaluation: FID"
-      # - href: https://github.com/Pakillo/quarto-course-website-template/discussions
-      #   text: Forum
 
+  sidebar:
+    - contents:
+      - href: "intro.qmd"
+      - text: "---"
+      - section: "Generating a 2D Point Cloud"
+        contents:
+          - section: "Diffusion"
+            contents:
+              - href: "1_1_Diffusion 2D Toy.ipynb"
+              - href: "1_1_a_refactor.ipynb"
+              - href: "1_1_b_Diffusion_2D_hyperparams.ipynb"
+          - section: "Flow Matching"
+            contents:
+              - href: "1_2_Flow Matching 2D Toy.ipynb"
+      - text: "---"
+      - section: "Generating Animal Face Images"
+        contents:
+          - href: "2_1_diffusion_afhq.ipynb"
+          - href: "2_1_a_move_off_notebook.qmd"
+          - href: "2_2_fid.ipynb"
+      - text: "---"
+      - section: "Transformers as Denoising Mdels"
+        contents:
+          - href: "3_1_dit.qmd"
+      - text: "---"
+      - section: "Text Conditioning"
+        contents:
+          - href: "4_1_text_conditioning_ddpm.ipynb"
+          - href: "4_1a_generate_t2i_ddpm.ipynb"
+          - href: "4_2_text_conditioning_cfm.ipynb"
+          - href: "4_2a_generate_t2i_cfm.ipynb"
+      - text: "---"
+      - section: "Additional resources"
+        contents:
+          - href: "slurm.qmd"
 format:
   html:
     toc: true

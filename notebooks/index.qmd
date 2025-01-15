@@ -21,16 +21,28 @@ This course provides a minimal yet complete implementation of diffusion and flow
 
 ## Tutorials
 
-Please use the sidebar to navigate through the tutorials.
+Please use the sidebar to navigate through the tutorials. To start, checkout [Training a Diffusion Model on 2D Points](https://kungfuai.github.io/nano-diffusion/1_1_Diffusion%202D%20Toy.html).
+
+## Hardware requirements for learning
+
+The 2D examples do not require GPU. You can use your laptop.
+
+Image generation for the aminal faces 16k subset requires a GPU but not much VRAM (12GB is enough).
+We ran the notebooks on an A10 ($0.75/hr on Lambda Labs) or H100 ($2.5/hr on Lambda Labs, about 6x faster than A10).
+It typically takes 1~3 H100 hours ($3 ~ $10) to train a decent quality model.
+
+A larger dataset like MidJourney 600k can be run on A10 but a faster GPU is recommended.
+About 100 H100 hours ($25) is needed to train a decent Text2Image model for this task.
 
 ## References
 
 
 There are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:
 
+- [FAIR's flow matching guide](https://arxiv.org/abs/2412.06264)
 - [DDPM paper](https://arxiv.org/abs/2006.11239)
 - [Lillian Weng's blog](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)
 - [CVPR'22 tutorial](https://cvpr2022-tutorial-diffusion-models.github.io/)
 - [DiT paper](https://arxiv.org/abs/2212.09748)
 - [Flow matching paper](https://arxiv.org/abs/2210.02747)
-- [FAIR's flow matching guide](https://arxiv.org/abs/2412.06264)
+

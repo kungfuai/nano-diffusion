@@ -2,7 +2,6 @@
 Adapted from https://github.com/facebookresearch/DiT/blob/main/models.py
 """
 
-from types import SimpleNamespace
 import torch
 import torch.nn as nn
 import numpy as np
@@ -49,7 +48,7 @@ class TimestepEmbedder(nn.Module):
         if t.dim() == 0:
             t = t.unsqueeze(0)
         # make sure the device of t and embedding are the same
-        # assert t.dim() == 1, f"t must be 1-D Tensor, but got {t.dim()}-D Tensor"
+        assert t.dim() == 1, f"t must be 1-D Tensor, but got {t.dim()}-D Tensor"
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         # assert embedding.shape == (t.shape[0], dim), f"embedding must be of shape {t.shape[0]} x {dim}, but got {embedding.shape}"
@@ -142,6 +141,29 @@ class FinalLayer(nn.Module):
         return x
 
 
+class TextEncoder(nn.Module):
+    """
+    Text encoder for DiT.
+    """
+    def __init__(self, model_name: str, hidden_dim: int):
+        from transformers import CLIPModel, CLIPProcessor
+
+        super().__init__()
+        self.model = CLIPModel.from_pretrained(model_name)
+        # TODO: should processor be in the model? Or should it be in the dataset class?
+        self.processor = CLIPProcessor.from_pretrained(model_name)
+        self.hidden_dim = hidden_dim
+        # self.model.config.hidden_size?
+        self.projector = nn.Linear(self.model.config.hidden_size, hidden_dim)
+
+    def forward(self, text: str):
+        inputs = self.processor(text=text, return_tensors="pt", padding=True, truncation=True)
+        text_features = self.model.get_text_features(**inputs)
+        # project to hidden_dim
+        text_features = self.projector(text_features)
+        return text_features
+
+
 class DiT(nn.Module):
     """
     Diffusion model with a Transformer backbone.
@@ -155,10 +177,23 @@ class DiT(nn.Module):
         depth=28,
         num_heads=16,
         mlp_ratio=4.0,
-        class_dropout_prob=0.1,
-        num_classes=1000,
         learn_sigma=True,
+        cond_embed_dim=None,
     ):
+        """
+        # Load the processor and model
+        processor = CLIPProcessor.from_pretrained("zer0int/CLIP-GmP-ViT-L-14")
+        model = CLIPModel.from_pretrained("zer0int/CLIP-GmP-ViT-L-14").to(device)
+
+        # Tokenize the text
+        inputs = processor(
+            text=text, return_tensors="pt", padding=True, truncation=True
+        ).to(device)
+
+        # Get text embeddings
+        with torch.no_grad():
+            text_features = model.get_text_features(**inputs)  # (batch_size, 512)
+        """
         super().__init__()
         self.learn_sigma = learn_sigma
         self.in_channels = in_channels
@@ -168,9 +203,9 @@ class DiT(nn.Module):
 
         self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+        # self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+        # self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
         num_patches = self.x_embedder.num_patches
-        # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
 
         self.blocks = nn.ModuleList([
@@ -178,6 +213,15 @@ class DiT(nn.Module):
         ])
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
         self.initialize_weights()
+
+        self.cond_embed_dim = cond_embed_dim
+        if cond_embed_dim is not None:
+            self.null_cond_embed = nn.Parameter(torch.randn(1, cond_embed_dim) * 0.02)
+            self.cond_proj = nn.Sequential(
+                nn.Linear(cond_embed_dim, hidden_size),
+                nn.SiLU(),
+                nn.Linear(hidden_size, hidden_size),
+            )
 
     def initialize_weights(self):
         # Initialize transformer layers:
@@ -198,7 +242,7 @@ class DiT(nn.Module):
         nn.init.constant_(self.x_embedder.proj.bias, 0)
 
         # Initialize label embedding table:
-        nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
+        # nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
 
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
@@ -230,20 +274,31 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    def forward(self, t, x, y=None, *args, **kwargs):
+    def get_null_cond_embed(self, batch_size: int=1):
+        return self.null_cond_embed.repeat(batch_size, 1)
+
+    def forward(self, t, x, y=None, p_uncond=None, *args, **kwargs):
         """
         Forward pass of DiT.
         t: (N,) tensor of diffusion timesteps
-        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
-        y: (N,) tensor of class labels
+        x: (N, C, H, W) tensor of spatial inputs
+        y: (N, D) tensor of conditioning embeddings
+        p_uncond: probability of using null conditioning (classifier-free guidance)
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
+
+        # Handle conditioning
         if y is not None:
-            y = self.y_embedder(y, self.training)    # (N, D)
-            c = t + y                                # (N, D)
+            assert self.cond_embed_dim is not None, "Model not configured for conditioning. Set cond_embed_dim in constructor."
+            assert y.shape[1] == self.cond_embed_dim, f"Conditioning embedding must have dim {self.cond_embed_dim}, got {y.shape[1]}"
+            if p_uncond is not None and p_uncond > 0:
+                unconditional_mask = (torch.rand(y.shape[0], device=y.device) < p_uncond)
+                y[unconditional_mask] = self.null_cond_embed
+            c = t + self.cond_proj(y)
         else:
             c = t
+            
         for block in self.blocks:
             x = block(x, c)                      # (N, T, D)
         x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)

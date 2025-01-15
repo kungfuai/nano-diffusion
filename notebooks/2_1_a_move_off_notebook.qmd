@@ -1,0 +1,176 @@
+---
+title: "Time to move off of the notebook"
+---
+
+
+As our model training becomes more complex, we need to transition from notebooks to production scripts for several reasons:
+
+1. Training times are now in hours, making experimentation in notebooks impractical
+2. We need robust experiment tracking and reproducibility
+3. We want to run many experiments and would like each experiment to be a clean, separate run
+
+To make training jobs robust, some extra work is needed: dependency management, monitoring, logging, and checkpointing.
+
+The `lib_2_1` directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:
+
+- A GPU machine (e.g. A10 on [Lambda Labs](https://lambdalabs.com/))
+- [Docker](https://www.docker.com/)
+- [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+
+## Running the training job
+
+```bash
+cd notebooks/lib_2_1
+bash build.sh
+bash train.sh
+```
+
+By default, the results will be saved in the `checkpoints` directory. If you like to use a hosted experiment tracking service like [Weights & Biases](https://wandb.ai/), you can set the `WANB_API_KEY` and `WANDB_PROJECT` environment variables, and the results will be logged to Weights & Biases.
+
+```bash
+export WANB_API_KEY=...
+export WANDB_PROJECT=...
+bash train.sh --logger wandb
+```
+
+# The refactoring
+
+
+## Code in the notebook
+
+Similar to the [refactoring for the 2D point clouds](1_1_a_refactor.ipynb), the notebook is a mix of stable and experimental code.
+
+#### Stable (library) code
+
+1. Main components of the diffusion model training pipeline:
+    - Data and model setup:
+        - DataLoader setup (`load_data`)
+        - **Model architectures (`UnetModel`)**
+        - The training loop (`train`)
+    - Diffusion specific components:
+        - Forward diffusion (`forward_diffusion`)
+        - Denoising step (`denoising_step`)
+        - Noise schedule creation (`create_noise_schedule`)
+        - Sample generation (`generate_samples_by_denoising`)
+
+2. Evaluation and visualization tools:
+    - **Visualization utilities (`visualize_sampled_images`)**
+
+The bolded parts are different from the 2D point clouds notebook.
+
+#### Experimental code
+
+- Custom and flexible visualization of intermediate results
+- Hyperparameter choices and training configurations
+
+We will also be adding code for bookkeeping: setting up logging, checkpointing, monitoring, and evaluation. Bookkeeping code is not part of the training recipe, and it does not impact how the model is trained. However, it is essential for producing the experiments data that helps us understand the behavior of the training process, and identify the winning ingredients of a good training recipe. For evaluation, we need to add FID score calculation (more about this in the [next section](3_1_fid_score)).
+
+## The refactored code
+
+First, let's make a copy of `lib_1_1`. The diffusion part of the logic remains almost the same. The function `denoising_step` is updated to allow for clipping the denoised sample.
+
+A new file `unets.py` is added to hold the UNet models. And `model.py` is updated to use the new models.
+
+`data.py` is updated with a new class `HuggingFaceDataset` as a convenience class to load image datasets from HuggingFace.
+
+`training_loop.py` remains very similar.
+
+`config.py` is updated to add some new hyperparameters.
+
+`bookkeeping.py` is added to handle the bookkeeping logic. A `Bookkeeping` class is implemented with the following interface:
+
+```python
+class Bookkeeping:
+    def __init__(self, config: TrainingConfig, denoising_model: nn.Module, noise_schedule: Dict):
+        ...
+
+    def set_up_logger(self):
+        ...
+        
+    def run_callbacks(self, config: TrainingConfig, step: int, loss: float, optimizer: torch.optim.Optimizer, val_dataloader: DataLoader):
+        ...
+```
+
+## Adding scripts to manage the training job
+
+Several files are added to manage the environment and run the training job in a Docker container:
+
+- `build.sh`: Builds the Docker image.
+- `train.sh`: Runs the training job.
+- `Dockerfile`: Defines the Docker image.
+- `train.py`: The training script.
+
+### The `Dockerfile`
+
+We use the `Dockerfile` to define the environment for the training job. When we run the `build.sh` script, it will build the Docker image that has all the dependencies installed.
+
+It is minimal but complete:
+
+```dockerfile
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
+
+# Non-root user
+RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion
+USER nanodiffusion
+
+RUN pip install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 \
+    clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2
+```
+
+Let's break down the Dockerfile:
+
+#### Base image
+- `FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime`: This is the base image. It is a PyTorch image with CUDA 12.1 and cuDNN 8.0 installed.
+
+#### User management
+- `RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion`: This creates a non-root user named `nanodiffusion`. It is a good practice to run the training job as a non-root user.
+- `USER nanodiffusion`: This switches to the `nanodiffusion` user.
+
+#### Dependencies
+- `RUN pip install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 \
+    clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2`: This installs the dependencies.
+
+### The `train.py` script
+
+The `train.py` script is the main script for the training job. It is a simple script that loads the model, sets the hyperparameters, and starts the training.
+
+We use a `TrainingPipeline` class to represent the logical flow of model training.
+
+```python
+class TrainingPipeline:
+    def __init__(self, config: TrainingConfig):
+        self.config = config
+
+    def fit(self, dataset_builder: DatasetBuilder, train_steps: int=10000):
+        train_dataloader, val_dataloader = self._create_dataloaders(dataset_builder)
+        self.noise_schedule = create_noise_schedule(n_T=self.config.num_denoising_steps, device=self.config.device)
+        self.denoising_model = self._create_model(device=self.config.device)
+        self.optimizer = self._create_optimizer(self.denoising_model)
+        bookkeeping = Bookkeeping(config=self.config, denoising_model=self.denoising_model, noise_schedule=self.noise_schedule)
+        bookkeeping.set_up_logger()
+        train(
+            config=self.config,
+            model=self.denoising_model,
+            train_dataloader=train_dataloader,
+            val_dataloader=val_dataloader,
+            noise_schedule=self.noise_schedule,
+            optimizer=self.optimizer,
+            steps=train_steps,
+            silent=False,
+            bookkeeping=bookkeeping,
+        )
+        return self.denoising_model
+
+    def generate_samples(self, num_samples: int):
+        ...
+
+    def _create_model(self, device: str):
+        ...
+
+    def _create_optimizer(self, denoising_model: nn.Module):
+        ...
+    
+    def _create_dataloaders(self, dataset_builder: DatasetBuilder):
+        ...
+```
+

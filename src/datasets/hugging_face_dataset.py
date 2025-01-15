@@ -19,16 +19,22 @@ class HuggingFaceDataset(Dataset):
         # NOTE: Can exapnd this to other common keys if needed
         if "image" in self.dataset[0].keys():
             return "image"
-        raise KeyError("Dataset does not have an 'image' key")
+        
+        # raise KeyError("Dataset does not have an 'image' or 'image_emb' key")
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
+        if not self.image_key:
+            return self.dataset[idx]
         image = self.dataset[idx][self.image_key]
         image = image.convert("RGB")  # Convert to RGB to ensure 3 channels
-        # By default, set label to 0 to conform to current expected batch format
-        label = 0
+        if "text_emb" in self.dataset[idx].keys():
+            text = np.array(self.dataset[idx].get('text_emb'))
+            text = text.reshape(text.shape[0], -1)
+        elif "text" in self.dataset[idx].keys():
+            text = self.dataset[idx].get('text')
         if self.transform:
             image = self.transform(image)
-        return image, label
+        return image, text

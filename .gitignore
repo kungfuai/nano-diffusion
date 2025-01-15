@@ -3,6 +3,7 @@ data/
 /results/
 wandb/
 logs/
+*.pth
 
 # Python bytecode files
 __pycache__/
@@ -54,3 +55,4 @@ tmp/
 mlruns/
 notebooks/results/
 notebooks/data/
+*.npy
