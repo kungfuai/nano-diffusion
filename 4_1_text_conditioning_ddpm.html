@@ -182,6 +182,13 @@ window.Quarto = {
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A Visual Story of Diffusion and Flow matching</span></a>
+  </div>
+</li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
@@ -403,9 +410,14 @@ window.Quarto = {
 </ul>
 <p>Applying the Bayes rule, we have:</p>
 <p><span class="math display">\[
-p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
+p_{\theta}(x \mid y) \propto p_{\theta}(x) \cdot p_{\theta}(y \mid x)
 \]</span></p>
-<p>Therefore, you can think of text-conditioned generation as taking the unconditional model and adjusting (“tweaking”) it with <span class="math inline">\(p_{\theta}(y \mid x)\)</span>, which is a “classifier” that predicts the label or text description given an image. When you add these two terms, you steer the generation toward images that are both likely under the unconditional model and consistent with the text <span class="math inline">\(y\)</span>. This is the core idea behind classifier guidance.</p>
+<p>When we look at the gradient of the log-probability,</p>
+<p><span class="math display">\[
+\nabla_{x} \log p_{\theta}(x \mid y) = \nabla_{x} \log p_{\theta}(x) + \nabla_{x} \log p_{\theta}(y \mid x)
+\]</span></p>
+<p>Note that <span class="math inline">\(\nabla_{x_t} \log p_{\theta}(x_t)\)</span> is approximately the output of the denoising model (the noise prediction), up to a constant factor.</p>
+<p>Therefore, we can think of text-conditioned generation as taking the unconditional model and adjusting (“tweaking”) it with <span class="math inline">\(p_{\theta}(y \mid x)\)</span>, which is a “classifier” that predicts the label or text description given an image. When we add these two terms, we steer the generation toward images that are both likely under the unconditional model and consistent with the text <span class="math inline">\(y\)</span>. This is the core idea behind classifier guidance.</p>
 <section id="classifier-guidance" class="level3">
 <h3 class="anchored" data-anchor-id="classifier-guidance">Classifier Guidance</h3>
 <p>With classifier guidance, there are 2 models:</p>
@@ -413,7 +425,14 @@ p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
 <li>a diffusion model trained to denoise images (learn <span class="math inline">\(p_{\theta}(x)\)</span>)</li>
 <li>a separate classifier trained to predict the label or text (e.g.&nbsp;cat, dog, etc.) <span class="math inline">\(y\)</span> given an image <span class="math inline">\(x\)</span>.</li>
 </ul>
-<p>During generation (the reverse diffusion process), at each step you: 1. Take the partially denoised image <span class="math inline">\(x_t\)</span>. 2. Run it through the classifier to get a prediction <span class="math inline">\(\log p_{\theta}(y \mid x_t)\)</span>. 3. Compute gradient of the log-probability <span class="math inline">\(\nabla_{\theta} \log p_{\theta}(y \mid x_t)\)</span> that tells you how to tweak <span class="math inline">\(x_t\)</span> to be more consistent with the label <span class="math inline">\(y\)</span>. 4. Mix this gradient into the diffusion model’s own prediction to push the sample toward matching <span class="math inline">\(y\)</span>.</p>
+<p>During generation (the reverse diffusion process), at each step we:</p>
+<ol type="1">
+<li>Take the partially denoised image <span class="math inline">\(x_t\)</span>.</li>
+<li>Run it through the classifier to get a prediction <span class="math inline">\(\log p_{\theta}(y \mid x_t)\)</span>.</li>
+<li>Compute gradient of the log-probability <span class="math inline">\(\nabla_{\theta} \log p_{\theta}(y \mid x_t)\)</span> that tells us how to tweak <span class="math inline">\(x_t\)</span> to be more consistent with the label <span class="math inline">\(y\)</span>.</li>
+<li>Mix this gradient into the diffusion model’s own prediction to push the sample toward matching <span class="math inline">\(y\)</span>.</li>
+</ol>
+<p>If <span class="math inline">\(y\)</span> is “a cat sitting on a mat,” the classifier <span class="math inline">\(p_{\theta}(y \mid x_t)\)</span> evaluates the likelihood of <span class="math inline">\(x_t\)</span> matching this description. The guidance term <span class="math inline">\(\nabla_{x} \log p_{\theta}(y \mid x_t)\)</span> nudges the model to refine samples towards features of a cat on a mat, while <span class="math inline">\(\nabla_{x} \log p_{\theta}(x)\)</span> ensures the output remains realistic and coherent as an image.</p>
 <p>While it works, it requires training or fine-tuning a separate classifier that can handle noisy intermediate images. Usually the classifier is tied to specific labels or tasks, which limits its flexibility.</p>
 </section>
 <section id="classifier-free-guidance" class="level3">
@@ -426,7 +445,7 @@ p_{\theta}(x \mid y) \propto \frac{p_{\theta}(x)}{p_{\theta}(y \mid x)}
 </ul>
 <section id="during-training" class="level4">
 <h4 class="anchored" data-anchor-id="during-training">During training</h4>
-<p>We train <strong>the same diffusion model</strong> to handle both modes by randomly “dropping out” the text prompt some fraction of the time during training. This is so that we have a model that can do <code>\epsilon_{\theta}(x_t, t, \emptyset)</code> and <code>\epsilon_{\theta}(x_t, t, y)</code>, where <span class="math inline">\(y\)</span> is the text prompt and <span class="math inline">\(\emptyset\)</span> is the null text prompt.</p>
+<p>We train <strong>the same diffusion model</strong> to handle both modes by randomly “dropping out” the text prompt some fraction of the time during training. This is so that we have a model is able to output both the unconditional noise prediction <span class="math inline">\(\epsilon_{\theta}(x_t, t, \emptyset)\)</span> and the conditional noise prediction <span class="math inline">\(\epsilon_{\theta}(x_t, t, y)\)</span>, where <span class="math inline">\(y\)</span> is the text prompt and <span class="math inline">\(\emptyset\)</span> is the null text prompt.</p>
 </section>
 <section id="during-generation" class="level4">
 <h4 class="anchored" data-anchor-id="during-generation">During generation</h4>
