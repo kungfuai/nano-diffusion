@@ -53,9 +53,13 @@ def parse_batch(batch) -> MiniBatch:
     """Convert raw batch dict to MiniBatch object"""
     if isinstance(batch, tuple) or isinstance(batch, list):
         x = batch[0]
-        if len(batch) > 1:
-            text_emb = None
-            cond_emb_dict = None
+        text_emb = None
+        cond_emb_dict = None
+        if len(batch) == 2:
+            text_emb = batch[1]
+            # print(text_emb[0], type(text_emb))
+            text_emb = text_emb.float().reshape(text_emb.shape[0], -1)
+            cond_emb_dict = {"text_emb": text_emb}
 
     elif isinstance(batch, dict):
         x = batch["image_emb"].float()

@@ -81,7 +81,7 @@ class DDPMSampler:
         self.vae_scale_multiplier = vae_scale_multiplier
         self.seed = seed
 
-    def sample(self, x_T, y = None, guidance_scale: float = None, seed: int = None, quiet: bool = None):
+    def sample(self, x_T, y = None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
         sampled_x = generate_samples_by_denoising(
             denoising_model=self.denoising_model,
             x_T=x_T,
@@ -160,7 +160,7 @@ class DDPM(BaseDiffusionAlgorithm):
 
         return self.training_example_generator.generate(x_0, self.forward_diffusion, y, p_uncond)
 
-    def sample(self, x_T, y=None, guidance_scale: float = None, seed: int = None, quiet: bool = None):
+    def sample(self, x_T, y=None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
         """
         Generate samples from the denoising model.
 

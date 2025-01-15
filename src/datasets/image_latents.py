@@ -13,7 +13,7 @@ This dataset is used to store image latents. Several metadata fields are necessa
 # TODO: also convert validation set to latents
 import numpy as np
 from tqdm import tqdm
-from datasets import load_dataset, Features, Value, Array2D, Array3D
+from datasets import load_dataset, Features, Value, Array2D, Array3D, Image
 import torch
 from torch.utils.data import Dataset
 from diffusers import AutoencoderKL
@@ -40,6 +40,7 @@ class ImageLatentsDataset(Dataset):
                  clip_model_name: str = "ViT-L/14",
                  image_column: str = 'image',
                  text_column: str = 'text',
+                 include_original_image: bool = False,
                  device: str = 'cuda:0',
                  **kwargs):
         self.src_dataset = load_dataset(src_dataset_name)[split]
@@ -47,7 +48,8 @@ class ImageLatentsDataset(Dataset):
         self.device = device
         self.image_column = image_column
         self.text_column = text_column
-        
+        self.include_original_image = include_original_image
+
         # Initialize models
         self.vae = AutoencoderKL.from_pretrained(tokenizer_name, torch_dtype=torch.float32).to('cuda')
 
@@ -70,6 +72,7 @@ class ImageLatentsDataset(Dataset):
         split: str = 'train',
         image_column: str = 'image',
         text_column: str = 'text',
+        include_original_image: bool = False,
         **kwargs
     ):
         return ImageLatentsDataset(
@@ -79,6 +82,7 @@ class ImageLatentsDataset(Dataset):
             split=split,
             image_column=image_column,
             text_column=text_column,
+            include_original_image=include_original_image,
             **kwargs
         )
     
@@ -88,11 +92,19 @@ class ImageLatentsDataset(Dataset):
             for k, v in item.items():
                 mapping[k].append(v)
 
-        return HFDataset.from_dict(mapping, features=Features({
-            "image_emb": Array3D(shape=(4, 8, 8), dtype="float16"),  # TODO: this is hard coded
-            "text_emb": Array2D(shape=(1, 768), dtype="float16"),  # TODO: this is hard coded
+        if self.include_original_image:
+            # print(f"first row of src_dataset: {self.src_dataset[0]}")
+            mapping['image'] = [self.src_dataset[i][self.image_column] for i in range(len(self))]
+            # print("Image type:", type(mapping['image'][0]))
+
+        features_dict = {
+            "image_emb": Array3D(shape=(4, 8, 8), dtype="float32"),  # TODO: this is hard coded
+            "text_emb": Array2D(shape=(1, 768), dtype="float32"),  # TODO: this is hard coded
             "text": Value("string")
-        }))
+        }
+        if self.include_original_image:
+            features_dict['image'] = Image()
+        return HFDataset.from_dict(mapping, features=Features(features_dict))
 
     def _transform(self, example):
         # Use the VAE and text encoder to get the latents and text encodings
@@ -122,7 +134,7 @@ class ImageLatentsDataset(Dataset):
         return self._transform(self.src_dataset[idx])
     
     def __len__(self):
-        # return 1000
+        # return 100
         return len(self.src_dataset)
     
     def __iter__(self):
@@ -139,10 +151,11 @@ if __name__ == "__main__":
     ds_name = 'reese-green/afhq64_captions_64k'
     text_column = 'caption_blip2-opt-2.7b'
     resolution = 64
+    include_original_image = True
     ds = ImageLatentsDataset.from_image_dataset(
-        ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='train', text_column=text_column)
+        ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='train', text_column=text_column, include_original_image=include_original_image)
     val_ds = ImageLatentsDataset.from_image_dataset(
-        ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='val', text_column=text_column)
+        ds_name, 'madebyollin/sdxl-vae-fp16-fix', resolution, split='val', text_column=text_column, include_original_image=include_original_image)
     print(f"{ds_name}: {len(ds)} examples")
     first_item = ds[0]
     for k, v in first_item.items():
@@ -157,7 +170,7 @@ if __name__ == "__main__":
         'val': val_ds.to_hf_dataset()
     })
 
-    # print(dataset_dict['train'][0]['image_emb'])
+    # print(dataset_dict['train'][0]['image'])
 
     save_to_npy = False
     if save_to_npy:
