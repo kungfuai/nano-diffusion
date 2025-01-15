@@ -126,6 +126,8 @@ class DDPM(BaseDiffusionAlgorithm):
             num_denoising_steps=config.num_denoising_steps,
             device=config.device,
         )
+        if config.data_is_latent:
+            assert vae is not None, "VAE is required for latent data."
         self.sampler = DDPMSampler(
             denoising_model=self.denoising_model,
             num_denoising_steps=config.num_denoising_steps,

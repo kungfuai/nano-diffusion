@@ -25,7 +25,7 @@ class DiffusionModelComponents:
     vae: Optional[nn.Module] = None
 
 
-def create_vae(config: DiffusionTrainingConfig) -> nn.Module:
+def create_vae_if_data_is_latent(config: DiffusionTrainingConfig) -> nn.Module:
     vae = None
     if config.data_is_latent:
         from diffusers import AutoencoderKL
@@ -60,9 +60,9 @@ def create_diffusion_model_components(
         lr_min=config.lr_min,
     )
     noise_schedule = create_noise_schedule(config.num_denoising_steps, device)
-    vae = create_vae(config)
+    vae = create_vae_if_data_is_latent(config)
     if config.diffusion_algo == "ddpm":
-        diffusion = DDPM(denoising_model=denoising_model, noise_schedule=noise_schedule, config=config)
+        diffusion = DDPM(denoising_model=denoising_model, noise_schedule=noise_schedule, config=config, vae=vae)
     elif config.diffusion_algo == "vdm":
         diffusion = VDM(denoising_model=denoising_model, config=config, vae=vae)
     else:
