@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Text conditioning for Flow Matching – Nano Diffusion</title>
+<title>Text conditioning for Flow Matching – Nano Diffusion: Diffusion and Flow Matching from Scratch</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -64,6 +64,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./4_2a_generate_t2i_cfm.html" rel="next">
+<link href="./4_1a_generate_t2i_ddpm.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -116,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Nano Diffusion</span>
+    <span class="navbar-title">Nano Diffusion: Diffusion and Flow Matching from Scratch</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -251,30 +253,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Transformers as Denoising Mdels</span></a>
+ <span class="menu-text">Text Conditioning</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./3_1_dit.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">DiT: Diffusion Transformers</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-        <li class="px-0"><hr class="sidebar-divider hi "></li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Text Conditioning</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./4_1_text_conditioning_ddpm.html" class="sidebar-item-text sidebar-link">
@@ -296,21 +280,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./4_2a_generate_t2i_cfm.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Load pretrained model</span></a>
+ <span class="menu-text">Generate images with text prompts using flow matching</span></a>
   </div>
 </li>
       </ul>
   </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
  <span class="menu-text">Additional resources</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./slurm.html" class="sidebar-item-text sidebar-link">
@@ -355,6 +340,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>Similarly, we can add text conditioning to the flow matching algorithm. The modification to the training loop is small. Most of the code change is already done inside the denoising model.</p>
 <div id="9371f9fc" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T03:50:17.174510Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T03:50:17.174230Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T03:50:17.180400Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T03:50:17.180164Z&quot;}" data-papermill="{&quot;duration&quot;:0.012017,&quot;end_time&quot;:&quot;2025-01-09T03:50:17.180486&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T03:50:17.168469&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>load_ext autoreload</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>autoreload <span class="dv">2</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -515,6 +501,7 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <div id="99d5fdc3" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T04:00:08.361243Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T04:00:08.360713Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T04:00:08.473120Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T04:00:08.472894Z&quot;}" data-papermill="{&quot;duration&quot;:0.116889,&quot;end_time&quot;:&quot;2025-01-09T04:00:08.473178&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T04:00:08.356289&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>torch.save(denoising_model.state_dict(), <span class="st">"denoising_model_4_2.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>In the next tutorial, we will use the trained flow matching model to generate images with text conditioning.</p>
 
 
 </section>
@@ -943,6 +930,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./4_1a_generate_t2i_ddpm.html" class="pagination-link" aria-label="Generate images with text conditioning">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Generate images with text conditioning</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./4_2a_generate_t2i_cfm.html" class="pagination-link" aria-label="Generate images with text prompts using flow matching">
+        <span class="nav-page-text">Generate images with text prompts using flow matching</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 
