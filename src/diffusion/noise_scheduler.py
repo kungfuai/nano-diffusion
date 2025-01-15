@@ -1,10 +1,15 @@
+import numpy as np
 import torch
 import torch.nn as nn
+from torch import Tensor
 from torch.utils.data import DataLoader
 from typing import Dict
 from tqdm import tqdm
 
 from ..config.diffusion_training_config import DiffusionTrainingConfig
+from ..utils import scale_input
+from ..bookkeeping.mini_batch import MiniBatch
+from ..diffusion.base import Diffusion
 
 
 def create_noise_schedule(n_T: int, device: torch.device, beta_min: float=0.0001, beta_max: float=0.02) -> Dict[str, torch.Tensor]:
@@ -17,6 +22,13 @@ def create_noise_schedule(n_T: int, device: torch.device, beta_min: float=0.0001
         "betas": betas,
         "alphas_cumprod": alphas_cumprod,
     }
+
+
+def obsolete_sample_timesteps(num_examples: int, config: DiffusionTrainingConfig) -> torch.Tensor:
+    """
+    Sample timesteps for the forward diffusion process.
+    """
+    return torch.randint(0, config.num_denoising_steps, (num_examples,), device=config.device).long()
 
 
 def forward_diffusion(x_0, t, noise_schedule, noise=None):
@@ -43,7 +55,37 @@ def forward_diffusion(x_0, t, noise_schedule, noise=None):
     return x_t, noise
 
 
-def denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample=True, clip_sample_range=1.0):
+def obsolete_forward_diffusion_for_vdm(x_0: Tensor, t: Tensor, beta_a: float, beta_b: float, noise: Tensor | None = None) -> tuple[Tensor, Tensor]:
+    """Apply forward diffusion process to add noise to images.
+
+    This function implements a non-standard forward diffusion process.
+    It uses a beta distribution to sample noise levels, and uses beta, and 1-beta to scale the noise and signal levels.
+    
+    Args:
+        x_0: The original images to which noise is added.
+        t: The noise levels to apply to the images.
+        beta_a: The alpha parameter for the noise level distribution.
+        beta_b: The beta parameter for the noise level distribution.
+        noise: Optional noise to use instead of generating new noise.
+    
+    Returns:
+        x_noisy: The images with noise added.
+        noise: The noise added to the images.
+    """
+    if noise is None:
+        noise = torch.randn_like(x_0)
+    
+    noise_level = torch.tensor(
+        np.random.beta(beta_a, beta_b, len(x_0)), 
+        device=x_0.device
+    )
+    signal_level = 1 - noise_level
+    x_noisy = noise_level.view(-1, 1, 1, 1) * noise + signal_level.view(-1, 1, 1, 1) * x_0
+    
+    return x_noisy.float(), noise
+
+
+def unconditional_denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample=True, clip_sample_range=1.0):
     """
     This is the backward diffusion step, with the effect of denoising.
     """
@@ -99,11 +141,11 @@ def denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample=True, cl
     return pred_prev_sample
 
 
-def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample=True, clip_sample_range=1.0, guidance_scale=7.5):
+def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True, clip_sample_range=1.0, guidance_scale=7.5):
     """
     This is the backward diffusion step, with the effect of denoising.
 
-    Implements classifier-free guidance by conditioning on both text embeddings and unconditional (null) embeddings.
+    Implements classifier-free guidance by conditioning on both conditional (e.g. text prompt) embeddings and unconditional (null) embeddings.
     """
     
     if isinstance(t, int):
@@ -111,27 +153,26 @@ def conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_s
     else:
         t_tensor = t
 
-    # Double the batch - first half conditioned on text, second half unconditioned
-    x_twice = torch.cat([x_t] * 2)
-    t_twice = torch.cat([t_tensor] * 2)
-    
     # Create unconditional embeddings (zeros) and concatenate with text embeddings
-    if text_embeddings is not None:
+    if y is not None:
+        # Double the batch - first half conditioned on text, second half unconditioned
+        x_twice = torch.cat([x_t] * 2)
+        t_twice = torch.cat([t_tensor] * 2)
         uncond_embeddings = denoising_model.get_null_cond_embed(batch_size=x_t.shape[0])
-        embeddings_cat = torch.cat([uncond_embeddings.to(text_embeddings.device), text_embeddings])
+        embeddings_cat = torch.cat([uncond_embeddings.to(y.device), y])
+        with torch.no_grad():
+            model_output = denoising_model(t=t_twice, x=x_twice, y=embeddings_cat)
+        # Split predictions and perform guidance
+        noise_pred_uncond, noise_pred_text = model_output.chunk(2)
+        adjustment = guidance_scale * (noise_pred_text - noise_pred_uncond)
+        model_output = noise_pred_uncond + adjustment
     else:
-        embeddings_cat = None
-
-    with torch.no_grad():
-        model_output = denoising_model(t=t_twice, x=x_twice, y=embeddings_cat)
+        # unconditional denoising
+        with torch.no_grad():
+            model_output = denoising_model(t=t_tensor, x=x_t)
+    
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
-
-    # Split predictions and perform guidance
-    noise_pred_uncond, noise_pred_text = model_output.chunk(2)
-    adjustment = guidance_scale * (noise_pred_text - noise_pred_uncond)
-    # print("avg adjustment", adjustment.cpu().numpy().mean(), "guidance scale", guidance_scale)
-    model_output = noise_pred_uncond + adjustment
 
     # Extract relevant values from noise_schedule
     alpha_prod_t = noise_schedule["alphas_cumprod"][t_tensor]
@@ -231,19 +272,26 @@ def denoising_step_direct(
     return pred_prev_sample
 
 
-def generate_samples_by_denoising(denoising_model, x_T, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False):
+def generate_samples_by_denoising(
+        denoising_model, x_T, y, noise_schedule, n_T, guidance_scale=4.5,
+        clip_sample=True, clip_sample_range=1.0, seed=0,
+        method="one_stop", quiet=False):
     """
     This is the generation process.
+
+    y: the conditional embeddings (i.e. the embeddings of the prompt).
+        If y is None, then the model is run in unconditional mode.
     """
     torch.manual_seed(seed)
 
-    x_t = x_T.to(device)
+    x_t = x_T
     pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
     for t in pbar:
         if method == "direct":
-            x_t = denoising_step_direct(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
+            # x_t = denoising_step_direct(denoising_model, x_t, t, y, noise_schedule, clip_sample, clip_sample_range)
+            raise NotImplementedError("Direct denoising step no longer supported")
         else:
-            x_t = denoising_step(denoising_model, x_t, t, noise_schedule, clip_sample, clip_sample_range)
+            x_t = denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample, clip_sample_range, guidance_scale=guidance_scale)
         if not quiet:
             pbar.set_postfix({"std": x_t.std().item()})
 
@@ -251,61 +299,33 @@ def generate_samples_by_denoising(denoising_model, x_T, noise_schedule, n_T, dev
     return x_t
 
 
-def generate_conditional_samples_by_denoising(denoising_model, x_T, text_embeddings, noise_schedule, n_T, device, clip_sample=True, clip_sample_range=1.0, seed=0, method="one_stop", quiet=False, guidance_scale=7.5):
-    """
-    Generate latent samples by denoising. Optionally, text embeddings are provided.
-    """
-    torch.manual_seed(seed)
-
-    x_t = x_T.to(device)
-    pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
-    for t in pbar:
-        if method == "direct":
-            raise NotImplementedError("Direct denoising step no longer supported")
-        
-        x_t = conditional_denoising_step(denoising_model, x_t, text_embeddings, t, noise_schedule, clip_sample, clip_sample_range, guidance_scale)
-        
-        if not quiet:
-            pbar.set_postfix({"std": x_t.std().item()})
-
-    # print(f"x_t: min={x_t.min()}, max={x_t.max()}, l2 norm={x_t.norm(dim=1).mean().item()}, mean={x_t.mean()}, std={x_t.std()}")
-    return x_t
-
-
 def compute_validation_loss(
     denoising_model: nn.Module,
     val_dataloader: DataLoader,
-    noise_schedule: Dict[str, torch.Tensor],
-    n_T: int,
-    device: torch.device,
+    diffusion: Diffusion,
+    config: DiffusionTrainingConfig,
 ) -> float:
     total_loss = 0
     num_batches = 0
     criterion = nn.MSELoss()
 
     with torch.no_grad():
-        for x, _ in val_dataloader:
-            x = x.to(device)
-            t = torch.randint(0, n_T, (x.shape[0],)).to(device)
-            noise = torch.randn(x.shape).to(device)
-            x_t, true_noise = forward_diffusion(x, t, noise_schedule, noise=noise)
+        for batch in val_dataloader:
+            batch = MiniBatch.from_dataloader_batch(batch).to(config.device)
+            inputs, targets = diffusion.prepare_training_examples(batch)
+            predictions = denoising_model(**inputs)
+            predictions = predictions.sample if hasattr(predictions, "sample") else predictions
 
-            predicted_noise = denoising_model(t=t, x=x_t)
-            if hasattr(predicted_noise, "sample"):
-                predicted_noise = predicted_noise.sample
-
-            loss = criterion(predicted_noise, true_noise)
+            loss = criterion(predictions, targets)
             total_loss += loss.item()
             num_batches += 1
 
     return total_loss / num_batches
 
 
-def compute_validation_loss_for_latents(
+def obsolete_compute_validation_loss_for_vdm(
     denoising_model: nn.Module,
     val_dataloader: DataLoader,
-    noise_schedule: Dict[str, torch.Tensor],
-    n_T: int,
     device: torch.device,
     config: DiffusionTrainingConfig,
 ) -> float:
@@ -315,40 +335,31 @@ def compute_validation_loss_for_latents(
 
     with torch.no_grad():
         for batch in val_dataloader:
-            x = batch['image_emb']
-            x = x.float().to(device)
-            x = x * config.vae_scale_factor
-            if 'text_emb' in batch:
-                text_emb = batch['text_emb'].float().to(device)
+            batch = MiniBatch.from_dataloader_batch(batch).to(device)
+            x_0 = batch.x
+            x_0 = x_0.float().to(device)
+            x_0 = scale_input(x_0, config)
+            if config.conditional and batch.has_conditional_embeddings:
+                text_emb = batch.text_emb.float()
                 text_emb = text_emb.reshape(text_emb.shape[0], -1)
             else:
                 text_emb = None
-            t = torch.randint(0, n_T, (x.shape[0],)).to(device)
-            noise = torch.randn(x.shape).to(device)
-            x_t, true_noise = forward_diffusion(x, t, noise_schedule, noise=noise)
+            
+            t = torch.tensor(
+                np.random.beta(config.vdm_beta_a, config.vdm_beta_b, len(x_0)), 
+                device=device
+            ).float()
+            common_noise = torch.randn(x_0.shape).to(device)
+            x_t, _ = forward_diffusion(x_0, t, config.train_config.beta_a, config.train_config.beta_b, noise=common_noise)
 
-            predicted_noise = denoising_model(t=t, x=x_t, y=text_emb, p_uncond=0.1)  # TODO: this is hardcoded. The syntax is also wrong.
-            if hasattr(predicted_noise, "sample"):
-                predicted_noise = predicted_noise.sample
+            model_args = {"t": t, "x": x_t}
+            if text_emb is not None:
+                model_args["y"] = text_emb
+            predicted_x_0 = denoising_model(**model_args)
+            predicted_x_0 = predicted_x_0.sample if hasattr(predicted_x_0, "sample") else predicted_x_0
 
-            loss = criterion(predicted_noise, true_noise)
+            loss = criterion(predicted_x_0, x_0)
             total_loss += loss.item()
             num_batches += 1
 
     return total_loss / num_batches
-
-
-def generate_images(
-    model: nn.Module,
-    noise_schedule: Dict[str, torch.Tensor],
-    n_T: int,
-    device: torch.device,
-    batch_size: int,
-    resolution: int = 32,
-    in_channels: int = 3,
-) -> torch.Tensor:
-    with torch.no_grad():
-        x = torch.randn(batch_size, in_channels, resolution, resolution).to(device)
-        samples = generate_samples_by_denoising(model, x, noise_schedule, n_T, device)
-        samples = (samples / 2 + 0.5).clamp(0, 1)
-    return samples

@@ -1,6 +1,6 @@
 from dataclasses import asdict
 from pathlib import Path
-from typing import Callable, Dict
+from typing import Callable, Dict, Iterator
 import os
 import torch
 from torch import nn
@@ -8,13 +8,14 @@ from torch.utils.data import DataLoader
 from torchvision.utils import make_grid, save_image
 
 from ..config.diffusion_training_config import DiffusionTrainingConfig
-from ..diffusion import generate_samples_by_denoising, compute_validation_loss
+from ..diffusion import compute_validation_loss
 from ..diffusion.diffusion_model_components import DiffusionModelComponents
 from ..eval.fid import compute_fid
+from ..bookkeeping.mini_batch import MiniBatch
 
 
 class DiffusionBookkeeping:
-    def __init__(self, config: DiffusionTrainingConfig, model_components: DiffusionModelComponents): #, denoising_model: nn.Module, noise_schedule: Dict):
+    def __init__(self, config: DiffusionTrainingConfig, model_components: DiffusionModelComponents):
         self.config = config
         self.model_components = model_components
         self.num_examples_trained = 0
@@ -38,31 +39,32 @@ class DiffusionBookkeeping:
                 print("  Watching model gradients (can be slow)")
                 wandb.watch(self.model_components.denoising_model)
         
-    def run_callbacks(self, config: DiffusionTrainingConfig, model_components: DiffusionModelComponents, step: int, loss: float, optimizer: torch.optim.Optimizer, train_dataloader: DataLoader, val_dataloader: DataLoader):
+    def run_callbacks(self, config: DiffusionTrainingConfig, step: int, loss: float, optimizer: torch.optim.Optimizer, train_dataloader: DataLoader, val_dataloader: DataLoader, grad_norm: float = None):
+        # TODO: instead of passing in the optimizer, only pass in lr=optimizer.param_groups[0]["lr"].
         self.num_examples_trained += config.batch_size
+        model_components = self.model_components
 
         with torch.no_grad():
             if step % config.log_every == 0:
                 log_training_step(
-                    step, self.num_examples_trained, loss, optimizer, config.logger
+                    step, self.num_examples_trained, loss, optimizer, config.logger, grad_norm
                 )
 
             if step % config.validate_every == 0 and step > 0 and val_dataloader:
                 validate_and_log(
-                    compute_validation_loss,
                     model_components,
                     val_dataloader,
                     config,
                 )
 
             if step % config.sample_every == 0:
-                generate_and_log_samples(model_components, config, step)
+                generate_and_log_samples(model_components, config, step, val_dataloader if config.conditional else None, seed=0)
 
             if step % config.save_every == 0 and step > 0:
                 save_checkpoints(model_components, step, config)
 
             if step % config.fid_every == 0 and step > 0:
-                compute_and_log_fid(model_components, config, train_dataloader)
+                compute_and_log_fid(model_components, config, train_dataloader, val_dataloader)
 
 
 def log_training_step(
@@ -71,27 +73,29 @@ def log_training_step(
     loss: torch.Tensor,
     optimizer: torch.optim.Optimizer,
     logger: str,
+    grad_norm: float = None,
 ):
     lr = optimizer.param_groups[0]["lr"]
     if logger == "wandb":
         import wandb
 
-        wandb.log(
-            {
-                "num_examples_trained": num_examples_trained,
-                "num_batches_trained": step,
-                "loss": loss.item(),
-                "learning_rate": lr,
-            }
-        )
+        log_dict = {
+            "num_examples_trained": num_examples_trained,
+            "num_batches_trained": step,
+            "loss": loss.item(),
+            "learning_rate": lr,
+        }
+        if grad_norm:
+            log_dict["grad_norm"] = grad_norm
 
+        wandb.log(log_dict, step=step)
+        
     print(
         f"Step: {step}, Examples: {num_examples_trained}, Loss: {loss.item():.4f}, LR: {lr:.6f}"
     )
 
 
 def validate_and_log(
-    compute_validation_loss: Callable,
     model_components: DiffusionModelComponents,
     val_dataloader: DataLoader,
     config: DiffusionTrainingConfig,
@@ -99,17 +103,15 @@ def validate_and_log(
     val_loss = compute_validation_loss(
         denoising_model=model_components.denoising_model,
         val_dataloader=val_dataloader,
-        noise_schedule=model_components.noise_schedule,
-        n_T=config.num_denoising_steps,
-        device=config.device,
+        diffusion=model_components.diffusion,
+        config=config,
     )
     if config.use_ema:
         ema_val_loss = compute_validation_loss(
             denoising_model=model_components.ema_model,
             val_dataloader=val_dataloader,
-            noise_schedule=model_components.noise_schedule,
-            n_T=config.num_denoising_steps,
-            device=config.device,
+            diffusion=model_components.diffusion,
+            config=config,
         )
 
     if config.logger == "wandb":
@@ -126,30 +128,44 @@ def validate_and_log(
 
 
 def generate_and_log_samples(
-    model_components: DiffusionModelComponents, config: DiffusionTrainingConfig, step: int = None
+    model_components: DiffusionModelComponents, config: DiffusionTrainingConfig, step: int = None,
+    val_dataloader: DataLoader = None, seed: int = None,
 ):
     device = torch.device(config.device)
-    denoising_model = model_components.denoising_model
-    ema_model = model_components.ema_model
-    noise_schedule = model_components.noise_schedule
 
     # Generate random noise
     n_samples = config.num_samples_for_logging
-    data_dim = [config.in_channels, config.resolution, config.resolution]
+    data_dim = config.input_shape
+    torch.manual_seed(seed)
     x = torch.randn(n_samples, *data_dim).to(device)
+    y = None
+
+    if val_dataloader:
+        # TODO: This assumes n_samples <= batch_size. Get multiple batches until we have enough samples.
+        it = iter(val_dataloader)
+        batch = next(it)
+        batch = MiniBatch.from_dataloader_batch(batch)
+        inputs, _ = model_components.diffusion.prepare_training_examples(batch)
+        y = inputs.get("y")
+        if config.conditional:
+            assert y is not None, "Conditional model requires y"
+        assert len(y) >= n_samples, f"Not enough samples in a validation batch. Need to have at least {n_samples} samples. But the batch has {len(y)} samples."
+        y = y[:n_samples]
+    else:
+        assert not config.conditional, "Conditional model requires val_dataloader. In generate_and_log_samples()."
 
     # Sample using the main model
-    # TODO: this only applies to images. Consider making this more flexible.
-    sampled_images = generate_samples_by_denoising(
-        denoising_model, x, noise_schedule, config.num_denoising_steps, device,
-        clip_sample=config.clip_sample_range > 0,
-        clip_sample_range=config.clip_sample_range,
-    )
-    sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
+    print(f"Sampling a {x.shape} array in {config.num_denoising_steps} steps with guidance scale {config.guidance_scale}. Initial avg: {x.mean().item()}")
+    if y is not None:
+        print(f"y shape: {y.shape}, y avg: {y.mean().item()}")
+    if y is not None and config.conditional:
+        sampled_x = model_components.diffusion.sample(x, y, guidance_scale=config.guidance_scale, seed=seed)
+    else:
+        sampled_x = model_components.diffusion.sample(x, seed=seed)
+        
     images_processed = (
-        (sampled_images * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
+        (sampled_x * 255).permute(0, 2, 3, 1).cpu().numpy().round().astype("uint8")
     )
-
     if config.logger == "wandb":
         import wandb
 
@@ -160,16 +176,13 @@ def generate_and_log_samples(
             }
         )
     else:
-        grid = make_grid(sampled_images, nrow=4, normalize=True, value_range=(-1, 1))
+        grid = make_grid(sampled_x, nrow=4, normalize=True, value_range=(-1, 1))
         save_image(
             grid, Path(config.checkpoint_dir) / f"generated_sample_step_{step}.png"
         )
 
     if config.use_ema:
-        ema_sampled_images = generate_samples_by_denoising(
-            ema_model, x, noise_schedule, config.num_denoising_steps, device
-        )
-        ema_sampled_images = (ema_sampled_images / 2 + 0.5).clamp(0, 1)
+        ema_sampled_images = model_components.diffusion.sample(x)
         ema_images_processed = (
             (ema_sampled_images * 255)
             .permute(0, 2, 3, 1)
@@ -228,24 +241,48 @@ def compute_and_log_fid(
     model_components: DiffusionModelComponents,
     config: DiffusionTrainingConfig,
     train_dataloader: DataLoader = None,  # TODO: delete this
+    val_dataloader: DataLoader = None,
 ):
     print(f"Generating samples and computing FID. This can be slow.")
     device = torch.device(config.device)
-    
+    diffusion = model_components.diffusion
+
     if config.dataset in ["cifar10"]:
         # No need to get real images, as the stats are already computed.
         real_images = None
     
-    batch_size = config.batch_size * 2  # Adjust this value based on your GPU memory
+    batch_size = config.batch_size
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated_images = []
 
+    def batch_generator() -> Iterator[MiniBatch]:
+        while True:
+            for batch in val_dataloader:
+                batch = MiniBatch.from_dataloader_batch(batch).to(device)
+                if batch.num_examples < batch_size:
+                    continue
+                yield batch
+            for batch in train_dataloader:
+                batch = MiniBatch.from_dataloader_batch(batch).to(device)
+                if batch.num_examples < batch_size:
+                    continue
+                yield batch
+    
     count = 0
+    batch_gen = batch_generator()
     for i in range(num_batches):
+        data_batch = next(batch_gen)
+        inputs, _ = diffusion.prepare_training_examples(data_batch)
+        torch.manual_seed(i)
+        x_T = torch.randn(batch_size, *config.input_shape).to(device)
+        y = inputs.get("y")
+        if y is not None and config.conditional:
+            batch_sampled_x = diffusion.sample(x_T, y, guidance_scale=config.guidance_scale, seed=i)
+        else:
+            batch_sampled_x = diffusion.sample(x_T, seed=i)
+        
         current_batch_size = min(batch_size, config.num_samples_for_fid - len(generated_images))
-        x_t = torch.randn(current_batch_size, config.in_channels, config.resolution, config.resolution).to(device)
-        batch_images = generate_samples_by_denoising(model_components.denoising_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
-        batch_images = (batch_images / 2 + 0.5).clamp(0, 1)
+        batch_images = batch_sampled_x[:current_batch_size]
         generated_images.append(batch_images)
         count += current_batch_size
         print(f"Generated {count} out of {config.num_samples_for_fid} images")
@@ -259,10 +296,18 @@ def compute_and_log_fid(
     if config.use_ema:
         ema_generated_images = []
         count = 0
+        batch_gen = batch_generator()
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
-            batch_images = generate_samples_by_denoising(model_components.ema_model, x_t, model_components.noise_schedule, config.num_denoising_steps, device=device, seed=i)
-            batch_images = (batch_images / 2 + 0.5).clamp(0, 1)
+            data_batch = next(batch_gen)
+            inputs, _ = diffusion.prepare_training_examples(data_batch)
+            x_T = torch.randn(batch_size, *config.input_shape).to(device)
+            y = inputs.get("y")
+            if y is not None and config.conditional:
+                batch_sampled_x = diffusion.sample(x_T, y, guidance_scale=config.guidance_scale)
+            else:
+                batch_sampled_x = diffusion.sample(x_T)
+            batch_images = batch_sampled_x[:current_batch_size]
             ema_generated_images.append(batch_images)
             count += current_batch_size
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
@@ -372,4 +417,3 @@ def log_denoising_results(
                 ema_denoised_grid,
                 Path(config.checkpoint_dir) / f"ema_denoised_images_step_{step}.png",
             )
-

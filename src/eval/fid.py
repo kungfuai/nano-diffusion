@@ -30,8 +30,9 @@ def compute_fid(
 
         for i, img in enumerate(generated_images):
             assert len(img.shape) == 3, f"Image must have 3 dimensions, got {len(img.shape)}"
-            # TODO: do we need to assert that the image is in the range [0, 1]?
-            img_np = (img.cpu().numpy() * 255).astype(np.uint8).transpose(1, 2, 0)
+            img_np = img.cpu().numpy()
+            img_np = (img_np - img_np.min()) / (img_np.max() - img_np.min())
+            img_np = (img_np * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
         if dataset_name in ["cifar10"]:
@@ -116,7 +117,9 @@ def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, reso
     shutil.copy(outf, real_images_dir)
 
 
-def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: TrainingConfig, real_images_dir: Path):
+def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: TrainingConfig, real_images_dir: Path, vae: Module = None):
+    if config.data_is_latent:
+        return precompute_fid_stats_for_real_image_latents(dataloader, config, real_images_dir, vae)
     print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
     real_images_dir = real_images_dir / dataset_name_safe

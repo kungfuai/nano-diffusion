@@ -20,6 +20,8 @@ website:
 
   sidebar:
     - contents:
+      - href: "intro.qmd"
+      - text: "---"
       - section: "Generating a 2D Point Cloud"
         contents:
           - section: "Diffusion"

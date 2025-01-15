@@ -1,6 +1,6 @@
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 
-RUN apt-get update -y && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y git build-essential && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Non-root user
 RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion
@@ -14,4 +14,4 @@ RUN pip install transformers==4.47.1 einops==0.8.0
 RUN pip install diffusers==0.32.1  # for loading pretrained models
 RUN pip install git+https://github.com/openai/CLIP.git  # for loading CLIP models
 
-
+RUN pip install accelerate==1.2.1

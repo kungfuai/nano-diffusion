@@ -16,7 +16,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
@@ -870,8 +870,11 @@ def parse_arguments():
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
-    parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Initialize model from a wandb run path")
-    parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Initialize model from a wandb file")
+    parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Initialize model from a wandb run path. Use it together with --init_from_wandb_file")
+    parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Initialize model from a wandb file. Use it together with --init_from_wandb_run_path")
+    parser.add_argument("--vae_model_name", type=str, default="madebyollin/sdxl-vae-fp16-fix", help="VAE model name")
+    parser.add_argument("--cond_embed_dim", type=int, default=768, help="Conditional embedding dimension")
+    parser.add_argument("--cond_drop_prob", type=float, default=0.2, help="Conditional dropout probability")
     args = parser.parse_args()
     return args
 

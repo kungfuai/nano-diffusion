@@ -31,25 +31,46 @@ bin/run.sh python -m src.train_cfm
 ## Features
 
 - Datasets
-  - [x] CIFAR-10
-  - [x] Flowers, CelebA-HQ, AFHQ
+  - [x] AFHQ (low resolution subset), CIFAR-10
+  - [x] Flowers, CelebA-HQ
   - [ ] Video frames from DeepMind Lab videos
+  - [ ] Openvid with Cosmos tokens
   - [ ] Comics (TBD)
   - [ ] SAB
   - [ ] LAION-Aesthetics
 - Model architectures:
   - [x] UNet (small, medium, large)
   - [x] DiT (tiny, small, base, large)
-- Training algorithms and scaling:
+- Training algorithms, efficiency and scaling:
   - [x] DDPM
   - [x] Conditional flow matching
-  - [ ] Text conditioning
-  - [ ] Multi-GPU training
-  - [ ] Mixed precision training
+  - [x] Text conditioning
+  - [x] Multi-GPU training
+  - [x] Mixed precision training
+  - [ ] [muP Transfer](https://github.com/microsoft/mup)
+  - [ ] Support [MosaicML Streaming Dataset](https://docs.mosaicml.com/projects/streaming/en/stable/preparing_datasets/basic_dataset_conversion.html)
+- Tokenziers (VAE)
+  - [ ] [Cosmos]
+  - [ ] [Reducio-VAE](https://github.com/microsoft/Reducio-VAE)
+- Conditioning
+  - VLM (for creating captions as training data)
+    - [x] [BLIP-2](https://github.com/salesforce/BLIP)
+    - [ ] [QWEN-VL](https://github.com/QwenLM/Qwen-VL)
+    - [x] [PaliGemma 2]
+  - Text encoder (for creating text embeddings as model input)
+    - [x] [CLIP](https://github.com/openai/CLIP)
+- Fine-tune, Model editting and test time techniques:
+  - [ ] [Fast inversion for Rectified Flow](https://github.com/HolmesShuan/FireFlow-Fast-Inversion-of-Rectified-Flow-for-Image-Semantic-Editing/tree/4fb7ca0a16d01e113e1a079bfb9da2b6d8c1e7b8)
+  - [ ] [TransPixar](https://wileewang.github.io/TransPixar/): extending a video generation model to RGBA.
+- Alternative training algorithms:
+  - [ ] [VAR]: scale-wise autoregressive model for discrete tokens, e.g. [minVAR](https://github.com/nreHieW/minVAR)
+  - [ ] [FlowAR](https://arxiv.org/html/2412.15205v1): scale-wise autoregressive model with flow matching
+  - [ ] [Micro-Diffusion](https://github.com/SonyResearch/micro_diffusion)
+  - [ ] [minRF](https://github.com/cloneofsimo/minRF/tree/4fc10e0cc8ba976152c7936a1af9717209f03e18/advanced): a minimal implementation of Rectified Flow
 - Experiment tracking (using `wandb`)
   - [x] Validation loss (this is missing in many other implementations, and much more informative than the training loss)
   - [x] Log samples
   - [x] Log FID score
-  - [ ] Log Denoising results
-  - [ ] Visualize denoising path with dimension reduction
+  - [x] Visualize denoising path with dimension reduction
   - [x] Resume training from a wandb run
+  - [ ] Visualize trajectories in latent space with dimension reduction
