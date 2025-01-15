@@ -1,8 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import os
 from typing import List, Tuple
 
+
+def diffusion_algo_choices():
+    return ["ddpm", "vdm"]
 
 @dataclass
 class DiffusionTrainingConfig:
@@ -16,8 +19,11 @@ class DiffusionTrainingConfig:
     # Model architecture
     net: str = "unet_small"  # network architecture
 
-    # Denoising settings
+    # Denoising and diffusion settings
+    diffusion_algo: str = field(default="ddpm", metadata={"choices": diffusion_algo_choices()})  # denoising algorithm
     num_denoising_steps: int = 1000  # number of timesteps
+    vdm_beta_a: float = 1.0  # alpha parameter for the noise level distribution
+    vdm_beta_b: float = 2.5  # beta parameter for the noise level distribution
 
     # VAE (tokenizer) for compression
     vae_use_fp16: bool = False  # use fp16 for the VAE
@@ -31,6 +37,9 @@ class DiffusionTrainingConfig:
     guidance_scale: float = 4.5  # guidance scale for classifier-free guidance
     
     # Training loop and optimizer
+    compile: bool = False  # whether to compile the model
+    accelerator: bool = False  # whether to use the accelerator utility
+    fp16: bool = False  # whether to use fp16 mixed precision for training
     total_steps: int = 100000  # total number of training steps
     batch_size: int = 16  # batch size
     learning_rate: float = 1e-4  # initial learning rate
@@ -47,6 +56,7 @@ class DiffusionTrainingConfig:
     fid_every: int = 5000  # compute FID every N steps
     num_samples_for_fid: int = 1000  # number of samples for FID
     num_real_samples_for_fid: int = 100  # number of real samples for FID when not using CIFAR
+    log_grad_norm: bool = False  # whether to log the gradient norm
 
     # Sampling
     clip_sample_range: float = 2.0  # range for clipping sample. If 0 or less, no clipping
@@ -102,3 +112,15 @@ class DiffusionTrainingConfig:
                 self.resolution = self.data_shape[1]
             else:
                 self.resolution = None
+        
+            # Assert the resolution, in_channels, and data_shape are consistent
+            if len(self.data_shape) == 3:
+                assert self.in_channels == self.data_shape[0], f"in_channels {self.in_channels} does not match data_shape {self.data_shape}"
+                assert self.resolution == self.data_shape[1], f"resolution {self.resolution} does not match data_shape {self.data_shape}"
+                assert self.resolution == self.data_shape[2], f"resolution {self.resolution} does not match data_shape {self.data_shape}"
+            # TODO: Add other assertions here
+        
+        # Process accelerator
+        if self.fp16:
+            if not self.accelerator:
+                raise ValueError("fp16 is only supported with accelerator. Please pass in --accelerator as an argument when using --fp16.")

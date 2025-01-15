@@ -117,7 +117,9 @@ def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, reso
     shutil.copy(outf, real_images_dir)
 
 
-def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: TrainingConfig, real_images_dir: Path):
+def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: TrainingConfig, real_images_dir: Path, vae: Module = None):
+    if config.data_is_latent:
+        return precompute_fid_stats_for_real_image_latents(dataloader, config, real_images_dir, vae)
     print(f"Precomputing FID stats for {config.num_real_samples_for_fid} real images from {config.dataset}")
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
     real_images_dir = real_images_dir / dataset_name_safe

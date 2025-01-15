@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional, Dict
+from contextlib import nullcontext
 
 import torch
 from torch.nn import MSELoss, Module
@@ -10,10 +11,8 @@ from src.bookkeeping.diffusion_bookkeeping import DiffusionBookkeeping
 from src.diffusion.diffusion_model_components import DiffusionModelComponents
 from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from src.eval.fid import precompute_fid_stats_for_real_images
-from src.diffusion import forward_diffusion
 from src.bookkeeping import MiniBatch
-from src.utils import scale_input
-from src.diffusion.noise_scheduler import sample_timesteps
+from src.diffusion.base import BaseDiffusionAlgorithm as Diffusion
 
 
 def training_loop(
@@ -24,11 +23,11 @@ def training_loop(
 ) -> int:
     print(f"Training on {config.device}")
 
-    device = torch.device(config.device)
     denoising_model = model_components.denoising_model  # .to(device)
     ema_model = model_components.ema_model
     optimizer = model_components.optimizer
     lr_scheduler = model_components.lr_scheduler
+
     bookkeeping = DiffusionBookkeeping(config, model_components)
 
     if config.dataset not in ["cifar10"]:
@@ -36,8 +35,15 @@ def training_loop(
 
     bookkeeping.set_up_logger()
 
-    checkpoint_dir = Path(config.checkpoint_dir)
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    accelerator = None
+    if config.accelerator:
+        from accelerate import Accelerator
+
+        accelerator = Accelerator(
+            mixed_precision="fp16" if config.fp16 else "no",
+        )
+        print(f"Using accelerator with mixed precision {accelerator.mixed_precision}.")
+        denoising_model, train_dataloader, optimizer, lr_scheduler = accelerator.prepare(denoising_model, train_dataloader, optimizer, lr_scheduler)
 
     step = 0
     num_examples_trained = 0
@@ -53,10 +59,10 @@ def training_loop(
 
             denoising_model.train()
             loss = train_step(
-                denoising_model, batch, model_components.noise_schedule, optimizer, config, device, criterion
+                batch, denoising_model, model_components.diffusion, optimizer, config, criterion, accelerator
             )
-            # TODO: add gradient norm logging
-            # grad_norm = torch.norm(torch.stack([torch.norm(p.grad) for p in denoising_model.parameters() if p.grad is not None]), 2)
+            if config.log_grad_norm:
+                grad_norm = torch.norm(torch.stack([torch.norm(p.grad) for p in denoising_model.parameters() if p.grad is not None]), 2)
             denoising_model.eval()
 
             lr_scheduler.step()
@@ -70,58 +76,59 @@ def training_loop(
 
                 bookkeeping.run_callbacks(
                     config=config,
-                    model_components=model_components,
                     step=step,
                     loss=loss,
                     optimizer=optimizer,
                     train_dataloader=train_dataloader,
-                    val_dataloader=val_dataloader
+                    val_dataloader=val_dataloader,
+                    grad_norm=grad_norm if config.log_grad_norm else None,
                 )
             step += 1
 
     if step > config.min_steps_for_final_save:
         save_final_models(model_components, config)
+    
+    if accelerator:
+        accelerator.end_training()
 
     return num_examples_trained
 
 
 def train_step(
-    denoising_model: Module,
-    batch: MiniBatch,
-    noise_schedule: Dict[str, torch.Tensor],
-    optimizer: Optimizer,
-    config: TrainingConfig,
-    device: torch.device,
-    criterion: Module,
+    batch: MiniBatch,  # data
+    denoising_model: Module,  # model
+    diffusion: Diffusion,  # diffusion algorithm for teaching (data augmentation)
+    optimizer: Optimizer,  # optimizer
+    config: TrainingConfig,  # config
+    criterion: Module,  # loss function
+    accelerator = None,  # accelerator utility
 ) -> torch.Tensor:
-    optimizer.zero_grad()
-    x_0 = batch.x.to(device)
-    x_0 = scale_input(x_0, config)
+    context = accelerator.accumulate() if accelerator else nullcontext()
 
-    true_noise = common_noise = torch.randn(x_0.shape).to(device)
-    t = sample_timesteps(num_examples=x_0.shape[0], config=config)
-    x_t, _ = forward_diffusion(x_0, t, noise_schedule, noise=common_noise)
+    with context:
+        optimizer.zero_grad()
+        inputs, targets = diffusion.prepare_training_examples(batch)
+        try:
+            predictions = denoising_model(**inputs)
+        except Exception as e:
+            for k, v in inputs.items():
+                if hasattr(v, "shape"):
+                    print("------ ", k, v.shape)
+            raise e
+        predictions = predictions.sample if hasattr(predictions, "sample") else predictions
 
-    model_kwargs = {"t": t, "x": x_t}
-    if config.conditional and batch.text_emb is not None:
-        model_kwargs.update({
-            "y": batch.text_emb.to(device),
-            "p_uncond": config.cond_drop_prob
-        })
-    predicted_noise = denoising_model(**model_kwargs)
-    predicted_noise = predicted_noise.sample if hasattr(predicted_noise, "sample") else predicted_noise
+        loss = criterion(predictions, targets)
+        if accelerator:
+            accelerator.backward(loss)
+        else:
+            loss.backward()
+        
+        if config.max_grad_norm > 0:
+            torch.nn.utils.clip_grad_norm_(
+                denoising_model.parameters(), config.max_grad_norm
+            )
 
-    loss = criterion(predicted_noise, true_noise)
-    loss = loss.mean() if config.use_loss_mean else loss
-
-    loss.backward()
-
-    if config.max_grad_norm > 0:
-        torch.nn.utils.clip_grad_norm_(
-            denoising_model.parameters(), config.max_grad_norm
-        )
-
-    optimizer.step()
+        optimizer.step()
 
     return loss
 

@@ -23,7 +23,7 @@ The variance β at each timestep defines how much noise to add. It can be a fixe
 
 import argparse
 
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
+from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig, diffusion_algo_choices
 from src.datasets import load_data
 from src.diffusion.diffusion_model_components import create_diffusion_model_components
 from src.diffusion.diffusion_training_loop import training_loop
@@ -44,6 +44,11 @@ def parse_arguments():
         "--data_is_latent",
         action="store_true",
         help="Whether the data is already in latent space",
+    )
+    parser.add_argument(
+        "--conditional",
+        action="store_true",
+        help="Whether the model is conditional",
     )
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
@@ -77,6 +82,29 @@ def parse_arguments():
         type=int,
         default=1000,
         help="Number of timesteps in the diffusion process",
+    )
+    parser.add_argument(
+        "-a",
+        "--diffusion_algo",
+        type=str,
+        choices=diffusion_algo_choices(),
+        default="ddpm",
+        help="Denoising algorithm",
+    )
+    parser.add_argument(
+        "--fp16",
+        action="store_true",
+        help="Use FP16 for training",
+    )
+    parser.add_argument(
+        "--accelerator",
+        action="store_true",
+        help="Use the accelerator utility",
+    )
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help="Compile the model",
     )
     parser.add_argument(
         "--warmup_steps", type=int, default=1200, help="Number of warmup steps"
@@ -197,4 +225,16 @@ def main():
 
 
 if __name__ == "__main__":
+    """
+    Main variables of the recipe:
+        - data_is_latent: whether the data is already in latent space.
+            If true, a VAE decoder will be needed to decode the generated latents to the raw data space (e.g. images).
+        - conditional: whether the model is conditional.
+            If true, the model will require an additional input `y` for conditioning (e.g. embedding of a text prompt).
+        - diffusion algorithm: DDPM, VDM
+            - parameters of the forward diffusion process: num_denoising_steps, noise_schedule
+            - parameters of the sampler: num_denoising_steps, guidance_scale, clip_sample, clip_sample_range
+        - network architecture: unet_small, unet, unet_big, dit_s2, etc.
+        - other common deep learning hyperparameters: learning rate, batch size
+    """
     main()

@@ -1,6 +1,6 @@
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 
-RUN apt-get update -y && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y git build-essential && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Non-root user
 RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion
