@@ -47,6 +47,7 @@ bin/run.sh python -m src.train_cfm
   - [x] Text conditioning
   - [x] Multi-GPU training
   - [x] Mixed precision training
+  - [ ] [muP Transfer](https://github.com/microsoft/mup)
 - Tokenziers (VAE)
   - [ ] [Cosmos]
   - [ ] [Reducio-VAE](https://github.com/microsoft/Reducio-VAE)

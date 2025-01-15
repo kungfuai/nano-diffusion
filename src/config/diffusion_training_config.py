@@ -15,6 +15,7 @@ class DiffusionTrainingConfig:
     in_channels: int = 3  # number of input channels
     resolution: int = 64  # resolution of the image
     data_shape: List[int] = None  # data shape (e.g., [3, 64, 64] for RGB images, [16, 3, 64, 64] for video). When specified, this overrides in_channels and resolution.
+    val_split: float = 0.1  # fraction of the dataset to use for validation
 
     # Model architecture
     net: str = "unet_small"  # network architecture
