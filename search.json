@@ -144,7 +144,7 @@
   {
     "objectID": "compare_denoising_step_fns.html",
     "href": "compare_denoising_step_fns.html",
-    "title": "Nano Diffusion: Diffusion and Flow Matching from Scratch",
+    "title": "Nano Diffusion",
     "section": "",
     "text": "import sys\n\nsys.path.append(\"..\")\n\nfrom src.train import denoising_step_0, denoising_step_1, create_noise_schedule\n\n\n# compare the two denoising step functions\nimport torch\nimport numpy as np\n\nbatch_size = 8\nx_t = torch.randn(batch_size, 2)\n\nclass DenoisingModel(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.linear = torch.nn.Linear(2, 2)\n\n    def forward(self, t, x):\n        return self.linear(x)\n\ndenoising_model = DenoisingModel()\ndenoising_model.eval()\nnoise_schedule = create_noise_schedule(n_T=1000, device=\"cpu\")\n\nt = 10\n# seed the noise\ntorch.manual_seed(0)\nx_0_0 = denoising_step_0(denoising_model, x_t=x_t, t=t, noise_schedule=noise_schedule, clip_sample=False)\n\ntorch.manual_seed(0)\nx_0_1 = denoising_step_1(denoising_model, x_t=x_t, t=t, noise_schedule=noise_schedule, clip_sample=False)\n\n# compare the two, mean squared error\nprint(\"MSE difference:\", np.mean((x_0_0.cpu().numpy() - x_0_1.cpu().numpy()) ** 2))\n# print the first 20 numbers\nprint(\"x_0_0:\", x_0_0.cpu().numpy().flatten()[:10])\nprint(\"x_0_1:\", x_0_1.cpu().numpy().flatten()[:10])\n\nMSE difference: 2.4966038e-10\nx_0_0: [-1.3758283  -1.7300689   0.56866246  0.7879243   0.6137402  -1.5527974\n -0.3410042   1.8221784   0.75911075 -0.6098999 ]\nx_0_1: [-1.3758079  -1.7300419   0.5686541   0.7879141   0.61373085 -1.552776\n -0.34100035  1.822156    0.7590997  -0.60988957]"
   },
@@ -1048,7 +1048,7 @@
     "href": "index.html#what-youll-learn",
     "title": "Nano Diffusion: Diffusion and Flow Matching from Scratch",
     "section": "What You’ll Learn",
-    "text": "What You’ll Learn\n\nImplementation of training recipes for diffusion and flow matching models from scratch\nWorking with popular model architectures like UNet and DiT\nTraining on various datasets including 2D point clouds, animal face images, minecraft gameplay videos, etc.\nExperiment tracking and model evaluation."
+    "text": "What You’ll Learn\n\nHow to train diffusion and flow matching models from scratch.\nWorking with popular model architectures like UNet and DiT.\nTraining on various datasets including 2D point clouds, animal face images and larger datasets.\nHow to condition the models to follow text prompts.\nHow to make model training more efficient, and scale up to higher resolution and larger datasets.\nExperiment tracking and model evaluation."
   },
   {
     "objectID": "index.html#prerequisites",
