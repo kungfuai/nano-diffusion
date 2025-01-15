@@ -5,7 +5,7 @@ project:
     - "*.ipynb"
 
 website:
-  title: "Nano Diffusion: Diffusion and Flow Matching from Scratch"
+  title: "Nano Diffusion"
   description: "Tutorials and practical recipes on how to build diffusion and flow matching models."
   image: "assets/learned_denoising_vector_field.gif"
   page-navigation: true
@@ -48,10 +48,11 @@ website:
           - href: "4_2_text_conditioning_cfm.ipynb"
           - href: "4_2a_generate_t2i_cfm.ipynb"
       - text: "---"
-      # - section: "Scaling up: generate bigger and more diverse images"
+      - section: "Scaling up: generate bigger and more diverse images"
       #   contents:
-      #     - href: "3_1_dit.qmd"
-          # - href: "vdm.qmd"
+      #     - href: "3_1_transformers_make_use_of_more_data_and_is_easier_to_scale.qmd"
+          # - href: "latent_space.qmd"
+          # - href: "vdm_faster_training_and_sampling.qmd"
           # - href: "accelerator, mixed precision, model compilation"
           # - href: "distributed training"
           # - href: "data recipe"

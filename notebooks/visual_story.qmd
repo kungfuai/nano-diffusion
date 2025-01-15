@@ -9,7 +9,7 @@ format:
 Diffusion and flow matching are techniques behind frontier generative models for image, video, music, protein structure and more.
 
 ::: {.columns}
-::: {.column width="60%"}
+::: {.column width="57%"}
 ![](assets/veo2_dog_swim.gif){fig-align="center"}
 :::
 

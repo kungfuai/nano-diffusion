@@ -8,9 +8,11 @@ This course provides a minimal yet complete implementation of diffusion and flow
 
 ## What You'll Learn
 
-- Implementation of training recipes for diffusion and flow matching models from scratch
-- Working with popular model architectures like [UNet](https://arxiv.org/abs/1505.04597) and [DiT](https://arxiv.org/abs/2212.09748)
-- Training on various datasets including 2D point clouds, animal face images, minecraft gameplay videos, etc.
+- How to train diffusion and flow matching models from scratch.
+- Working with popular model architectures like [UNet](https://arxiv.org/abs/1505.04597) and [DiT](https://arxiv.org/abs/2212.09748).
+- Training on various datasets including 2D point clouds, animal face images and larger datasets.
+- How to condition the models to follow text prompts.
+- How to make model training more efficient, and scale up to higher resolution and larger datasets.
 - Experiment tracking and model evaluation.
 
 ## Prerequisites
