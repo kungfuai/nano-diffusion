@@ -1,6 +1,21 @@
+import numpy as np
 import torch
+import torchvision.transforms.functional as F
 from ..config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 
+
+class SquarePad:
+    """
+    Borrowed from https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/5
+    """
+    def __call__(self, image):
+        w, h = image.size
+        max_wh = np.max([w, h])
+        hp = int((max_wh - w) / 2)
+        vp = int((max_wh - h) / 2)
+        padding = (hp, vp, hp, vp)
+        return F.pad(image, padding, 0, 'constant')
+    
 
 def scale_input(x: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
     """
