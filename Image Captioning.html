@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>README – Nano Diffusion</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Nano Diffusion</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/kungfuai/nano-diffusion.git" title="GitHub" class="quarto-navigation-tool px-1" aria-label="GitHub"><i class="bi bi-github"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">README</li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visual_story.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A Visual Story of Diffusion and Flow matching</span></a>
+  </div>
+</li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Generating a 2D Point Cloud</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Diffusion</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_Diffusion 2D Toy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Training a Diffusion Model on 2D Points</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_a_refactor.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A refactoring exercise</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Experiment with hyperparameters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Flow Matching</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./1_2_Flow Matching 2D Toy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Training a Flow Matching Model for 2D Point Generation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Generating Animal Face Images</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_1_diffusion_afhq.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Training a Diffusion Model for Animal Face Images</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Time to move off of the notebook</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./2_2_fid.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Quality evaluation of an image generation model</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Transformers as Denoising Mdels</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3_1_dit.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DiT: Diffusion Transformers</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Text Conditioning</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_1_text_conditioning_ddpm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Text Conditioning (text2image)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_1a_generate_t2i_ddpm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generate images with text conditioning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_2_text_conditioning_cfm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Text conditioning for Flow Matching</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./4_2a_generate_t2i_cfm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Load pretrained model</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Additional resources</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./slurm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Managing training jobs with SLURM</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#dataset" id="toc-dataset" class="nav-link active" data-scroll-target="#dataset">Dataset</a></li>
+  <li><a href="#blip-2" id="toc-blip-2" class="nav-link" data-scroll-target="#blip-2">BLIP 2</a>
+  <ul class="collapse">
+  <li><a href="#demos-of-blip2" id="toc-demos-of-blip2" class="nav-link" data-scroll-target="#demos-of-blip2">Demos of BLIP2</a></li>
+  <li><a href="#generate-captions-for-datset-with-blip2" id="toc-generate-captions-for-datset-with-blip2" class="nav-link" data-scroll-target="#generate-captions-for-datset-with-blip2">Generate captions for Datset with BLIP2</a></li>
+  </ul></li>
+  <li><a href="#paligemma-3b" id="toc-paligemma-3b" class="nav-link" data-scroll-target="#paligemma-3b">PaliGemma-3b</a></li>
+  <li><a href="#cogvlm" id="toc-cogvlm" class="nav-link" data-scroll-target="#cogvlm">CogVLM</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">README</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This notebook can be used to generate captions for an image dataset using the following models: - BLIP2 - PaliGemma-3b - CogVLM</p>
+<section id="dataset" class="level1">
+<h1>Dataset</h1>
+<div id="cell-3" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>module_path <span class="op">=</span> os.path.abspath(os.path.join(<span class="st">'..'</span>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> module_path <span class="kw">not</span> <span class="kw">in</span> sys.path:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    sys.path.append(module_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-4" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.datasets.hugging_face_dataset <span class="im">import</span> HuggingFaceDataset</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>dataset_name <span class="op">=</span> <span class="st">"zzsi/afhq64_16k"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> HuggingFaceDataset(dataset_name, <span class="st">'val'</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"len(dataset): </span><span class="sc">{</span><span class="bu">len</span>(dataset)<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>len(dataset): 1500</code></pre>
+</div>
+</div>
+</section>
+<section id="blip-2" class="level1">
+<h1>BLIP 2</h1>
+<section id="demos-of-blip2" class="level3">
+<h3 class="anchored" data-anchor-id="demos-of-blip2">Demos of BLIP2</h3>
+<div id="cell-7" class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> PIL <span class="im">import</span> Image</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> Blip2Processor, Blip2ForConditionalGeneration</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> <span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Using device: </span><span class="sc">{</span>device<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>img_url <span class="op">=</span> <span class="st">'https://storage.googleapis.com/sfr-vision-language-research/BLIP/demo.jpg'</span> </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>raw_image <span class="op">=</span> Image.<span class="bu">open</span>(requests.get(img_url, stream<span class="op">=</span><span class="va">True</span>).raw).convert(<span class="st">'RGB'</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>display(raw_image)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>processor <span class="op">=</span> Blip2Processor.from_pretrained(<span class="st">"Salesforce/blip2-opt-2.7b"</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> Blip2ForConditionalGeneration.from_pretrained(<span class="st">"Salesforce/blip2-opt-2.7b"</span>).to(device)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> processor(raw_image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(device)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>out <span class="op">=</span> model.generate(<span class="op">**</span>inputs)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(processor.decode(out[<span class="dv">0</span>], skip_special_tokens<span class="op">=</span><span class="va">True</span>).strip())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-8" class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(<span class="dv">5</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">20</span>, <span class="dv">10</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>captions <span class="op">=</span> []</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> processor(dataset[i][<span class="dv">0</span>], return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(<span class="st">"cuda"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    out <span class="op">=</span> model.generate(<span class="op">**</span>inputs)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    caption <span class="op">=</span> processor.decode(out[<span class="dv">0</span>], skip_special_tokens<span class="op">=</span><span class="va">True</span>).strip()</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    captions.append(caption)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    axs[i].imshow(dataset[i][<span class="dv">0</span>])</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    axs[i].axis(<span class="st">'off'</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    axs[i].set_title(captions[i])</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="generate-captions-for-datset-with-blip2" class="level2">
+<h2 class="anchored" data-anchor-id="generate-captions-for-datset-with-blip2">Generate captions for Datset with BLIP2</h2>
+<div id="cell-10" class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm <span class="im">import</span> tqdm</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>blip_captions <span class="op">=</span> {}</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, data <span class="kw">in</span> <span class="bu">enumerate</span>(tqdm(dataset)):</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    raw_image <span class="op">=</span> dataset[i][<span class="dv">0</span>]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> processor(raw_image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(<span class="st">"cuda"</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    out <span class="op">=</span> model.generate(<span class="op">**</span>inputs)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    caption <span class="op">=</span> processor.decode(out[<span class="dv">0</span>], skip_special_tokens<span class="op">=</span><span class="va">True</span>).strip()</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    blip_captions[i] <span class="op">=</span> caption</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-11" class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the captions</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"blip_captions.json"</span>, <span class="st">"w"</span>) <span class="im">as</span> f:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    json.dump(blip_captions, f)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="paligemma-3b" class="level1">
+<h1>PaliGemma-3b</h1>
+<div id="cell-13" class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> AutoProcessor, PaliGemmaForConditionalGeneration</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="op">=</span> <span class="st">"google/paligemma-3b-mix-224"</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> <span class="st">"cuda:0"</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>dtype <span class="op">=</span> torch.bfloat16</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> PaliGemmaForConditionalGeneration.from_pretrained(</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    model_id,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    torch_dtype<span class="op">=</span>dtype,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    device_map<span class="op">=</span>device,</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    revision<span class="op">=</span><span class="st">"bfloat16"</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>).<span class="bu">eval</span>().to(device)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>processor <span class="op">=</span> AutoProcessor.from_pretrained(model_id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-14" class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>image <span class="op">=</span> dataset[<span class="dv">0</span>][<span class="dv">0</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>display(image)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>prompt <span class="op">=</span> <span class="st">"caption en &lt;image&gt;"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>model_inputs <span class="op">=</span> processor(text<span class="op">=</span>prompt, images<span class="op">=</span>image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(model.device)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>input_len <span class="op">=</span> model_inputs[<span class="st">"input_ids"</span>].shape[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.inference_mode():</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    generation <span class="op">=</span> model.generate(<span class="op">**</span>model_inputs, max_new_tokens<span class="op">=</span><span class="dv">100</span>, do_sample<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    generation <span class="op">=</span> generation[<span class="dv">0</span>][input_len:]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    decoded <span class="op">=</span> processor.decode(generation, skip_special_tokens<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(decoded)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-15" class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>captions <span class="op">=</span> []</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    image <span class="op">=</span> dataset[i][<span class="dv">0</span>]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    prompt <span class="op">=</span> <span class="st">"&lt;image&gt;caption en"</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    model_inputs <span class="op">=</span> processor(text<span class="op">=</span>prompt, images<span class="op">=</span>image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(model.device)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    input_len <span class="op">=</span> model_inputs[<span class="st">"input_ids"</span>].shape[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.inference_mode():</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> model.generate(<span class="op">**</span>model_inputs, max_new_tokens<span class="op">=</span><span class="dv">100</span>, do_sample<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> generation[<span class="dv">0</span>][input_len:]</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        decoded <span class="op">=</span> processor.decode(generation, skip_special_tokens<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(decoded)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        captions.append(decoded)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># plot images with captions</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(<span class="dv">5</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">20</span>, <span class="dv">10</span>))</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    axs[i].imshow(dataset[i][<span class="dv">0</span>])</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    axs[i].axis(<span class="st">'off'</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    axs[i].set_title(captions[i])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-16" class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm <span class="im">import</span> tqdm</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># save every image with caption to dict and the write to json</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>captions <span class="op">=</span> {}</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, data <span class="kw">in</span> <span class="bu">enumerate</span>(tqdm(dataset)):</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    image <span class="op">=</span> dataset[i][<span class="dv">0</span>]</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    prompt <span class="op">=</span> <span class="st">"&lt;image&gt;caption en"</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    model_inputs <span class="op">=</span> processor(text<span class="op">=</span>prompt, images<span class="op">=</span>image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(model.device)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    input_len <span class="op">=</span> model_inputs[<span class="st">"input_ids"</span>].shape[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.inference_mode():</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> model.generate(<span class="op">**</span>model_inputs, max_new_tokens<span class="op">=</span><span class="dv">100</span>, do_sample<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> generation[<span class="dv">0</span>][input_len:]</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        decoded <span class="op">=</span> processor.decode(generation, skip_special_tokens<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        captions[i] <span class="op">=</span> decoded</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-17" class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save to json</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"pali-gemma-3b-captions.json"</span>, <span class="st">"w"</span>) <span class="im">as</span> f:</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    json.dump(captions, f)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="cogvlm" class="level1">
+<h1>CogVLM</h1>
+<div id="cell-19" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gc</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> PIL <span class="im">import</span> Image</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> AutoModelForCausalLM, LlamaTokenizer</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># print gpu usage</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Initial GPU memory usage: </span><span class="sc">{</span>torch<span class="sc">.</span>cuda<span class="sc">.</span>memory_allocated() <span class="op">/</span> <span class="dv">1024</span> <span class="op">**</span> <span class="dv">3</span><span class="sc">:.2f}</span><span class="ss"> GB"</span>)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>gc.collect()</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>torch.cuda.empty_cache()</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"GPU memory usage after emptying the cache: </span><span class="sc">{</span>torch<span class="sc">.</span>cuda<span class="sc">.</span>memory_allocated() <span class="op">/</span> <span class="dv">1024</span> <span class="op">**</span> <span class="dv">3</span><span class="sc">:.2f}</span><span class="ss"> GB"</span>)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> LlamaTokenizer.from_pretrained(<span class="st">'lmsys/vicuna-7b-v1.5'</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> AutoModelForCausalLM.from_pretrained(</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'THUDM/cogvlm-base-224-hf'</span>,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    torch_dtype<span class="op">=</span>torch.bfloat16,</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    low_cpu_mem_usage<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    trust_remote_code<span class="op">=</span><span class="va">True</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>).to(<span class="st">'cuda'</span>).<span class="bu">eval</span>()</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>image <span class="op">=</span> Image.<span class="bu">open</span>(requests.get(<span class="st">'https://github.com/THUDM/CogVLM/blob/main/examples/1.png?raw=true'</span>, stream<span class="op">=</span><span class="va">True</span>).raw).convert(<span class="st">'RGB'</span>)</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> model.build_conversation_input_ids(tokenizer, query<span class="op">=</span><span class="st">''</span>, images<span class="op">=</span>[image])</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> {</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">'input_ids'</span>: inputs[<span class="st">'input_ids'</span>].unsqueeze(<span class="dv">0</span>).to(<span class="st">'cuda'</span>),</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">'token_type_ids'</span>: inputs[<span class="st">'token_type_ids'</span>].unsqueeze(<span class="dv">0</span>).to(<span class="st">'cuda'</span>),</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">'attention_mask'</span>: inputs[<span class="st">'attention_mask'</span>].unsqueeze(<span class="dv">0</span>).to(<span class="st">'cuda'</span>),</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">'images'</span>: [[inputs[<span class="st">'images'</span>][<span class="dv">0</span>].to(<span class="st">'cuda'</span>).to(torch.bfloat16)]],</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>gen_kwargs <span class="op">=</span> {<span class="st">"max_length"</span>: <span class="dv">2048</span>, <span class="st">"do_sample"</span>: <span class="va">False</span>}</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    outputs <span class="op">=</span> model.generate(<span class="op">**</span>inputs, <span class="op">**</span>gen_kwargs)</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    outputs <span class="op">=</span> outputs[:, inputs[<span class="st">'input_ids'</span>].shape[<span class="dv">1</span>]:]</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(tokenizer.decode(outputs[<span class="dv">0</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Initial GPU memory usage: 23.28 GB
+GPU memory usage after emptying the cache: 0.00 GB</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"5db625fb17bc4e1283e1a4e6d0dfa08c","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-error">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">OutOfMemoryError</span>                          Traceback (most recent call last)
+Cell <span class="ansi-green-fg">In[12], line 19</span>
+<span class="ansi-green-fg ansi-bold">     11</span> <span style="color:rgb(0,135,0)">print</span>(<span style="color:rgb(175,0,0)">f</span><span style="color:rgb(175,0,0)">"</span><span style="color:rgb(175,0,0)">GPU memory usage after emptying the cache: </span><span style="font-weight:bold;color:rgb(175,95,135)">{</span>torch<span style="color:rgb(98,98,98)">.</span>cuda<span style="color:rgb(98,98,98)">.</span>memory_allocated() <span style="color:rgb(98,98,98)">/</span> <span style="color:rgb(98,98,98)">1024</span> <span style="color:rgb(98,98,98)">*</span><span style="color:rgb(98,98,98)">*</span> <span style="color:rgb(98,98,98)">3</span><span style="font-weight:bold;color:rgb(175,95,135)">:</span><span style="color:rgb(175,0,0)">.2f</span><span style="font-weight:bold;color:rgb(175,95,135)">}</span><span style="color:rgb(175,0,0)"> GB</span><span style="color:rgb(175,0,0)">"</span>)
+<span class="ansi-green-fg ansi-bold">     13</span> tokenizer <span style="color:rgb(98,98,98)">=</span> LlamaTokenizer<span style="color:rgb(98,98,98)">.</span>from_pretrained(<span style="color:rgb(175,0,0)">'</span><span style="color:rgb(175,0,0)">lmsys/vicuna-7b-v1.5</span><span style="color:rgb(175,0,0)">'</span>)
+<span class="ansi-green-fg ansi-bold">     14</span> model <span style="color:rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">AutoModelForCausalLM</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">from_pretrained</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-fg ansi-bold">     15</span> <span class="ansi-yellow-bg">    </span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">'</span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">THUDM/cogvlm-base-224-hf</span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">'</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">     16</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">torch_dtype</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">=</span><span class="ansi-yellow-bg">torch</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">bfloat16</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">     17</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">low_cpu_mem_usage</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">=</span><span style="font-weight:bold;color:rgb(0,135,0)" class="ansi-yellow-bg">True</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">     18</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">trust_remote_code</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">=</span><span style="font-weight:bold;color:rgb(0,135,0)" class="ansi-yellow-bg">True</span>
+<span class="ansi-green-fg">---&gt; 19</span> <span class="ansi-yellow-bg">)</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">to</span><span class="ansi-yellow-bg">(</span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">'</span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">cuda</span><span style="color:rgb(175,0,0)" class="ansi-yellow-bg">'</span><span class="ansi-yellow-bg">)</span><span style="color:rgb(98,98,98)">.</span>eval()
+<span class="ansi-green-fg ansi-bold">     21</span> image <span style="color:rgb(98,98,98)">=</span> Image<span style="color:rgb(98,98,98)">.</span>open(requests<span style="color:rgb(98,98,98)">.</span>get(<span style="color:rgb(175,0,0)">'</span><span style="color:rgb(175,0,0)">https://github.com/THUDM/CogVLM/blob/main/examples/1.png?raw=true</span><span style="color:rgb(175,0,0)">'</span>, stream<span style="color:rgb(98,98,98)">=</span><span style="font-weight:bold;color:rgb(0,135,0)">True</span>)<span style="color:rgb(98,98,98)">.</span>raw)<span style="color:rgb(98,98,98)">.</span>convert(<span style="color:rgb(175,0,0)">'</span><span style="color:rgb(175,0,0)">RGB</span><span style="color:rgb(175,0,0)">'</span>)
+<span class="ansi-green-fg ansi-bold">     22</span> inputs <span style="color:rgb(98,98,98)">=</span> model<span style="color:rgb(98,98,98)">.</span>build_conversation_input_ids(tokenizer, query<span style="color:rgb(98,98,98)">=</span><span style="color:rgb(175,0,0)">'</span><span style="color:rgb(175,0,0)">'</span>, images<span style="color:rgb(98,98,98)">=</span>[image])
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/transformers/modeling_utils.py:3164</span>, in <span class="ansi-cyan-fg">PreTrainedModel.to</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-fg ansi-bold">   3159</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> dtype_present_in_args:
+<span class="ansi-green-fg ansi-bold">   3160</span>         <span style="font-weight:bold;color:rgb(0,135,0)">raise</span> <span style="font-weight:bold;color:rgb(215,95,95)">ValueError</span>(
+<span class="ansi-green-fg ansi-bold">   3161</span>             <span style="color:rgb(175,0,0)">"</span><span style="color:rgb(175,0,0)">You cannot cast a GPTQ model in a new `dtype`. Make sure to load the model using `from_pretrained` using the desired</span><span style="color:rgb(175,0,0)">"</span>
+<span class="ansi-green-fg ansi-bold">   3162</span>             <span style="color:rgb(175,0,0)">"</span><span style="color:rgb(175,0,0)"> `dtype` by passing the correct `torch_dtype` argument.</span><span style="color:rgb(175,0,0)">"</span>
+<span class="ansi-green-fg ansi-bold">   3163</span>         )
+<span class="ansi-green-fg">-&gt; 3164</span> <span style="font-weight:bold;color:rgb(0,135,0)">return</span> <span style="color:rgb(0,135,0)" class="ansi-yellow-bg">super</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">to</span><span class="ansi-yellow-bg">(</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">*</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:1174</span>, in <span class="ansi-cyan-fg">Module.to</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-fg ansi-bold">   1171</span>         <span style="font-weight:bold;color:rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg ansi-bold">   1172</span>             <span style="font-weight:bold;color:rgb(0,135,0)">raise</span>
+<span class="ansi-green-fg">-&gt; 1174</span> <span style="font-weight:bold;color:rgb(0,135,0)">return</span> <span style="color:rgb(0,135,0)" class="ansi-yellow-bg">self</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">_apply</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">convert</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:780</span>, in <span class="ansi-cyan-fg">Module._apply</span><span class="ansi-blue-fg">(self, fn, recurse)</span>
+<span class="ansi-green-fg ansi-bold">    778</span> <span style="font-weight:bold;color:rgb(0,135,0)">if</span> recurse:
+<span class="ansi-green-fg ansi-bold">    779</span>     <span style="font-weight:bold;color:rgb(0,135,0)">for</span> module <span style="font-weight:bold;color:rgb(175,0,255)">in</span> <span style="color:rgb(0,135,0)">self</span><span style="color:rgb(98,98,98)">.</span>children():
+<span class="ansi-green-fg">--&gt; 780</span>         <span class="ansi-yellow-bg">module</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">_apply</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">fn</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg ansi-bold">    782</span> <span style="font-weight:bold;color:rgb(0,135,0)">def</span> <span style="color:rgb(0,0,255)">compute_should_use_set_data</span>(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    783</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> torch<span style="color:rgb(98,98,98)">.</span>_has_compatible_shallow_copy_type(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    784</span>         <span style="font-style:italic;color:rgb(95,135,135)"># If the new tensor has compatible tensor type as the existing tensor,</span>
+<span class="ansi-green-fg ansi-bold">    785</span>         <span style="font-style:italic;color:rgb(95,135,135)"># the current behavior is to change the tensor in-place using `.data =`,</span>
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-fg ansi-bold">    790</span>         <span style="font-style:italic;color:rgb(95,135,135)"># global flag to let the user control whether they want the future</span>
+<span class="ansi-green-fg ansi-bold">    791</span>         <span style="font-style:italic;color:rgb(95,135,135)"># behavior of overwriting the existing tensor or not.</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:780</span>, in <span class="ansi-cyan-fg">Module._apply</span><span class="ansi-blue-fg">(self, fn, recurse)</span>
+<span class="ansi-green-fg ansi-bold">    778</span> <span style="font-weight:bold;color:rgb(0,135,0)">if</span> recurse:
+<span class="ansi-green-fg ansi-bold">    779</span>     <span style="font-weight:bold;color:rgb(0,135,0)">for</span> module <span style="font-weight:bold;color:rgb(175,0,255)">in</span> <span style="color:rgb(0,135,0)">self</span><span style="color:rgb(98,98,98)">.</span>children():
+<span class="ansi-green-fg">--&gt; 780</span>         <span class="ansi-yellow-bg">module</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">_apply</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">fn</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg ansi-bold">    782</span> <span style="font-weight:bold;color:rgb(0,135,0)">def</span> <span style="color:rgb(0,0,255)">compute_should_use_set_data</span>(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    783</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> torch<span style="color:rgb(98,98,98)">.</span>_has_compatible_shallow_copy_type(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    784</span>         <span style="font-style:italic;color:rgb(95,135,135)"># If the new tensor has compatible tensor type as the existing tensor,</span>
+<span class="ansi-green-fg ansi-bold">    785</span>         <span style="font-style:italic;color:rgb(95,135,135)"># the current behavior is to change the tensor in-place using `.data =`,</span>
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-fg ansi-bold">    790</span>         <span style="font-style:italic;color:rgb(95,135,135)"># global flag to let the user control whether they want the future</span>
+<span class="ansi-green-fg ansi-bold">    791</span>         <span style="font-style:italic;color:rgb(95,135,135)"># behavior of overwriting the existing tensor or not.</span>
+
+    <span class="ansi-red-fg">[... skipping similar frames: Module._apply at line 780 (3 times)]</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:780</span>, in <span class="ansi-cyan-fg">Module._apply</span><span class="ansi-blue-fg">(self, fn, recurse)</span>
+<span class="ansi-green-fg ansi-bold">    778</span> <span style="font-weight:bold;color:rgb(0,135,0)">if</span> recurse:
+<span class="ansi-green-fg ansi-bold">    779</span>     <span style="font-weight:bold;color:rgb(0,135,0)">for</span> module <span style="font-weight:bold;color:rgb(175,0,255)">in</span> <span style="color:rgb(0,135,0)">self</span><span style="color:rgb(98,98,98)">.</span>children():
+<span class="ansi-green-fg">--&gt; 780</span>         <span class="ansi-yellow-bg">module</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">_apply</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">fn</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg ansi-bold">    782</span> <span style="font-weight:bold;color:rgb(0,135,0)">def</span> <span style="color:rgb(0,0,255)">compute_should_use_set_data</span>(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    783</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> torch<span style="color:rgb(98,98,98)">.</span>_has_compatible_shallow_copy_type(tensor, tensor_applied):
+<span class="ansi-green-fg ansi-bold">    784</span>         <span style="font-style:italic;color:rgb(95,135,135)"># If the new tensor has compatible tensor type as the existing tensor,</span>
+<span class="ansi-green-fg ansi-bold">    785</span>         <span style="font-style:italic;color:rgb(95,135,135)"># the current behavior is to change the tensor in-place using `.data =`,</span>
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-fg ansi-bold">    790</span>         <span style="font-style:italic;color:rgb(95,135,135)"># global flag to let the user control whether they want the future</span>
+<span class="ansi-green-fg ansi-bold">    791</span>         <span style="font-style:italic;color:rgb(95,135,135)"># behavior of overwriting the existing tensor or not.</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:805</span>, in <span class="ansi-cyan-fg">Module._apply</span><span class="ansi-blue-fg">(self, fn, recurse)</span>
+<span class="ansi-green-fg ansi-bold">    801</span> <span style="font-style:italic;color:rgb(95,135,135)"># Tensors stored in modules are graph leaves, and we don't want to</span>
+<span class="ansi-green-fg ansi-bold">    802</span> <span style="font-style:italic;color:rgb(95,135,135)"># track autograd history of `param_applied`, so we have to use</span>
+<span class="ansi-green-fg ansi-bold">    803</span> <span style="font-style:italic;color:rgb(95,135,135)"># `with torch.no_grad():`</span>
+<span class="ansi-green-fg ansi-bold">    804</span> <span style="font-weight:bold;color:rgb(0,135,0)">with</span> torch<span style="color:rgb(98,98,98)">.</span>no_grad():
+<span class="ansi-green-fg">--&gt; 805</span>     param_applied <span style="color:rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">fn</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">param</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg ansi-bold">    806</span> p_should_use_set_data <span style="color:rgb(98,98,98)">=</span> compute_should_use_set_data(param, param_applied)
+<span class="ansi-green-fg ansi-bold">    808</span> <span style="font-style:italic;color:rgb(95,135,135)"># subclasses may have multiple child tensors so we need to use swap_tensors</span>
+
+File <span class="ansi-green-fg">~/.local/lib/python3.10/site-packages/torch/nn/modules/module.py:1160</span>, in <span class="ansi-cyan-fg">Module.to.&lt;locals&gt;.convert</span><span class="ansi-blue-fg">(t)</span>
+<span class="ansi-green-fg ansi-bold">   1153</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> convert_to_format <span style="font-weight:bold;color:rgb(175,0,255)">is</span> <span style="font-weight:bold;color:rgb(175,0,255)">not</span> <span style="font-weight:bold;color:rgb(0,135,0)">None</span> <span style="font-weight:bold;color:rgb(175,0,255)">and</span> t<span style="color:rgb(98,98,98)">.</span>dim() <span style="font-weight:bold;color:rgb(175,0,255)">in</span> (<span style="color:rgb(98,98,98)">4</span>, <span style="color:rgb(98,98,98)">5</span>):
+<span class="ansi-green-fg ansi-bold">   1154</span>         <span style="font-weight:bold;color:rgb(0,135,0)">return</span> t<span style="color:rgb(98,98,98)">.</span>to(
+<span class="ansi-green-fg ansi-bold">   1155</span>             device,
+<span class="ansi-green-fg ansi-bold">   1156</span>             dtype <span style="font-weight:bold;color:rgb(0,135,0)">if</span> t<span style="color:rgb(98,98,98)">.</span>is_floating_point() <span style="font-weight:bold;color:rgb(175,0,255)">or</span> t<span style="color:rgb(98,98,98)">.</span>is_complex() <span style="font-weight:bold;color:rgb(0,135,0)">else</span> <span style="font-weight:bold;color:rgb(0,135,0)">None</span>,
+<span class="ansi-green-fg ansi-bold">   1157</span>             non_blocking,
+<span class="ansi-green-fg ansi-bold">   1158</span>             memory_format<span style="color:rgb(98,98,98)">=</span>convert_to_format,
+<span class="ansi-green-fg ansi-bold">   1159</span>         )
+<span class="ansi-green-fg">-&gt; 1160</span>     <span style="font-weight:bold;color:rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">t</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">to</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-fg ansi-bold">   1161</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">device</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">   1162</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">dtype</span><span class="ansi-yellow-bg"> </span><span style="font-weight:bold;color:rgb(0,135,0)" class="ansi-yellow-bg">if</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">t</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">is_floating_point</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg"> </span><span style="font-weight:bold;color:rgb(175,0,255)" class="ansi-yellow-bg">or</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">t</span><span style="color:rgb(98,98,98)" class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">is_complex</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg"> </span><span style="font-weight:bold;color:rgb(0,135,0)" class="ansi-yellow-bg">else</span><span class="ansi-yellow-bg"> </span><span style="font-weight:bold;color:rgb(0,135,0)" class="ansi-yellow-bg">None</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">   1163</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">non_blocking</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg ansi-bold">   1164</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg ansi-bold">   1165</span> <span style="font-weight:bold;color:rgb(0,135,0)">except</span> <span style="font-weight:bold;color:rgb(215,95,95)">NotImplementedError</span> <span style="font-weight:bold;color:rgb(0,135,0)">as</span> e:
+<span class="ansi-green-fg ansi-bold">   1166</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> <span style="color:rgb(0,135,0)">str</span>(e) <span style="color:rgb(98,98,98)">==</span> <span style="color:rgb(175,0,0)">"</span><span style="color:rgb(175,0,0)">Cannot copy out of meta tensor; no data!</span><span style="color:rgb(175,0,0)">"</span>:
+
+<span class="ansi-red-fg">OutOfMemoryError</span>: CUDA out of memory. Tried to allocate 86.00 MiB. GPU 0 has a total capacity of 23.68 GiB of which 74.75 MiB is free. Including non-PyTorch memory, this process has 23.53 GiB memory in use. Of the allocated memory 23.28 GiB is allocated by PyTorch, and 1.52 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)</pre>
+</div>
+</div>
+</div>
+<div id="cell-20" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># push to huggingface</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> PIL <span class="im">import</span> Image</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.datasets.hugging_face_dataset <span class="im">import</span> HuggingFaceDataset</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    user_name <span class="op">=</span> <span class="st">"reese-green"</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    resolution <span class="op">=</span> <span class="dv">64</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"zzsi/afhq64_16k"</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    train_dataset <span class="op">=</span> HuggingFaceDataset(dataset_name, <span class="st">'train'</span>)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    val_dataset <span class="op">=</span> HuggingFaceDataset(dataset_name, <span class="st">'val'</span>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    train_blip <span class="op">=</span> <span class="st">"train_blip_captions.json"</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    val_blip <span class="op">=</span> <span class="st">"val_blip_captions.json"</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    train_pali <span class="op">=</span> <span class="st">"train_paligemma-3b-captions.json"</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    val_pali <span class="op">=</span> <span class="st">"val_paligemma-3b-captions.json"</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    train_blip_list <span class="op">=</span> []</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    val_blip_list <span class="op">=</span> []</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    train_pali_list <span class="op">=</span> []</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    val_pali_list <span class="op">=</span> []</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(train_blip, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        <span class="bu">dict</span> <span class="op">=</span> json.load(f)</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        train_blip_list <span class="op">=</span> <span class="bu">list</span>(<span class="bu">dict</span>.values())</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(val_blip, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>        <span class="bu">dict</span> <span class="op">=</span> json.load(f)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>        val_blip_list <span class="op">=</span> <span class="bu">list</span>(<span class="bu">dict</span>.values())</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(train_pali, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>        <span class="bu">dict</span> <span class="op">=</span> json.load(f)</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>        train_pali_list <span class="op">=</span> <span class="bu">list</span>(<span class="bu">dict</span>.values())</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(val_pali, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>        <span class="bu">dict</span> <span class="op">=</span> json.load(f)</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>        val_pali_list <span class="op">=</span> <span class="bu">list</span>(<span class="bu">dict</span>.values())</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># take a torch dataset and push to huggingface</span></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># https://huggingface.co/docs/huggingface_hub/v0.25.0/en/tutorials/push_to_hub</span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> datasets <span class="im">import</span> Dataset, DatasetDict</span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># convert torch dataset to huggingface dataset</span></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gen_train_ds():</span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, (img, label) <span class="kw">in</span> <span class="bu">enumerate</span>(train_dataset):</span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> {<span class="st">"image"</span>: img, <span class="st">"label"</span>: label, <span class="ss">f"caption_blip2-opt-2.7b"</span>: train_blip_list[i], <span class="ss">f"caption_paligemma-3b-mix-224"</span>: train_pali_list[i]}</span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a>    train_ds_hf <span class="op">=</span> Dataset.from_generator(gen_train_ds)</span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add both train and val datasets to the repo</span></span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gen_val_ds():</span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, (img, label) <span class="kw">in</span> <span class="bu">enumerate</span>(val_dataset):</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> {<span class="st">"image"</span>: img, <span class="st">"label"</span>: label, <span class="ss">f"caption_blip2-opt-2.7b"</span>: val_blip_list[i], <span class="ss">f"caption_paligemma-3b-mix-224"</span>: val_pali_list[i]}</span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>    val_ds_hf <span class="op">=</span> Dataset.from_generator(gen_val_ds)</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>    dataset_dict <span class="op">=</span> DatasetDict({<span class="st">"train"</span>: train_ds_hf, <span class="st">"val"</span>: val_ds_hf})</span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>    dataset_dict.push_to_hub(<span class="ss">f"</span><span class="sc">{</span>user_name<span class="sc">}</span><span class="ss">/afhq</span><span class="sc">{</span>resolution<span class="sc">}</span><span class="ss">_16k"</span>, create_pr<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"b6ef48d5cef144ce93816f8a26b7caa3","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"4c0bbdd5191c4befb74484920117227e","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"5b696435b3b7451faf3d7a1e93abc553","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"0ea1d5d2cf1c47b39aaa3c881c4e8658","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"54bdfa12fea84f6faaaf2d2b1ec0529e","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"c4764a6e45154d41b8e699d1f41a6c42","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/kungfuai\.github\.io\/nano-diffusion\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

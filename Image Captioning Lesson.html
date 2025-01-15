@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Compare GPUs – Nano Diffusion</title>
+<title>Generating an Image Captions Dataset – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,10 +20,44 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -66,6 +100,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
 
 </head>
@@ -103,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Compare GPUs</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating an Image Captions Dataset</li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -291,8 +329,15 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#a10" id="toc-a10" class="nav-link active" data-scroll-target="#a10">A10</a></li>
-  <li><a href="#h100" id="toc-h100" class="nav-link" data-scroll-target="#h100">H100</a></li>
+  <li><a href="#generating-image-captions" id="toc-generating-image-captions" class="nav-link active" data-scroll-target="#generating-image-captions">Generating Image Captions</a></li>
+  <li><a href="#get-the-data" id="toc-get-the-data" class="nav-link" data-scroll-target="#get-the-data">1. Get the data</a></li>
+  <li><a href="#get-the-model" id="toc-get-the-model" class="nav-link" data-scroll-target="#get-the-model">2. Get the model</a></li>
+  <li><a href="#generate-a-caption-for-a-single-image" id="toc-generate-a-caption-for-a-single-image" class="nav-link" data-scroll-target="#generate-a-caption-for-a-single-image">3. Generate a caption for a single image</a></li>
+  <li><a href="#generating-captions-for-the-whole-dataset" id="toc-generating-captions-for-the-whole-dataset" class="nav-link" data-scroll-target="#generating-captions-for-the-whole-dataset">4. Generating captions for the whole dataset</a></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"></a>
+  <ul class="collapse">
+  <li><a href="#write-to-a-json-file" id="toc-write-to-a-json-file" class="nav-link" data-scroll-target="#write-to-a-json-file">5. Write to a json file</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -301,7 +346,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Compare GPUs</h1>
+<h1 class="title">Generating an Image Captions Dataset</h1>
 </div>
 
 
@@ -318,15 +363,177 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>As each training run goes from hours to days or weeks, the choice of GPU becomes more important. We want to get a high quality model. We want to have fast iteration speed: time is valuable. We want to keep all the training experiments under a budget.</p>
-<p>Here is a comparison training on two popular GPUs on Lambda Labs: A10 and H100.</p>
-<section id="a10" class="level2">
-<h2 class="anchored" data-anchor-id="a10">A10</h2>
+<p>Image captions are natural language descriptions of an image. Models like CLIP and DALL-E were trained on millions of image-caption pairs to enable them to take text as input for generating an image. This is called <em>text-to-image generation</em>, where a model learns to understand the relationship between text and visual elements. The process through which these models learn this semantic text-image relationship is called <em>text conditioning</em>.</p>
+<section id="generating-image-captions" class="level3">
+<h3 class="anchored" data-anchor-id="generating-image-captions">Generating Image Captions</h3>
+<p>If the data you are working with does not have text captions, you can generate them yourself using any image-to-text model.</p>
+<p>In this notebook, we’ll explain step-by-step how to use the Google’s PaliGemma model to generate image captions for a dataset of animal faces. The same technique can be applied on any dataset of images.</p>
 </section>
-<section id="h100" class="level2">
-<h2 class="anchored" data-anchor-id="h100">H100</h2>
+<section id="get-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="get-the-data">1. Get the data</h2>
+<p>First, we must download our chosen dataset.</p>
+<div id="cell-4" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># To use the files in the parent directory run this cell</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>module_path <span class="op">=</span> os.path.abspath(os.path.join(<span class="st">'..'</span>))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> module_path <span class="kw">not</span> <span class="kw">in</span> sys.path:</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    sys.path.append(module_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load raw image data</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.datasets.hugging_face_dataset <span class="im">import</span> HuggingFaceDataset</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>dataset_name <span class="op">=</span> <span class="st">"zzsi/afhq64_16k"</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> HuggingFaceDataset(dataset_name, <span class="st">'val'</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"len(dataset): </span><span class="sc">{</span><span class="bu">len</span>(dataset)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>dataset[<span class="dv">0</span>][<span class="dv">0</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>len(dataset): 1500</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<div>
+<figure class="figure">
+<p><img src="Image Captioning Lesson_files/figure-html/cell-3-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="get-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="get-the-model">2. Get the model</h2>
+<p>Now, we can use HuggingFace to easily run inference on the PaliGemma model.</p>
+<div id="cell-7" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> AutoProcessor, PaliGemmaForConditionalGeneration</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="op">=</span> <span class="st">"google/paligemma-3b-mix-224"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> <span class="st">'cuda'</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">'cpu'</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>dtype <span class="op">=</span> torch.bfloat16</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> PaliGemmaForConditionalGeneration.from_pretrained(</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    model_id,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    torch_dtype<span class="op">=</span>dtype,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    device_map<span class="op">=</span>device,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    revision<span class="op">=</span><span class="st">"bfloat16"</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>).<span class="bu">eval</span>().to(device)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>processor <span class="op">=</span> AutoProcessor.from_pretrained(model_id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>2025-01-13 14:33:39.573619: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F AVX512_VNNI AVX512_BF16 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-01-13 14:33:39.648818: I tensorflow/core/util/port.cc:104] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-01-13 14:33:39.979174: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: :/usr/local/cuda-11.2/lib64:/usr/local/cuda-11.2/extras/CUPTI/lib64
+2025-01-13 14:33:39.979236: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: :/usr/local/cuda-11.2/lib64:/usr/local/cuda-11.2/extras/CUPTI/lib64
+2025-01-13 14:33:39.979240: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+`config.hidden_act` is ignored, you should use `config.hidden_activation` instead.
+Gemma's activation function will be set to `gelu_pytorch_tanh`. Please, use
+`config.hidden_activation` if you want to override this behaviour.
+See https://github.com/huggingface/transformers/pull/29402 for more details.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"38de8aab551a4ea8baff8626c1cc2de8","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+</div>
+</section>
+<section id="generate-a-caption-for-a-single-image" class="level2">
+<h2 class="anchored" data-anchor-id="generate-a-caption-for-a-single-image">3. Generate a caption for a single image</h2>
+<p>Let’s try to generate a caption for the first image. PaliGemma requires an image and a text prompt. To output caption-like text, we can use the prompt <code>"&lt;image&gt; caption en"</code> where the <code>&lt;image&gt;</code> will automatically get replaced by the input image.</p>
+<div id="cell-9" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the image</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>image <span class="op">=</span> dataset[<span class="dv">0</span>][<span class="dv">0</span>]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>display(image)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Setup the model inputs</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>prompt <span class="op">=</span> <span class="st">"&lt;image&gt; caption en"</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>model_inputs <span class="op">=</span> processor(text<span class="op">=</span>prompt, images<span class="op">=</span>image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(model.device)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>input_len <span class="op">=</span> model_inputs[<span class="st">"input_ids"</span>].shape[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate the caption</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.inference_mode():</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    generation <span class="op">=</span> model.generate(<span class="op">**</span>model_inputs, max_new_tokens<span class="op">=</span><span class="dv">100</span>, do_sample<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    generation <span class="op">=</span> generation[<span class="dv">0</span>][input_len:]</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    decoded <span class="op">=</span> processor.decode(generation, skip_special_tokens<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(decoded)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Image Captioning Lesson_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>A white cat with black and brown spots looks directly at the camera. Its eyes are green and its nose is black. The cat's fur is white and its ears are white. The background is blurry.</code></pre>
+</div>
+</div>
+</section>
+<section id="generating-captions-for-the-whole-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="generating-captions-for-the-whole-dataset">4. Generating captions for the whole dataset</h2>
+<p>Here we only generate captions for the first 5 images so that this doesn’t run for too long. Simply remove the first line.</p>
+<div id="cell-11" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> <span class="bu">list</span>(dataset)[:<span class="dv">5</span>] <span class="co"># only process the first 5 images</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate captions for each image</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>captions <span class="op">=</span> []</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> data <span class="kw">in</span> dataset:</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    image <span class="op">=</span> data[<span class="dv">0</span>]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    prompt <span class="op">=</span> <span class="st">"&lt;image&gt; caption en"</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    model_inputs <span class="op">=</span> processor(text<span class="op">=</span>prompt, images<span class="op">=</span>image, return_tensors<span class="op">=</span><span class="st">"pt"</span>).to(model.device)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    input_len <span class="op">=</span> model_inputs[<span class="st">"input_ids"</span>].shape[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.inference_mode():</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> model.generate(<span class="op">**</span>model_inputs, max_new_tokens<span class="op">=</span><span class="dv">100</span>, do_sample<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        generation <span class="op">=</span> generation[<span class="dv">0</span>][input_len:]</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        decoded <span class="op">=</span> processor.decode(generation, skip_special_tokens<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        captions.append(decoded)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(decoded)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>A white cat with black and brown spots looks directly at the camera. Its eyes are green and its nose is black. The cat's fur is white and its ears are white. The background is blurry.
+A close-up of a brown and black cat with green eyes. The cat has a pink nose, white whiskers, and a brown and black coat. The background is blurry. The cat's eyes are green, and its ears are pointy. The cat is looking at the camera.
+A white cat with two different colored eyes, one blue and one yellow, looks directly at the camera. Its eyes are blue on one side and yellow on the other. The cat has a pink nose, white whiskers, and a white chest. Its ears are pink and its fur is white. The cat is standing in front of a white background.
+A calico cat with a white chest and green eyes looks directly at the camera. Its ears are perked up and its whiskers are long. The cat's eyes are blue and its nose is pink. The cat is standing on a blue surface and its fur is black and white.
+A gray cat with yellow eyes looks directly at the camera, its ears perked up. The cat's eyes are glowing yellow, and its whiskers are long and prominent. The cat's fur is gray, and its nose is black. The cat is sitting on the ground, its head tilted slightly back. The background is blurry.</code></pre>
+</div>
+</div>
+<div id="cell-12" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot images with captions</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> textwrap</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(<span class="bu">len</span>(dataset), <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">5</span>, <span class="dv">15</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(dataset)):</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    axs[i, <span class="dv">0</span>].imshow(dataset[i][<span class="dv">0</span>])</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    axs[i, <span class="dv">0</span>].axis(<span class="st">'off'</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    caption <span class="op">=</span> textwrap.fill(captions[i], <span class="dv">30</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    axs[i, <span class="dv">1</span>].text(<span class="fl">0.0</span>, <span class="fl">0.5</span>, caption, verticalalignment<span class="op">=</span><span class="st">'center'</span>, wrap<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    axs[i, <span class="dv">1</span>].axis(<span class="st">'off'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Image Captioning Lesson_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="section" class="level1">
+<h1></h1>
+<section id="write-to-a-json-file" class="level2">
+<h2 class="anchored" data-anchor-id="write-to-a-json-file">5. Write to a json file</h2>
+<p>With the captions all generated, the only thing left to is to write them to a json for future use.</p>
+<div id="cell-15" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the captions to a JSON file</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"captions.json"</span>, <span class="st">"w"</span>) <span class="im">as</span> f:</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    json.dump(captions, f)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
