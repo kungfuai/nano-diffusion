@@ -102,7 +102,7 @@ If we teach well, the learning part becomes easier. Apply the standard supervise
 
 The denoiser model learns to map out the direction for any **time** and **location**. Time means the current progress of the journey from 0% to 100%, and location means the current state of the data point. These directions over time and location forms a dynamic **vector field** that changes over "time". We can visualize the dynamic vector field as a set of animated arrows.
 
-Before learning, the vector field does not do much. At time goes by from 0 to 100%, the random points are still almost at the same place.
+Before learning, the vector field does not do much. In the following animation that barely moves, the tiny dots arranged in a grid are arrows that have not learned the directions. At time goes by from 0 to 100%, the random points are still almost at the same place.
 
 ::: {.columns}
 ::: {.column width="100%"}
