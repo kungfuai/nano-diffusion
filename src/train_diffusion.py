@@ -107,6 +107,12 @@ def parse_arguments():
         help="Compile the model",
     )
     parser.add_argument(
+        "--val_split",
+        type=float,
+        default=0.1,
+        help="Fraction of the dataset to use for validation",
+    )
+    parser.add_argument(
         "--warmup_steps", type=int, default=1200, help="Number of warmup steps"
     )
     parser.add_argument(

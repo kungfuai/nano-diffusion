@@ -2,9 +2,9 @@
 title: "Nano Diffusion: Diffusion and Flow Matching from Scratch"
 ---
 
-Welcome to Nano Diffusion, a hands-on tutorial series that teaches you how to build diffusion models and flow matching from the ground up. These models are what powers the latest generative AI applications in creating high quality images, videos, audio, and more modalities.
+Welcome to Nano Diffusion, a hands-on tutorial series that teaches you how to build diffusion models and flow matching from scratch. These models are what powers the latest generative AI applications in creating high quality images, videos, audio, and more modalities.
 
-This course provides a minimal yet complete implementation of diffusion and flow matching models, making the complex topic accessible while maintaining practical utility.
+Starting with small datasets and toy examples, we will evolve a minimal code base, train small models as proof of concept, and then add MLOps tools, go through refactoring, explore variants of the training recipes, and scale up to larger datasets and models.
 
 ## What You'll Learn
 

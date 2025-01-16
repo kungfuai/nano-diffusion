@@ -112,6 +112,7 @@ class DDPMSampler:
 
 class DDPM(BaseDiffusionAlgorithm):
     def __init__(self,
+            # TODO: remove config
             config: DiffusionTrainingConfig,
             denoising_model: nn.Module = None,
             noise_schedule: Dict[str, torch.Tensor] = None,
@@ -143,7 +144,7 @@ class DDPM(BaseDiffusionAlgorithm):
         """
         Prepare a training example for the denoising model.
 
-        This is used in the traiining step or a validation step.
+        This is used in the training step or a validation step.
         """
         device = self.config.device
         config = self.config

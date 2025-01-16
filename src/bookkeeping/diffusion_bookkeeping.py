@@ -45,25 +45,25 @@ class DiffusionBookkeeping:
         model_components = self.model_components
 
         with torch.no_grad():
-            if step % config.log_every == 0:
+            if (config.log_every or 0) > 0 and step % config.log_every == 0:
                 log_training_step(
                     step, self.num_examples_trained, loss, optimizer, config.logger, grad_norm
                 )
 
-            if step % config.validate_every == 0 and step > 0 and val_dataloader:
+            if (config.validate_every or 0) > 0 and step % config.validate_every == 0 and step > 0 and val_dataloader:
                 validate_and_log(
                     model_components,
                     val_dataloader,
                     config,
                 )
 
-            if step % config.sample_every == 0:
+            if (config.sample_every or 0) > 0 and step % config.sample_every == 0:
                 generate_and_log_samples(model_components, config, step, val_dataloader if config.conditional else None, seed=0)
 
-            if step % config.save_every == 0 and step > 0:
+            if (config.save_every or 0) > 0 and step % config.save_every == 0:
                 save_checkpoints(model_components, step, config)
 
-            if step % config.fid_every == 0 and step > 0:
+            if (config.fid_every or 0) > 0 and step % config.fid_every == 0:
                 compute_and_log_fid(model_components, config, train_dataloader, val_dataloader)
 
 
