@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Nano Diffusion: Diffusion and Flow Matching from Scratch – Nano Diffusion</title>
+<title>test_trained_t2i_model – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -88,7 +122,7 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
 </ul>
@@ -103,7 +137,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Nano Diffusion: Diffusion and Flow Matching from Scratch</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -273,105 +307,128 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#what-youll-learn" id="toc-what-youll-learn" class="nav-link active" data-scroll-target="#what-youll-learn">What You’ll Learn</a></li>
-  <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link" data-scroll-target="#prerequisites">Prerequisites</a></li>
-  <li><a href="#tutorials" id="toc-tutorials" class="nav-link" data-scroll-target="#tutorials">Tutorials</a></li>
-  <li><a href="#hardware-for-learning-start-small" id="toc-hardware-for-learning-start-small" class="nav-link" data-scroll-target="#hardware-for-learning-start-small">Hardware for learning: start small</a></li>
-  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
-  </ul>
-</nav>
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Nano Diffusion: Diffusion and Flow Matching from Scratch</h1>
+
+
+
+<div id="cell-0" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="st">".."</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.bookkeeping.wandb_utils <span class="im">import</span> load_model_from_wandb</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.models.factory <span class="im">import</span> create_model</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>run_path <span class="op">=</span> <span class="st">"zzsi_kungfu/nano-diffusion/cil23lq7"</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>file_name <span class="op">=</span> <span class="st">"logs/train/2025-01-15_04-40-09/model_checkpoint_step_90000.pth"</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> create_model(net<span class="op">=</span><span class="st">"unet"</span>, resolution<span class="op">=</span><span class="dv">64</span>, cond_embed_dim<span class="op">=</span><span class="dv">768</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>load_model_from_wandb(model, run_path, file_name)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Creating model unet with resolution 64 and in_channels 3 and cond_embed_dim 768
+model params: 33.11 M
+Restoring model from zzsi_kungfu/nano-diffusion/cil23lq7 and logs/train/2025-01-15_04-40-09/model_checkpoint_step_90000.pth
+Model restored from /home/ubuntu/zz/nano-diffusion/notebooks/logs/train/2025-01-15_04-40-09/model_checkpoint_step_90000.pth</code></pre>
 </div>
-
-
-
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<p>Welcome to Nano Diffusion, a hands-on tutorial series that teaches you how to build diffusion models and flow matching from scratch. These models are what powers the latest generative AI applications in creating high quality images, videos, audio, and more modalities.</p>
-<p>Starting with small datasets and toy examples, we will evolve a minimal code base, train small models as proof of concept, and then add MLOps tools, go through refactoring, explore variants of the training recipes, and scale up to larger datasets and models.</p>
-<section id="what-youll-learn" class="level2">
-<h2 class="anchored" data-anchor-id="what-youll-learn">What You’ll Learn</h2>
-<ul>
-<li>How to train diffusion and flow matching models from scratch.</li>
-<li>Working with popular model architectures like <a href="https://arxiv.org/abs/1505.04597">UNet</a> and <a href="https://arxiv.org/abs/2212.09748">DiT</a>.</li>
-<li>Training on various datasets including 2D point clouds, animal face images and larger datasets.</li>
-<li>How to condition the models to follow text prompts.</li>
-<li>How to make model training more efficient, and scale up to higher resolution and larger datasets.</li>
-<li>Experiment tracking and model evaluation.</li>
-</ul>
-</section>
-<section id="prerequisites" class="level2">
-<h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
-<ul>
-<li>Access to a GPU (12GB VRAM or above)</li>
-<li>Familiarity with PyTorch and deep learning basics</li>
-<li>Docker and NVIDIA container toolkit installed</li>
-</ul>
-</section>
-<section id="tutorials" class="level2">
-<h2 class="anchored" data-anchor-id="tutorials">Tutorials</h2>
-<p>Please use the sidebar to navigate through the tutorials. Checkout <a href="https://kungfuai.github.io/nano-diffusion/visual_story.html">a visual story of diffusion and flow matching</a>, and start with <a href="https://kungfuai.github.io/nano-diffusion/1_1_Diffusion%202D%20Toy.html">Training a Diffusion Model on 2D Points</a>.</p>
-</section>
-<section id="hardware-for-learning-start-small" class="level2">
-<h2 class="anchored" data-anchor-id="hardware-for-learning-start-small">Hardware for learning: start small</h2>
-<p>The 2D examples do not require GPU. You can use your laptop. The cost is almost zero.</p>
-<div class="quarto-figure quarto-figure-center">
+</div>
+<div id="cell-1" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> diffusers <span class="im">import</span> AutoencoderKL</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.diffusion.diffusion_model_components <span class="im">import</span> DDPM, create_noise_schedule</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> src.config.diffusion_training_config <span class="im">import</span> DiffusionTrainingConfig</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> DiffusionTrainingConfig(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    dataset<span class="op">=</span><span class="st">""</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    num_denoising_steps<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    device<span class="op">=</span><span class="st">"cuda:0"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    vae_model_name<span class="op">=</span><span class="st">"madebyollin/sdxl-vae-fp16-fix"</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    diffusion_algo<span class="op">=</span><span class="st">"ddpm"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    net<span class="op">=</span><span class="st">"unet"</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    resolution<span class="op">=</span><span class="dv">64</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    cond_embed_dim<span class="op">=</span><span class="dv">768</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    data_is_latent<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    conditional<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> torch.device(<span class="st">"cuda:0"</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> model.to(device)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix").to(device)</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>vae <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(<span class="dv">1000</span>, device)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>diffusion <span class="op">=</span> DDPM(denoising_model<span class="op">=</span>model, noise_schedule<span class="op">=</span>noise_schedule, config<span class="op">=</span>config, vae<span class="op">=</span>vae)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-2" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x_T <span class="op">=</span> torch.randn(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">64</span>, <span class="dv">64</span>).to(device)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sampled_images <span class="op">=</span> diffusion.sample(x_T, y<span class="op">=</span><span class="va">None</span>, guidance_scale<span class="op">=</span><span class="fl">3.0</span>, seed<span class="op">=</span><span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:17&lt;00:00, 56.00it/s, std=0.326]</code></pre>
+</div>
+</div>
+<div id="cell-3" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>processed_images <span class="op">=</span> (sampled_images <span class="op">*</span> <span class="dv">255</span>).permute(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>).cpu().numpy().astype(np.uint8)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>plt.imshow(processed_images[<span class="dv">0</span>])</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
 <figure class="figure">
-<p><img src="assets/learned_denoising_vector_field.gif" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+<p><img src="test_trained_t2i_model_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
-<p>Image generation for 64x64 aminal faces trained on 16k images requires a GPU but not much VRAM (12GB is enough). We ran the notebooks on an A10 ($0.75/hr on Lambda Labs) or H100 ($2.5/hr on Lambda Labs, about 6x faster than A10). It typically takes 1~3 H100 hours ($3 ~ $10) to train a decent quality model.</p>
-<div class="quarto-figure quarto-figure-center">
+</div>
+</div>
+<div id="cell-4" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> clip</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>clip_model, _ <span class="op">=</span> clip.load(<span class="st">"ViT-L/14"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>clip_model <span class="op">=</span> clip_model.to(device)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>texts <span class="op">=</span> [<span class="st">"a white cat looking at the side"</span>, <span class="st">"a bulldog"</span>]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>text_tokens <span class="op">=</span> clip.tokenize(texts).to(device)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>text_embeds <span class="op">=</span> clip_model.encode_text(text_tokens)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-6" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># text conditioning</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"text embeds shape: </span><span class="sc">{</span>text_embeds<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>x_T <span class="op">=</span> torch.randn(<span class="bu">len</span>(text_embeds), <span class="dv">3</span>, <span class="dv">64</span>, <span class="dv">64</span>).to(device)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>sampled_images <span class="op">=</span> diffusion.sample(x_T, y<span class="op">=</span>text_embeds, guidance_scale<span class="op">=</span><span class="fl">3.0</span>, seed<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>processed_images <span class="op">=</span> (sampled_images <span class="op">*</span> <span class="dv">255</span>).permute(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>).cpu().numpy().astype(np.uint8)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="bu">len</span>(processed_images), figsize<span class="op">=</span>(<span class="dv">8</span><span class="op">*</span><span class="bu">len</span>(processed_images), <span class="dv">8</span>))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, ax <span class="kw">in</span> <span class="bu">enumerate</span>(axes):</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    ax.imshow(processed_images[i])</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    ax.set_title(texts[i])</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>text embeds shape: torch.Size([2, 768])</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1000/1000 [00:19&lt;00:00, 50.44it/s, std=0.736]</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
 <figure class="figure">
-<p><img src="assets/afhq64_test_samples.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+<p><img src="test_trained_t2i_model_files/figure-html/cell-8-output-3.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
-<p>A larger dataset like with 600k 256x256 images can be run on A10 but a faster GPU is recommended. About 10 H100 hours ($30) is needed to train a decent Text2Image model for this task.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="assets/mj_latents_0.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
-</figure>
 </div>
-</section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
-<p>There are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:</p>
-<ul>
-<li><a href="https://arxiv.org/abs/2006.11239">DDPM paper</a></li>
-<li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">Lillian Weng’s blog</a></li>
-<li><a href="https://cvpr2022-tutorial-diffusion-models.github.io/">CVPR’22 tutorial</a></li>
-<li><a href="https://arxiv.org/abs/2210.02747">Flow matching paper</a></li>
-<li><a href="https://arxiv.org/abs/2212.09748">DiT paper</a></li>
-<li><a href="https://mhsung.github.io/kaist-cs492d-fall-2024/">Diffusion course from KAIST, Fall 2024</a></li>
-<li><a href="https://github.com/apapiu/transformer_latent_diffusion">Latent diffusion with transformers</a></li>
-<li><a href="https://arxiv.org/abs/2412.06264">FAIR’s flow matching guide</a></li>
-<li><a href="https://github.com/SonyResearch/micro_diffusion">Sony’s MicroDiffusion</a></li>
-<li><a href="https://github.com/LambdaLabsML/distributed-training-guide">Distributed training guide from Lambda Labs</a></li>
-</ul>
+</div>
 
 
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
