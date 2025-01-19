@@ -19,7 +19,6 @@ class HuggingFaceDataset(Dataset):
         # NOTE: Can exapnd this to other common keys if needed
         if "image" in self.dataset[0].keys():
             return "image"
-        
         # raise KeyError("Dataset does not have an 'image' or 'image_emb' key")
 
     def __len__(self):
@@ -30,11 +29,18 @@ class HuggingFaceDataset(Dataset):
             return self.dataset[idx]
         image = self.dataset[idx][self.image_key]
         image = image.convert("RGB")  # Convert to RGB to ensure 3 channels
+
         if "text_emb" in self.dataset[idx].keys():
-            text = np.array(self.dataset[idx].get('text_emb'))
+            text = np.array(self.dataset[idx].get("text_emb"))
             text = text.reshape(text.shape[0], -1)
         elif "text" in self.dataset[idx].keys():
-            text = self.dataset[idx].get('text')
+            text = self.dataset[idx].get("text")
+        elif "label" in self.dataset[idx].keys():
+            text = self.dataset[idx].get("label")
+        else:
+            text = None
+
         if self.transform:
             image = self.transform(image)
+
         return image, text
