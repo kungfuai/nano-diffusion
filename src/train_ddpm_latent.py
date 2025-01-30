@@ -4,12 +4,11 @@ Train a DDPM model on image latents and text embeddings.
 import argparse
 import torch
 import numpy as np
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
-from src.datasets import load_data
-from src.diffusion.diffusion_model_components import create_latent_diffusion_model_components
-from src.diffusion.latent_diffusion_training_loop import training_loop
-from src.models.factory import choices
-from src.bookkeeping.mini_batch import MiniBatch
+from nanodiffusion.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
+from nanodiffusion.datasets import load_data
+from nanodiffusion.diffusion.diffusion_model_components import create_latent_diffusion_model_components
+from nanodiffusion.diffusion.latent_diffusion_training_loop import training_loop
+from nanodiffusion.models.factory import choices
 
 
 def parse_arguments():

@@ -7,12 +7,12 @@ from torch.nn import MSELoss, Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
-from src.bookkeeping.diffusion_bookkeeping import DiffusionBookkeeping
-from src.diffusion.diffusion_model_components import DiffusionModelComponents
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
-from src.eval.fid import precompute_fid_stats_for_real_images
-from src.bookkeeping import MiniBatch
-from src.diffusion.base import BaseDiffusionAlgorithm as Diffusion
+from ..bookkeeping.diffusion_bookkeeping import DiffusionBookkeeping
+from ..diffusion.diffusion_model_components import DiffusionModelComponents
+from ..config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
+from ..eval.fid import precompute_fid_stats_for_real_images
+from ..bookkeeping import MiniBatch
+from ..diffusion.base import BaseDiffusionAlgorithm as Diffusion
 
 
 def training_loop(

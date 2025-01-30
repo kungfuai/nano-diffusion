@@ -38,13 +38,13 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
-from src.datasets.celeb_dataset import CelebDataset
-from src.datasets.flowers_dataset import FlowersDataset
-from src.datasets.hugging_face_dataset import HuggingFaceDataset
-from src.datasets.pokemon_dataset import PokemonDataset
-from src.models.factory import create_model
-from src.utils.sample import threshold_sample, denoise_and_compare
-from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
+from nanodiffusion.datasets.celeb_dataset import CelebDataset
+from nanodiffusion.datasets.flowers_dataset import FlowersDataset
+from nanodiffusion.datasets.hugging_face_dataset import HuggingFaceDataset
+from nanodiffusion.datasets.pokemon_dataset import PokemonDataset
+from nanodiffusion.models.factory import create_model
+from nanodiffusion.utils.sample import threshold_sample, denoise_and_compare
+from nanodiffusion.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from train_diffusion import precompute_fid_stats_for_real_images, make_dataset_name_safe_for_cleanfid
 
 @contextmanager

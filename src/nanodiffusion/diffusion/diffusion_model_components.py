@@ -4,14 +4,14 @@ import torch
 from torch import nn, optim
 from typing import Dict, Optional, Any
 
-from src.config.diffusion_training_config import DiffusionTrainingConfig
-from src.models.factory import create_model
-from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.diffusion import create_noise_schedule
-from src.bookkeeping.wandb_utils import load_model_from_wandb
-from src.diffusion.base import Diffusion
-from src.diffusion.ddpm import DDPM
-from src.diffusion.vdm import VDM
+from ..config.diffusion_training_config import DiffusionTrainingConfig
+from ..models.factory import create_model
+from ..optimizers.lr_schedule import get_cosine_schedule_with_warmup
+from . import create_noise_schedule
+from ..bookkeeping.wandb_utils import load_model_from_wandb
+from .base import Diffusion
+from .ddpm import DDPM
+from .vdm import VDM
 
 
 @dataclass

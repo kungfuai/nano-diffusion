@@ -59,3 +59,7 @@ notebooks/data/
 
 # scripts
 /bin
+
+# python package artifacts
+dist/
+*.egg-info/
