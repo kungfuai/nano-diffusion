@@ -451,7 +451,8 @@ def compute_validation_loss(model: Module, val_dataloader: DataLoader, device: t
 class TrainingConfig:
     # Dataset
     dataset: str = "zzsi/afhq64_16k_latents_sdxl_blip2" # dataset name
-    resolution: int = 8 # resolution of the image
+    resolution: int = 8 # resolution of the latent "image"
+    val_split: float = 0.1 # validation split
     
     # Model architecture
     in_channels: int = 3 # number of input channels

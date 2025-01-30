@@ -422,6 +422,7 @@ class TrainingConfig:
     # Dataset
     dataset: str # dataset name
     resolution: int # resolution of the image
+    val_split: float = 0.1 # validation split
     
     # Model architecture
     in_channels: int = 3 # number of input channels
