@@ -39,11 +39,14 @@ def create_vae_if_data_is_latent(config: DiffusionTrainingConfig) -> nn.Module:
 
 def create_diffusion_model_components(
     config: DiffusionTrainingConfig,
+    denoising_model: Optional[nn.Module] = None,
 ) -> DiffusionModelComponents:
     device = torch.device(config.device)
-    denoising_model = create_model(
-        net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
-    )
+    if denoising_model is None: # if no denoising model is provided, create one
+        denoising_model = create_model(
+            net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
+        )
+        config.net = denoising_model.name if hasattr(denoising_model, "name") else denoising_model.__class__.__name__
     denoising_model = denoising_model.to(device)
     if config.compile:
         denoising_model = torch.compile(denoising_model)
