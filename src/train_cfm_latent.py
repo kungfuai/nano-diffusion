@@ -33,16 +33,16 @@ except ImportError:
     print("clean-fid not installed, skipping")
 
 
-from src.plan.ot import OTPlanSampler
-from src.models.factory import create_model, choices
-from src.optimizers.lr_schedule import get_cosine_schedule_with_warmup
-from src.models.factory import create_model
-from src.datasets import load_data
-from src.bookkeeping.cfm_bookkeeping import log_training_step, \
+from nanodiffusion.plan.ot import OTPlanSampler
+from nanodiffusion.models.factory import create_model, choices
+from nanodiffusion.optimizers.lr_schedule import get_cosine_schedule_with_warmup
+from nanodiffusion.models.factory import create_model
+from nanodiffusion.datasets import load_data
+from nanodiffusion.bookkeeping.cfm_bookkeeping import log_training_step, \
     compute_fid, save_model, \
     save_checkpoints
-from src.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, get_real_images, precompute_fid_stats_for_real_images
-from src.bookkeeping.wandb_utils import load_model_from_wandb
+from nanodiffusion.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, get_real_images, precompute_fid_stats_for_real_images
+from nanodiffusion.bookkeeping.wandb_utils import load_model_from_wandb
 
 
 def pad_t_like_x(t, x):

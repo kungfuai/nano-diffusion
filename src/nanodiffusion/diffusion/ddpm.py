@@ -7,7 +7,7 @@ from torch import nn
 from .base import BaseDiffusionAlgorithm
 from ..bookkeeping.mini_batch import MiniBatch
 from ..config.diffusion_training_config import DiffusionTrainingConfig
-from .noise_scheduler import forward_diffusion, denoising_step, generate_samples_by_denoising
+from .noise_scheduler import forward_diffusion, generate_samples_by_denoising
 
 
 class ForwardDiffusion:

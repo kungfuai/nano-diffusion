@@ -23,13 +23,13 @@ The variance β at each timestep defines how much noise to add. It can be a fixe
 
 import argparse
 
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig, diffusion_algo_choices
-from src.datasets import load_data
-from src.diffusion.diffusion_model_components import create_diffusion_model_components
-from src.diffusion.diffusion_training_loop import training_loop
-from src.models.factory import choices
-from src.bookkeeping import parse_shape
-from src.bookkeeping.mini_batch import collate_fn_for_latents
+from nanodiffusion.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig, diffusion_algo_choices
+from nanodiffusion.datasets import load_data
+from nanodiffusion.diffusion.diffusion_model_components import create_diffusion_model_components
+from nanodiffusion.diffusion.diffusion_training_loop import training_loop
+from nanodiffusion.models.factory import choices
+from nanodiffusion.bookkeeping import parse_shape
+from nanodiffusion.bookkeeping.mini_batch import collate_fn_for_latents
 
 
 def parse_arguments():

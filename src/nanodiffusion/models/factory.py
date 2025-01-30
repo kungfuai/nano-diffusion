@@ -1,6 +1,6 @@
-from src.models.unets import UNet, UNetBig, UNetSmall
-from src.models.dit import DiT
-from src.models.tld import Denoiser as TLD
+from nanodiffusion.models.unets import UNet, UNetBig, UNetSmall
+from nanodiffusion.models.dit import DiT
+from nanodiffusion.models.tld import Denoiser as TLD
 
 def choices():
     return [

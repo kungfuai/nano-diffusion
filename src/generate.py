@@ -7,7 +7,7 @@ from PIL import Image
 import wandb
 import torch
 from torchvision.utils import save_image, make_grid
-from src.diffusion import generate_samples_by_denoising, create_noise_schedule, create_model
+from nanodiffusion.diffusion import generate_samples_by_denoising, create_noise_schedule, create_model
 
 
 def main():

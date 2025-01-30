@@ -3,12 +3,12 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
-from src.datasets.flowers_dataset import FlowersDataset
-from src.datasets.celeb_dataset import CelebDataset
-from src.datasets.pokemon_dataset import PokemonDataset
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
-from src.datasets.hugging_face_dataset import HuggingFaceDataset
-from src.datasets.mj_latents import MJLatentsDataset
+from .flowers_dataset import FlowersDataset
+from .celeb_dataset import CelebDataset
+from .pokemon_dataset import PokemonDataset
+from .hugging_face_dataset import HuggingFaceDataset
+from .mj_latents import MJLatentsDataset
+from ..config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 
 
 def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:

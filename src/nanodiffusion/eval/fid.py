@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from src.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 from torch.nn import Module
 from tqdm.auto import tqdm
 
@@ -11,6 +10,8 @@ try:
     from cleanfid import fid
 except ImportError:
     print("cleanfid not installed. Please install it using `pip install cleanfid`.")
+
+from nanodiffusion.config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
 
 
 def compute_fid(
@@ -212,13 +213,13 @@ def evaluate_pretrained_model(
         device: str = "cuda:0",
         seed: int = 0,
     ):
-    from src.bookkeeping.wandb_utils import load_model_from_wandb
-    from src.models.factory import create_model
-    from src.datasets import load_data
-    from src.config.diffusion_training_config import DiffusionTrainingConfig
-    from src.train_cfm import TrainingConfig, generate_samples_with_flow_matching
-    from src.bookkeeping.diffusion_bookkeeping import generate_samples_by_denoising
-    from src.diffusion.diffusion_model_components import create_noise_schedule
+    from nanodiffusion.bookkeeping.wandb_utils import load_model_from_wandb
+    from nanodiffusion.models.factory import create_model
+    from nanodiffusion.datasets import load_data
+    from nanodiffusion.config.diffusion_training_config import DiffusionTrainingConfig
+    from nanodiffusion.diffusion.noise_scheduler import generate_samples_by_denoising
+    from nanodiffusion.diffusion.noise_scheduler import create_noise_schedule
+    from train_cfm import TrainingConfig, generate_samples_with_flow_matching
     
     # create an empty model
     denoising_model = create_model(net=net, resolution=resolution)

@@ -22,6 +22,7 @@ docker run --runtime nvidia -it --rm $DOCKER_ARGS \
 	--gpus "device=${GPU_DEVICES}" \
 	-v $(pwd):/workspace \
 	-v $(pwd)/data/container_cache:/home/$USER/.cache \
+	-e PYTHONPATH=/workspace/src \
 	-e WANDB_API_KEY=$WANDB_API_KEY \
 	-e WANDB_PROJECT=$WANDB_PROJECT \
 	nanodiffusion \
