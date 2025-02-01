@@ -30,7 +30,8 @@ def training_loop(
 
     bookkeeping = DiffusionBookkeeping(config, model_components)
 
-    if config.dataset not in ["cifar10"]:
+    if config.dataset not in ["cifar10"] and config.fid_every > 0:
+        # TODO: this only applies to images
         precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.cache_dir) / "real_images_for_fid")
 
     bookkeeping.set_up_logger()
@@ -108,6 +109,7 @@ def train_step(
     with context:
         optimizer.zero_grad()
         inputs, targets = diffusion.prepare_training_examples(batch)
+        assert str(inputs["x"].device) == str(config.device), f"Inputs are on {inputs['x'].device}, but config is on {config.device}"
         try:
             predictions = denoising_model(**inputs)
         except Exception as e:

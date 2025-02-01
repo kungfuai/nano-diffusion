@@ -7,7 +7,8 @@ from torch import nn
 from .base import BaseDiffusionAlgorithm
 from ..bookkeeping.mini_batch import MiniBatch
 from ..config.diffusion_training_config import DiffusionTrainingConfig
-from .noise_scheduler import forward_diffusion, generate_samples_by_denoising
+from .noise_scheduler import forward_diffusion, generate_samples_by_denoising, \
+    create_noise_schedule, generate_samples_by_denoising_impainting
 
 
 class ForwardDiffusion:
@@ -49,7 +50,7 @@ class TrainingExampleGenerator:
             targets = x_0
         else:
             raise ValueError("Unsupported target_type.")
-        inputs = {"x": x_t, "t": t}
+        inputs = {"x": x_t, "t": t / self.num_denoising_steps}
         if y is not None:
             inputs["y"] = y
             inputs["p_uncond"] = p_uncond
@@ -62,51 +63,85 @@ class DDPMSampler:
     """
     def __init__(self,
             denoising_model: nn.Module,
+            device: str | torch.device = "cuda:0",
             num_denoising_steps: int = 1000,
             guidance_scale: float = None,
             noise_schedule: Dict[str, torch.Tensor] = None,
             clip_sample=True,
             clip_sample_range=1.0,
+            scale_to_01=True,
             decoder: nn.Module | Callable = None,
             vae_scale_multiplier: float = 1.0,
             seed=0,
         ):
         self.denoising_model = denoising_model
+        self.device = device
         self.num_denoising_steps = num_denoising_steps
-        self.noise_schedule = noise_schedule
+        self.noise_schedule = noise_schedule or create_noise_schedule(num_denoising_steps, device=device)
         self.clip_sample = clip_sample
         self.clip_sample_range = clip_sample_range
         self.guidance_scale = guidance_scale
+        self.scale_to_01 = scale_to_01
         self.decoder = decoder
         self.vae_scale_multiplier = vae_scale_multiplier
         self.seed = seed
 
-    def sample(self, x_T, y = None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
-        sampled_x = generate_samples_by_denoising(
-            denoising_model=self.denoising_model,
-            x_T=x_T,
-            y=y,
-            noise_schedule=self.noise_schedule,
-            n_T=self.num_denoising_steps,
-            guidance_scale=guidance_scale or self.guidance_scale,
-            clip_sample=self.clip_sample,
-            clip_sample_range=self.clip_sample_range,
-            seed=seed or self.seed,
-            quiet=quiet,
-        )
+    def sample(self, x_T, y = None, mask=None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
+        """
+        Generate samples from the denoising model.
+
+        Args:
+            x_T: The initial noise tensor. This provides initialization and the shape of the generated output.
+            y: Embeddings of the prompt or conditioning information. It can be text embeddings.
+              Only applicable to conditional generation.
+            mask: A mask tensor of the same shape as x_T.
+              In the mask, 1 indicates known pixels to maintain and 0 indicates unknown pixels to generate.
+              Only applicable to inpainting.
+            guidance_scale: The scale for the guidance mechanism.
+              Only applicalbe to conditional generation.
+            seed: The seed for the random number generator.
+            quiet: Whether to suppress the progress bar.
+        """
+        # TODO: Consolidate the logic for inpainting and non-inpainting.
+        #       Currently, the code is duplicated.
+        if mask is not None:
+            sampled_x = generate_samples_by_denoising_impainting(
+                denoising_model=self.denoising_model,
+                x_T=x_T,
+                y=y,
+                noise_schedule=self.noise_schedule,
+                n_T=self.num_denoising_steps,
+                guidance_scale=guidance_scale or self.guidance_scale,
+                clip_sample=self.clip_sample,
+                clip_sample_range=self.clip_sample_range,
+                seed=seed or self.seed,
+                quiet=quiet,
+                mask=mask,
+            )
+        else:
+            sampled_x = generate_samples_by_denoising(
+                denoising_model=self.denoising_model,
+                x_T=x_T,
+                y=y,
+                noise_schedule=self.noise_schedule,
+                n_T=self.num_denoising_steps,
+                guidance_scale=guidance_scale or self.guidance_scale,
+                clip_sample=self.clip_sample,
+                clip_sample_range=self.clip_sample_range,
+                seed=seed or self.seed,
+                quiet=quiet,
+            )
         if self.decoder:
             sampled_x = sampled_x / self.vae_scale_multiplier  # Scale back to the original scale
             sampled_decoded = self.decoder(sampled_x)
             sampled_images = sampled_decoded.sample if hasattr(sampled_decoded, "sample") else sampled_decoded
-            sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
-            # sampled_images = sampled_images - sampled_images.min()
-            # sampled_images = sampled_images / sampled_images.max()
-            # print(f"sampled_images: min={sampled_images.min()}, max={sampled_images.max()}, std={sampled_images.std()}")
+            if self.scale_to_01:
+                sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
         else:
             # Assume the data is image.
-            # TODO: add logic to postprocess other data types (e.g. audio).
             sampled_images = sampled_x
-            sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
+            if self.scale_to_01:
+                sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
         return sampled_images
 
 
