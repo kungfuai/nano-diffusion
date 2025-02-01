@@ -21,6 +21,7 @@ def create_noise_schedule(n_T: int, device: torch.device, beta_min: float=0.0001
         "alphas": alphas,
         "betas": betas,
         "alphas_cumprod": alphas_cumprod,
+        "num_denoising_steps": n_T,
     }
 
 
@@ -141,17 +142,19 @@ def unconditional_denoising_step(denoising_model, x_t, t, noise_schedule, clip_s
     return pred_prev_sample
 
 
-def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True, clip_sample_range=1.0, guidance_scale=7.5):
+def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True, clip_sample_range=1.0, guidance_scale=7.5, mask=None):
     """
     This is the backward diffusion step, with the effect of denoising.
 
     Implements classifier-free guidance by conditioning on both conditional (e.g. text prompt) embeddings and unconditional (null) embeddings.
     """
+    num_denoising_steps = noise_schedule["num_denoising_steps"]
     
     if isinstance(t, int):
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
     else:
         t_tensor = t
+
 
     # Create unconditional embeddings (zeros) and concatenate with text embeddings
     if y is not None:
@@ -161,7 +164,7 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
         uncond_embeddings = denoising_model.get_null_cond_embed(batch_size=x_t.shape[0])
         embeddings_cat = torch.cat([uncond_embeddings.to(y.device), y])
         with torch.no_grad():
-            model_output = denoising_model(t=t_twice, x=x_twice, y=embeddings_cat)
+            model_output = denoising_model(t=t_twice / num_denoising_steps, x=x_twice, y=embeddings_cat)
         # Split predictions and perform guidance
         noise_pred_uncond, noise_pred_text = model_output.chunk(2)
         adjustment = guidance_scale * (noise_pred_text - noise_pred_uncond)
@@ -169,7 +172,7 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
     else:
         # unconditional denoising
         with torch.no_grad():
-            model_output = denoising_model(t=t_tensor, x=x_t)
+            model_output = denoising_model(t=t_tensor / num_denoising_steps, x=x_t)
     
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
@@ -182,8 +185,9 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
                                     torch.ones_like(t_tensor, device=x_t.device))
 
     # Reshape alpha_prod_t_prev for proper broadcasting
-    alpha_prod_t = alpha_prod_t.view(-1, 1, 1, 1)
-    alpha_prod_t_prev = alpha_prod_t_prev.view(-1, 1, 1, 1)
+    additional_shape = (1,) * (x_t.ndim - 1)
+    alpha_prod_t = alpha_prod_t.view(-1, *additional_shape)
+    alpha_prod_t_prev = alpha_prod_t_prev.view(-1, *additional_shape)
 
     beta_prod_t = 1 - alpha_prod_t
     beta_prod_t_prev = 1 - alpha_prod_t_prev
@@ -192,7 +196,6 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
 
     # Compute the previous sample mean
     pred_original_sample = (x_t - beta_prod_t ** 0.5 * model_output) / alpha_prod_t ** 0.5
-
     if clip_sample:
         pred_original_sample = torch.clamp(pred_original_sample, -clip_sample_range, clip_sample_range)
 
@@ -208,7 +211,7 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
     variance_noise = torch.randn_like(x_t)
 
     # Handle t=0 case where t can be a tensor
-    non_zero_mask = (t_tensor != 0).float().view(-1, 1, 1, 1)
+    non_zero_mask = (t_tensor != 0).float().view(-1, *additional_shape)
     variance = non_zero_mask * ((1 - alpha_prod_t_prev) / (1 - alpha_prod_t) * current_beta_t)
     variance = torch.clamp(variance, min=1e-20)
 
@@ -295,7 +298,46 @@ def generate_samples_by_denoising(
         if not quiet:
             pbar.set_postfix({"std": x_t.std().item()})
 
-    # x_t = (x_t / 2 + 0.5).clamp(0, 1)  # This is mainly for images and may not work for latents.
+    return x_t
+
+def generate_samples_by_denoising_impainting(
+        denoising_model, x_T, y, noise_schedule, n_T, guidance_scale=4.5,
+        clip_sample=True, clip_sample_range=1.0, seed=0,
+        method="one_stop", quiet=False, mask=None):
+    """
+    Args:
+        mask: Optional binary mask where 1 indicates known pixels to maintain
+    """
+    torch.manual_seed(seed)
+
+    x_t = x_T
+    alphas_cumprod = noise_schedule['alphas_cumprod']
+
+    pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
+    for t in pbar:
+        # Handle masked regions if mask is provided
+        if mask is not None:
+            # Calculate noise level for this timestep
+            noise_level = torch.sqrt(alphas_cumprod[t])
+            
+            # Add appropriate noise to known regions
+            x_input = x_t.clone()
+            noisy_known = x_T * mask  # Use original values from x_T
+            x_input = x_input * (1 - mask) + (noise_level * torch.randn_like(noisy_known) + 
+                                            (1 - noise_level) * noisy_known) * mask
+        else:
+            x_input = x_t
+
+        if method == "direct":
+            raise NotImplementedError("Direct denoising step no longer supported")
+        else:
+            # Use x_input instead of x_t for model input
+            x_t = denoising_step(denoising_model, x_input, y, t, noise_schedule, 
+                               clip_sample, clip_sample_range, guidance_scale=guidance_scale)
+
+        if not quiet:
+            pbar.set_postfix({"std": x_t.std().item()})
+
     return x_t
 
 

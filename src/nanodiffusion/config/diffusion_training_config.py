@@ -10,7 +10,7 @@ def diffusion_algo_choices():
 @dataclass
 class DiffusionTrainingConfig:
     # Dataset
-    dataset: str  # dataset name
+    dataset: str = None  # dataset name
     data_is_latent: bool = False  # whether the data is already in latent space
     in_channels: int = 3  # number of input channels
     resolution: int = 64  # resolution of the image
@@ -70,7 +70,7 @@ class DiffusionTrainingConfig:
     ema_start_step: int = 0  # step to start EMA update
 
     # Accelerator
-    device: str = "cuda"  # device to use for training
+    device: str = "cuda:0"  # device to use for training
 
     # Logging
     logger: str = "wandb"  # logging method

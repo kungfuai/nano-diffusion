@@ -71,6 +71,12 @@ def parse_batch(batch) -> MiniBatch:
         for key in batch:
             if key.endswith("_emb") and key not in ["image_emb"]:
                 cond_emb_dict[key] = batch[key].float()
+    
+    elif isinstance(batch, torch.Tensor):
+        x = batch.float()
+        text_emb = None
+        cond_emb_dict = None
+
     else:
         raise ValueError(f"Unsupported batch type: {type(batch)}")
 
