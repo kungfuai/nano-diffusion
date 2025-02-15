@@ -310,21 +310,23 @@ def generate_samples_by_denoising_impainting(
     """
     torch.manual_seed(seed)
 
-    x_t = x_T
+    x_t = x_T.clone()
     alphas_cumprod = noise_schedule['alphas_cumprod']
 
     pbar = tqdm(range(n_T - 1, -1, -1)) if not quiet else range(n_T - 1, -1, -1)
+    random_noise = torch.randn_like(x_T)
     for t in pbar:
         # Handle masked regions if mask is provided
         if mask is not None:
             # Calculate noise level for this timestep
-            noise_level = torch.sqrt(alphas_cumprod[t])
+            signal_level = torch.sqrt(alphas_cumprod[t])
+            noise_level = torch.sqrt(1 - alphas_cumprod[t])
             
             # Add appropriate noise to known regions
-            x_input = x_t.clone()
-            noisy_known = x_T * mask  # Use original values from x_T
-            x_input = x_input * (1 - mask) + (noise_level * torch.randn_like(noisy_known) + 
-                                            (1 - noise_level) * noisy_known) * mask
+            x_input = x_t
+            x_known = x_T * mask  # Use original values from x_T
+            x_input = x_input * (1 - mask) + (noise_level * random_noise + 
+                                            signal_level * x_known) * mask
         else:
             x_input = x_t
 
