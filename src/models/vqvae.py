@@ -6,26 +6,92 @@ import torch.nn.functional as F
 import numpy as np
 
 
-class ResBlock(nn.Module):
-    def __init__(self, input_channels, channel):
-        super().__init__()
+def normalize(in_channels, num_groups=32):
+    return torch.nn.GroupNorm(
+        num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True
+    )
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(input_channels, channel, 3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(channel, input_channels, 1),
+
+class ResnetBlock(nn.Module):
+    def __init__(
+        self, *, in_channels, out_channels=None, dropout
+    ):  # conv_shortcut=False,  # conv_shortcut: always False in VAE
+        super().__init__()
+        self.in_channels = in_channels
+        out_channels = in_channels if out_channels is None else out_channels
+        self.out_channels = out_channels
+
+        self.norm1 = normalize(in_channels)
+        self.conv1 = torch.nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=1, padding=1
+        )
+        self.norm2 = normalize(out_channels)
+        self.dropout = torch.nn.Dropout(dropout) if dropout > 1e-6 else nn.Identity()
+        self.conv2 = torch.nn.Conv2d(
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1
+        )
+        if self.in_channels != self.out_channels:
+            self.nin_shortcut = torch.nn.Conv2d(
+                in_channels, out_channels, kernel_size=1, stride=1, padding=0
+            )
+        else:
+            self.nin_shortcut = nn.Identity()
+
+    def forward(self, x):
+        h = self.conv1(F.silu(self.norm1(x), inplace=True))
+        h = self.conv2(self.dropout(F.silu(self.norm2(h), inplace=True)))
+        return self.nin_shortcut(x) + h
+
+
+class AttnBlock(nn.Module):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.C = in_channels
+
+        self.norm = normalize(in_channels)
+        self.qkv = torch.nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=3 * in_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        self.w_ratio = int(in_channels) ** (-0.5)
+        self.proj_out = torch.nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=in_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
         )
 
-    def forward(self, x_BCHW):
-        out = self.conv(x_BCHW)
-        out += x_BCHW
-        out = F.relu(out)
-        return out
+    def forward(self, x):
+        qkv = self.qkv(self.norm(x))
+        B, _, H, W = qkv.shape  # should be B,3C,H,W
+        C = self.C
+        q, k, v = qkv.reshape(B, 3, C, H, W).unbind(1)
+
+        # compute attention
+        q = q.view(B, C, H * W).contiguous()
+        q = q.permute(0, 2, 1).contiguous()  # B,HW,C
+        k = k.view(B, C, H * W).contiguous()  # B,C,HW
+        w = torch.bmm(q, k).mul_(
+            self.w_ratio
+        )  # B,HW,HW    w[B,i,j]=sum_c q[B,i,C]k[B,C,j]
+        w = F.softmax(w, dim=2)
+
+        # attend to values
+        v = v.view(B, C, H * W).contiguous()
+        w = w.permute(0, 2, 1).contiguous()  # B,HW,HW (first HW of k, second of q)
+        h = torch.bmm(v, w)  # B, C,HW (HW of q) h[B,C,j] = sum_i v[B,C,i] w[B,i,j]
+        h = h.view(B, C, H, W).contiguous()
+
+        return x + self.proj_out(h)
 
 
 class Encoder(nn.Module):
 
-    def __init__(self, input_channels=3, n_hid=64):
+    def __init__(self, input_channels=3, n_hid=64, dropout=0.0):
         super().__init__()
 
         self.net = nn.Sequential(
@@ -35,12 +101,17 @@ class Encoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(2 * n_hid, 2 * n_hid, 3, padding=1),
             nn.ReLU(),
-            ResBlock(2 * n_hid, 2 * n_hid // 4),
-            ResBlock(2 * n_hid, 2 * n_hid // 4),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
         )
 
         self.output_channels = 2 * n_hid
-        self.output_stide = 4
+        # self.output_stide = 4
 
     def forward(self, x_BCHW):
         return self.net(x_BCHW)
@@ -48,14 +119,19 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self, n_init=32, n_hid=64, output_channels=3):
+    def __init__(self, n_init, n_hid=64, output_channels=3, dropout=0.0):
         super().__init__()
 
         self.net = nn.Sequential(
             nn.Conv2d(n_init, 2 * n_hid, 3, padding=1),
             nn.ReLU(),
-            ResBlock(2 * n_hid, 2 * n_hid // 4),
-            ResBlock(2 * n_hid, 2 * n_hid // 4),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
+            AttnBlock(2 * n_hid),
+            ResnetBlock(in_channels=2 * n_hid, dropout=dropout),
             nn.ConvTranspose2d(2 * n_hid, n_hid, 4, stride=2, padding=1),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(n_hid, output_channels, 4, stride=2, padding=1),
