@@ -53,7 +53,8 @@ def train_one_epoch(
     optimizer: torch.optim.Optimizer,
 ) -> float:
     epoch_loss = 0
-    for i, (x, c) in enumerate(train_loader):
+    pbar = tqdm(train_loader)
+    for i, (x, c) in enumerate(pbar):
         x, c = x.cuda(), c.cuda()
         optimizer.zero_grad()
 
@@ -69,7 +70,7 @@ def train_one_epoch(
         optimizer.step()
 
         epoch_loss += loss.item()
-
+        pbar.set_postfix(loss=loss.item())
     epoch_loss /= len(train_loader)
     return epoch_loss
 
@@ -99,7 +100,7 @@ def train_var(
         batch_size=training_params["batch_size"], dataset=dataset
     )
     var_model = var_model.to("cuda")
-    for epoch in tqdm(range(training_params["epochs"])):
+    for epoch in range(training_params["epochs"]):
         epoch_loss = train_one_epoch(var_model, vqvae, train_loader, optimizer)
         print(f"Epoch: {epoch}, Loss: {epoch_loss}")
 

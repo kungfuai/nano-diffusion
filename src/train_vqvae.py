@@ -132,7 +132,8 @@ def train_one_epoch(
 ):
     epoch_loss = 0
     epoch_recon_loss = 0
-    for i, (x, c) in enumerate(train_loader):
+    pbar = tqdm(train_loader)
+    for i, (x, c) in enumerate(pbar):
         x, c = x.cuda(), c.cuda()
         optimizer.zero_grad()
 
@@ -149,6 +150,7 @@ def train_one_epoch(
         optimizer.step()
         epoch_loss += loss.item()
         epoch_recon_loss += recon_loss.item()
+        pbar.set_postfix(loss=loss.item())
 
     epoch_loss /= len(train_loader)
     epoch_recon_loss /= len(train_loader)
@@ -207,7 +209,7 @@ def train_vqvae(
     )
 
     # Train the model
-    for epoch in tqdm(range(training_params["epochs"])):
+    for epoch in range(training_params["epochs"]):
         epoch_loss, epoch_recon_loss = train_one_epoch(
             vq_model, train_loader, optimizer
         )
