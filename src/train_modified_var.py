@@ -167,6 +167,9 @@ def train_one_epoch(
         x, c = x.cuda(), c.cuda()
         optimizer.zero_grad()
 
+        # !!! This is potentially where things are going wrong !!!
+        # If you compare this with what's in train_var.py you can see the changes I've made
+        # These changes attempt to bridge the gap between the original VAR and the minVAR implementation
         gt_idx_Bl = vqvae.img_to_idxBl(x)
         idx_BL = torch.cat(gt_idx_Bl, dim=1)
         x_BLCv_wo_first_l = vqvae.quantize.idxBl_to_var_input(gt_idx_Bl)
@@ -176,6 +179,7 @@ def train_one_epoch(
         loss = F.cross_entropy(
             logits_BLV.view(-1, logits_BLV.size(-1)), idx_BL.view(-1)
         )
+        # !!!!!!
 
         loss.backward()
         optimizer.step()
