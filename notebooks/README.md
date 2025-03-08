@@ -46,3 +46,5 @@ This folder holds the educational notebooks to learn practical recipes for train
 
 - [Diffusion course from KAIST, Fall 2024](https://mhsung.github.io/kaist-cs492d-fall-2024/)
 - [Distributed training guide from Lambda Labs](https://github.com/LambdaLabsML/distributed-training-guide)
+- [Training a diffusion model for protein structure][https://github.com/microsoft/foldingdiff]
+- [Diffusion course from MIT, 6.S184][https://diffusion.csail.mit.edu/]
