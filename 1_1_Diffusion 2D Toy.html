@@ -347,10 +347,13 @@ window.Quarto = {
    
   <ul>
   <li><a href="#what-well-cover" id="toc-what-well-cover" class="nav-link active" data-scroll-target="#what-well-cover">What We’ll Cover</a></li>
-  <li><a href="#why-2d-points" id="toc-why-2d-points" class="nav-link" data-scroll-target="#why-2d-points">Why 2D Points?</a></li>
+  <li><a href="#why-2d-points" id="toc-why-2d-points" class="nav-link" data-scroll-target="#why-2d-points">Why 2D Points?</a>
+  <ul class="collapse">
+  <li><a href="#import-dependencies" id="toc-import-dependencies" class="nav-link" data-scroll-target="#import-dependencies">Import dependencies</a></li>
+  </ul></li>
   <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The Data</a>
   <ul class="collapse">
-  <li><a href="#dataloaders" id="toc-dataloaders" class="nav-link" data-scroll-target="#dataloaders">Dataloaders</a></li>
+  <li><a href="#configuration-and-dataloaders" id="toc-configuration-and-dataloaders" class="nav-link" data-scroll-target="#configuration-and-dataloaders">Configuration and Dataloaders</a></li>
   <li><a href="#forward-diffusion-the-teaching" id="toc-forward-diffusion-the-teaching" class="nav-link" data-scroll-target="#forward-diffusion-the-teaching">Forward Diffusion: the Teaching</a>
   <ul class="collapse">
   <li><a href="#noise-schedule" id="toc-noise-schedule" class="nav-link" data-scroll-target="#noise-schedule">Noise Schedule</a></li>
@@ -363,7 +366,7 @@ window.Quarto = {
   <li><a href="#denoising-reverse-diffusion" id="toc-denoising-reverse-diffusion" class="nav-link" data-scroll-target="#denoising-reverse-diffusion">Denoising: Reverse diffusion</a></li>
   <li><a href="#network-architecture-of-the-denoising-model" id="toc-network-architecture-of-the-denoising-model" class="nav-link" data-scroll-target="#network-architecture-of-the-denoising-model">Network Architecture of the Denoising Model</a>
   <ul class="collapse">
-  <li><a href="#model-1-simple-concatination" id="toc-model-1-simple-concatination" class="nav-link" data-scroll-target="#model-1-simple-concatination">Model 1: Simple Concatination</a></li>
+  <li><a href="#model-1-simple-concatenation" id="toc-model-1-simple-concatenation" class="nav-link" data-scroll-target="#model-1-simple-concatenation">Model 1: Simple Concatenation</a></li>
   <li><a href="#model-2-sinusoidal-time-embedding-concatination" id="toc-model-2-sinusoidal-time-embedding-concatination" class="nav-link" data-scroll-target="#model-2-sinusoidal-time-embedding-concatination">Model 2: Sinusoidal Time Embedding Concatination</a></li>
   <li><a href="#model-3-time-modulated-linear-layers" id="toc-model-3-time-modulated-linear-layers" class="nav-link" data-scroll-target="#model-3-time-modulated-linear-layers">Model 3: Time-Modulated Linear Layers</a></li>
   </ul></li>
@@ -433,6 +436,9 @@ window.Quarto = {
 <li>Clear understanding of how diffusion models work</li>
 </ul>
 <p>We’ll explore the different components of diffusion models and their functions, as well as compare the quality of generated results using different model architectures.</p>
+<section id="import-dependencies" class="level3">
+<h3 class="anchored" data-anchor-id="import-dependencies">Import dependencies</h3>
+<p>First, let’s import a few libraries. You do not need to have many dependencies. <code>torch</code> is really the main library you need. <code>matplotlib</code> is used for visualization and <code>sklearn</code> is used to load the dataset.</p>
 <div id="cell-2" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
@@ -449,6 +455,7 @@ window.Quarto = {
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm.auto <span class="im">import</span> tqdm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
+</section>
 <section id="the-data" class="level1">
 <h1>The Data</h1>
 <p>First, let’s take a look at the data we’ll be working with.</p>
@@ -457,6 +464,7 @@ window.Quarto = {
 <li>Non-linear structure</li>
 <li>Clear visual pattern.</li>
 </ul>
+<p>Although it is considered a toy dataset, before diffusion models were proposed, it was not trivial to train a model (e.g.&nbsp;variational auto-encoders) to generate the pattern accurately.</p>
 <p>This makes it a great dataset for understanding how diffusion models learn to generate structured data from noise.</p>
 <div id="cell-4" class="cell" data-outputid="ee5ad332-ca2a-47c8-bc8f-125d122fd9c7" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x, _ <span class="op">=</span> make_swiss_roll(n_samples<span class="op">=</span><span class="dv">1000</span>, noise<span class="op">=</span><span class="fl">0.5</span>)</span>
@@ -472,8 +480,8 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<section id="dataloaders" class="level3">
-<h3 class="anchored" data-anchor-id="dataloaders">Dataloaders</h3>
+<section id="configuration-and-dataloaders" class="level3">
+<h3 class="anchored" data-anchor-id="configuration-and-dataloaders">Configuration and Dataloaders</h3>
 <p>Before training the model, we need to define some hyperparameters and create our train and validation dataloaders.</p>
 <p>The <code>TrainingConfig</code> class contains a couple of parameters for the training process. <code>batch_size</code>, <code>learning_rate</code>, <code>weight_decay</code> are common parameters for the optimizer and dataloader. Specific to diffusion, <code>num_denoising_steps</code> is the number of timesteps in the diffusion process.</p>
 <div id="cell-6" class="cell" data-outputid="2fe24a83-91d5-4bfe-ed72-edadab3350fe" data-execution_count="3">
@@ -542,13 +550,18 @@ window.Quarto = {
 </section>
 <section id="forward-diffusion-the-teaching" class="level2">
 <h2 class="anchored" data-anchor-id="forward-diffusion-the-teaching">Forward Diffusion: the Teaching</h2>
-<p>Diffusion algorithms have two main processes: Forward Diffusion and Reverse Denoising. Let’s start with forward diffusion.</p>
-<p>We gradually add noise to our spiral data according to a carefully designed schedule. This creates a sequence:</p>
+<p>Instead of making the model “imagine” a spiral from scratch, we define a more structured and easier task:</p>
+<ol type="1">
+<li>We <strong>add noise</strong> to the data in multiple steps.</li>
+<li>The more steps we apply, the more the structure is lost.</li>
+<li>This process gives the model <strong>examples of partially corrupted data at different noise levels</strong>.</li>
+</ol>
+<p>The above process is called forward diffusion. We gradually add noise to our spiral data according to a carefully designed schedule. This creates a sequence:</p>
 <ul>
 <li>Clean data → Slightly noisy → More noisy → Pure noise</li>
 </ul>
-<p>Forward diffusion can be considered as “data augmentation” in the training step. It adds noise to the data to challenge the model to be able to tell apart signal from noise. Diffusion is a particular way of adding noise, with a carefully designed noise schedule.</p>
-<p>The forward diffusion defines a sequence of data points (each <span class="math inline">\(x_t\)</span> is a 2 dimensional vector):</p>
+<p>Forward diffusion can be considered as “data augmentation” during training. We challenge the model tell apart signal from noise, rather than predicting the signal from nothing (or pure noise). This makes the task more structured and easier to learn.</p>
+<p>With forward diffusion, we produce a sequence of data points (each <span class="math inline">\(x_t\)</span> is a 2 dimensional vector):</p>
 <p><span class="math display">\[x_0, x_1, x_2, ..., x_T\]</span></p>
 <p>where T is the number of diffusion steps (e.g.&nbsp;1000).</p>
 <p>Similar to an algebraic sequence with a common difference, the diffusion sequence has a “common noise” <span class="math inline">\(\mathbf\epsilon\)</span> that is the same for all steps in a sequence. The recursive formula of the diffusion sequence is:</p>
@@ -556,12 +569,13 @@ window.Quarto = {
 x_t = \sqrt{\alpha_t} x_{t-1} + \sqrt{\beta_t} \mathbf\epsilon
 \]</span></p>
 <p>where <span class="math inline">\(\beta_t = 1 - \alpha_t\)</span> is the variance of the noise at time <span class="math inline">\(t\)</span>. This relationship is primarily a design choice that simplifies the mathematics and makes the derivations more elegant and manageable.</p>
-<p>One can then derive the explicit formula for <span class="math inline">\(x_t\)</span> expressed in terms of <span class="math inline">\(x_0\)</span> and <span class="math inline">\(\mathbf\epsilon\)</span>:</p>
+<p>One can then write the explicit formula for <span class="math inline">\(x_t\)</span> expressed in terms of <span class="math inline">\(x_0\)</span> and <span class="math inline">\(\mathbf\epsilon\)</span>:</p>
 <p><span class="math display">\[
 x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 \]</span></p>
 <p>where <span class="math inline">\(\bar\alpha_t = \prod_{i=1}^t \alpha_i\)</span> is the cumulative product of the variance of the noise at time <span class="math inline">\(t\)</span>.</p>
-<p>The forward diffusion process is thus defined by this noise schedule: <span class="math inline">\(\beta_1, \beta_2, ..., \beta_T\)</span>.</p>
+<p>The forward diffusion process is thus defined by this noise schedule: <span class="math inline">\(\beta_1, \beta_2, ..., \beta_T\)</span>, which defines the “blending ratio” between the clean data and the noise.</p>
+<p>Below is an implementation of forward diffusion.</p>
 <div id="cell-10" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> forward_diffusion(x_0, t, noise_schedule, noise<span class="op">=</span><span class="va">None</span>):</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
@@ -588,43 +602,41 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 </div>
 <section id="noise-schedule" class="level3">
 <h3 class="anchored" data-anchor-id="noise-schedule">Noise Schedule</h3>
-<p>Here we create our noise shedule for the diffusion process, which controls how noise is added to the data across timesteps during forward difffusion. The schedule is parametized by <span class="math inline">\(\beta_{min}\)</span> and <span class="math inline">\(\beta_{max}\)</span> which define the range of noise intensity values.</p>
+<p>The noise shedule controls how noise is added to the data across timesteps during forward difffusion. The schedule is parametized by <span class="math inline">\(\beta_{min}\)</span> and <span class="math inline">\(\beta_{max}\)</span> which define the range of noise intensity values. It is a design choice. We will use a standard schedule in this tutorial.</p>
 <p>The range of <span class="math inline">\(\beta_t\)</span> is empirically chosen to be between 1e-4 and 0.02. We can plot the noise schedule curves to visualize the blending ratio between the clean data and the noise, and how it changes over “time” through the diffusion process.</p>
 <div id="cell-12" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>beta_min, beta_max <span class="op">=</span> <span class="fl">1e-4</span>, <span class="fl">0.02</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># beta_min, beta_max = 1e-4, 1</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># beta_min, beta_max = 0, 0.02</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_noise_schedule(n_T: <span class="bu">int</span>, device: torch.device) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, torch.Tensor]:</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    betas <span class="op">=</span> torch.linspace(beta_min, beta_max, n_T).to(device)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    alphas <span class="op">=</span> <span class="fl">1.</span> <span class="op">-</span> betas</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    alphas_cumprod <span class="op">=</span> torch.cumprod(alphas, axis<span class="op">=</span><span class="dv">0</span>).to(device)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    alphas_cumprod_prev <span class="op">=</span> torch.cat([torch.ones(<span class="dv">1</span>).to(device), alphas_cumprod[:<span class="op">-</span><span class="dv">1</span>].to(device)])</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    sqrt_recip_alphas <span class="op">=</span> torch.sqrt(<span class="fl">1.0</span> <span class="op">/</span> alphas).to(device)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    sqrt_alphas_cumprod <span class="op">=</span> torch.sqrt(alphas_cumprod).to(device)</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    sqrt_one_minus_alphas_cumprod <span class="op">=</span> torch.sqrt(<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    posterior_variance <span class="op">=</span> betas <span class="op">*</span> (<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod_prev) <span class="op">/</span> (<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"betas"</span>: betas,</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"alphas_cumprod"</span>: alphas_cumprod,</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_recip_alphas"</span>: sqrt_recip_alphas,</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_alphas_cumprod"</span>: sqrt_alphas_cumprod,</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_one_minus_alphas_cumprod"</span>: sqrt_one_minus_alphas_cumprod,</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"posterior_variance"</span>: posterior_variance,</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_noise_schedule(n_T: <span class="bu">int</span>, device: torch.device) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, torch.Tensor]:</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    betas <span class="op">=</span> torch.linspace(beta_min, beta_max, n_T).to(device)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    alphas <span class="op">=</span> <span class="fl">1.</span> <span class="op">-</span> betas</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    alphas_cumprod <span class="op">=</span> torch.cumprod(alphas, axis<span class="op">=</span><span class="dv">0</span>).to(device)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    alphas_cumprod_prev <span class="op">=</span> torch.cat([torch.ones(<span class="dv">1</span>).to(device), alphas_cumprod[:<span class="op">-</span><span class="dv">1</span>].to(device)])</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    sqrt_recip_alphas <span class="op">=</span> torch.sqrt(<span class="fl">1.0</span> <span class="op">/</span> alphas).to(device)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    sqrt_alphas_cumprod <span class="op">=</span> torch.sqrt(alphas_cumprod).to(device)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    sqrt_one_minus_alphas_cumprod <span class="op">=</span> torch.sqrt(<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    posterior_variance <span class="op">=</span> betas <span class="op">*</span> (<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod_prev) <span class="op">/</span> (<span class="fl">1.</span> <span class="op">-</span> alphas_cumprod)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"betas"</span>: betas,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"alphas_cumprod"</span>: alphas_cumprod,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_recip_alphas"</span>: sqrt_recip_alphas,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_alphas_cumprod"</span>: sqrt_alphas_cumprod,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sqrt_one_minus_alphas_cumprod"</span>: sqrt_one_minus_alphas_cumprod,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"posterior_variance"</span>: posterior_variance,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(config.num_denoising_steps, device)</span>
 <span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>noise_schedule <span class="op">=</span> create_noise_schedule(config.num_denoising_steps, device)</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the schedule</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">7</span>, <span class="dv">3</span>))</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>plt.subplot(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>)<span class="op">;</span> plt.plot(<span class="bu">range</span>(<span class="dv">1000</span>), noise_schedule[<span class="st">"sqrt_alphas_cumprod"</span>].cpu().numpy())</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="vs">r"$\sqrt{\bar\alpha_t}$: signal level"</span>)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>plt.subplot(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>)<span class="op">;</span> plt.plot(<span class="bu">range</span>(<span class="dv">1000</span>), noise_schedule[<span class="st">"sqrt_one_minus_alphas_cumprod"</span>].cpu().numpy())</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> plt.title(<span class="vs">r"$\sqrt{1-\bar\alpha_t}$: noise level"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the schedule</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">7</span>, <span class="dv">3</span>))</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>plt.subplot(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>)<span class="op">;</span> plt.plot(<span class="bu">range</span>(<span class="dv">1000</span>), noise_schedule[<span class="st">"sqrt_alphas_cumprod"</span>].cpu().numpy())</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="vs">r"$\sqrt{\bar\alpha_t}$: signal level"</span>)</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>plt.subplot(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>)<span class="op">;</span> plt.plot(<span class="bu">range</span>(<span class="dv">1000</span>), noise_schedule[<span class="st">"sqrt_one_minus_alphas_cumprod"</span>].cpu().numpy())</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> plt.title(<span class="vs">r"$\sqrt{1-\bar\alpha_t}$: noise level"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
@@ -656,7 +668,7 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 </div>
 </div>
 </div>
-<p>As the noise increases, the orderly spiral quickly fades away as it becomes a disordered pile of points.</p>
+<p>As the noise increases, the orderly spiral quickly fades away as it becomes a disordered pile of points (Gaussian distribution with mean 0 and variance 1).</p>
 </section>
 <section id="visualize-forward-diffusion-trajectories" class="level3">
 <h3 class="anchored" data-anchor-id="visualize-forward-diffusion-trajectories">Visualize forward diffusion trajectories</h3>
@@ -773,10 +785,7 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 <span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>        bytes_io <span class="op">=</span> io.BytesIO()</span>
 <span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>        g.savefig(bytes_io, <span class="bu">format</span><span class="op">=</span><span class="st">"png"</span>)</span>
-<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> bytes_io.getvalue()</span>
-<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>        <span class="co"># # return the figure</span></span>
-<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>        <span class="co"># return plt.gcf()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> bytes_io.getvalue()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="plotting-the-forward-diffusion-trajectories" class="level4">
@@ -811,12 +820,12 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 <pre><code>&lt;Figure size 640x480 with 0 Axes&gt;</code></pre>
 </div>
 </div>
-<p>The dotted lines are the trajectories of the forward diffusion. Good data points on the spiral pattern (red) are gradually transformed into noise (blue), which is a Gaussian distribution.</p>
+<p>The dotted lines are the trajectories of the forward diffusion. Good data points on the spiral pattern (red) are gradually transformed into noise (blue), which is a Gaussian distribution. The color gradient represents the time step or the noise level. We can see that the trajectories are generally smooth curves.</p>
 </section>
 </section>
 <section id="forward-diffusion-is-a-form-of-data-augmentation" class="level3">
 <h3 class="anchored" data-anchor-id="forward-diffusion-is-a-form-of-data-augmentation">Forward Diffusion is a Form of Data Augmentation</h3>
-<p>We can consider this as a data augmentation process. For each clean data point, a noisy data point is created by adding noise to it.</p>
+<p>We can consider this as a data augmentation process. For each clean data point, one or more noisy data points are created by adding different amounts of noise to it. We then ask to the model predict the noise based on corrupted data points.</p>
 <p>One could write a new dataset class to represent this data augmentation process:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> DiffusionAugmentedDataset:</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, index):</span>
@@ -835,12 +844,12 @@ x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1 - \bar\alpha_t} \mathbf\epsilon
 <h1>The Learning</h1>
 <section id="denoising-reverse-diffusion" class="level2">
 <h2 class="anchored" data-anchor-id="denoising-reverse-diffusion">Denoising: Reverse diffusion</h2>
-<p>Now that we understand how forward diffusion works, we need a model that can learn to reverse this process, and get back to the clean data.</p>
-<p>We call such a model a denoising model. It predicts the noise at each time step <span class="math inline">\(t\)</span> and the current state of the data <span class="math inline">\(x_t\)</span>. It is paramterized as a neural network:</p>
+<p>As mentioned before, instead of learning to generate from scratch, we <strong>train a model to predict and remove noise</strong> at each step, so that we can get back to the clean data.</p>
+<p>This model is called a <strong>denoising model</strong>. It predicts the noise at each time step <span class="math inline">\(t\)</span> and the current state of the data <span class="math inline">\(x_t\)</span>. The model is parameterized as a neural network:</p>
 <p><span class="math display">\[
 \mathbf\epsilon_{\theta}(t, \mathbf{x_t})
 \]</span></p>
-<p>where <span class="math inline">\(\theta\)</span> is the parameters of the denoising model. <span class="math inline">\(t\)</span> is a scalar value that represents the current time step or progress in the diffusion process. <span class="math inline">\(t\)</span> is also referred to as the noise level, with 0 indicating the clean data and <span class="math inline">\(T\)</span> (e.g.&nbsp;<span class="math inline">\(T=1000\)</span>) indicating the fully noisy data.</p>
+<p>where <span class="math inline">\(\theta\)</span> is the learnable parameters, <span class="math inline">\(t\)</span> is a scalar value that represents the current time step or progress in the diffusion process. <span class="math inline">\(t\)</span> is also referred to as the noise level, with 0 indicating the clean data and <span class="math inline">\(T\)</span> (e.g.&nbsp;<span class="math inline">\(T=1000\)</span>) indicating the fully noisy data.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -901,8 +910,8 @@ Note
 </tr>
 </tbody>
 </table>
-<section id="model-1-simple-concatination" class="level3">
-<h3 class="anchored" data-anchor-id="model-1-simple-concatination">Model 1: Simple Concatination</h3>
+<section id="model-1-simple-concatenation" class="level3">
+<h3 class="anchored" data-anchor-id="model-1-simple-concatenation">Model 1: Simple Concatenation</h3>
 <p>Our first model is a simple three layer MLP. Note that in the <code>foward</code> method, we concatinate the time to the noisy data before each foward pass.</p>
 <div id="cell-25" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Model1(nn.Module):</span>
@@ -1136,7 +1145,7 @@ Note
 <p><span class="math display">\[
 x_{t-1} = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1 - \bar\alpha_t}} \mathbf\epsilon_{\theta}(\mathbf{x_t}, t)) + \sqrt{\tilde\beta_t} \mathbf z_t \tag{1}
 \]</span></p>
-<p>where <span class="math inline">\(z_t ~ \mathcal{N}(0, 1)\)</span> is Gaussian noise (independent from <span class="math inline">\(\mathbf\epsilon\)</span>) that is sampled at each denoising step, and <span class="math inline">\(\tilde\beta_t = \frac{1 - \bar\alpha_{t-1}}{1 - \bar\alpha_t} \beta_t\)</span> is the variance of the noise at time <span class="math inline">\(t\)</span>.</p>
+<p>where <span class="math inline">\(z_t ~ \mathcal{N}(0, 1)\)</span> is Gaussian noise (independent from <span class="math inline">\(\mathbf\epsilon\)</span>) that is sampled at each denoising step, and <span class="math inline">\(\tilde\beta_t = \frac{1 - \bar\alpha_{t-1}}{1 - \bar\alpha_t} \beta_t\)</span> is the variance of the noise at time <span class="math inline">\(t\)</span>. This <a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models">blog post</a> has a good derivation of the formula.</p>
 <p>Let’s implement the denoising step.</p>
 <div id="cell-31" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> denoising_step(denoising_model, x_t, t, noise_schedule, thresholding<span class="op">=</span><span class="va">False</span>):</span>
@@ -1218,7 +1227,7 @@ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1 - \bar\alph
 </section>
 <section id="visualize-denoising-trajectories-of-an-untrained-model" class="level3">
 <h3 class="anchored" data-anchor-id="visualize-denoising-trajectories-of-an-untrained-model">Visualize denoising trajectories of an untrained model</h3>
-<p>Let’s create a model from scratch. Before the model is trained, what would the denoising trajectories look like?</p>
+<p>Before the model is trained, what would the denoising trajectories look like?</p>
 <div id="cell-33" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a model and optimizer</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
@@ -1315,7 +1324,7 @@ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1 - \bar\alph
 </div>
 <section id="train-for-100-steps" class="level3">
 <h3 class="anchored" data-anchor-id="train-for-100-steps">Train for 100 steps</h3>
-<p>First, train the model for 100 steps to make sure the training loop is working.</p>
+<p>First, train the model for a small number (100) of steps to make sure the training loop is working.</p>
 <div id="cell-38" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train the model</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>model3_optimizer <span class="op">=</span> optim.AdamW(model3.parameters(), lr<span class="op">=</span>config.learning_rate, weight_decay<span class="op">=</span>config.weight_decay)</span>
@@ -1440,7 +1449,7 @@ loss: 0.3116355836391449</code></pre>
 </section>
 <section id="animate-the-learning-process" class="level3">
 <h3 class="anchored" data-anchor-id="animate-the-learning-process">Animate the learning process</h3>
-<p>To get a better idea of what the inbetween steps looked like, let’s checkpoint the model and do a sampling every 100 training steps.</p>
+<p>To get a better idea of what the model’s learning progress looked like, let’s checkpoint the model and do a sampling every 100 training steps.</p>
 <p>Click the play button to see the animation of generated samples as the model learns.</p>
 <div id="cell-49" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
@@ -3881,10 +3890,11 @@ model1_loss: 0.34836021065711975</code></pre>
 </div>
 </div>
 </div>
+<p>We excluded the points that strayed too far. If we include them, their values need to be clipped to a small range (e.g.&nbsp;-3.9 to 3.9) and they will lie on the boundary of a square. You can see this in the next section where we plot them 3 models side by side.</p>
 </section>
 <section id="model-2" class="level2">
 <h2 class="anchored" data-anchor-id="model-2">Model 2</h2>
-<div id="cell-60" class="cell" data-execution_count="26">
+<div id="cell-61" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>model2 <span class="op">=</span> Model2(features<span class="op">=</span><span class="dv">2</span>, hidden_features<span class="op">=</span>[<span class="dv">512</span>, <span class="dv">256</span>, <span class="dv">256</span>]).to(device)</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"model params: </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model2.parameters())<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -3996,7 +4006,7 @@ model2_loss: 0.3272062838077545</code></pre>
 </section>
 <section id="model-3" class="level2">
 <h2 class="anchored" data-anchor-id="model-3">Model 3</h2>
-<div id="cell-62" class="cell" data-execution_count="27">
+<div id="cell-63" class="cell" data-execution_count="27">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>model3 <span class="op">=</span> Model3(</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>    dim_in<span class="op">=</span><span class="dv">2</span>,</span>
 <span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    dim_out<span class="op">=</span><span class="dv">2</span>,</span>
@@ -4110,7 +4120,7 @@ model3_loss: 0.2785179913043976</code></pre>
 </div>
 </div>
 </div>
-<div id="cell-63" class="cell" data-execution_count="28">
+<div id="cell-64" class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample points from the model</span></span>
@@ -4193,9 +4203,10 @@ model3_loss: 0.2785179913043976</code></pre>
 </section>
 <section id="key-takeaways-and-discussion" class="level2">
 <h2 class="anchored" data-anchor-id="key-takeaways-and-discussion">Key Takeaways and Discussion</h2>
-<p>We’ve seen how diffusion models can learn to generate complex patterns, even with a simple architecture. Some key observations:</p>
+<p>We’ve seen how diffusion models can learn to generate complex patterns, even with a simple architecture. We have learned:</p>
 <ul>
-<li>Forward diffusion provides a structured way to add noise.</li>
+<li>Forward diffusion provides a structured way to add noise to the clean data. It can be viewed as a data augmentation technique.</li>
+<li>Reverse diffusion is a generative process that uses a trained denoising model to predict and remove noise in an iterative manner.</li>
 <li>The choice of architecture significantly impacts generation quality. Time embedding strategy matters for model performance.</li>
 </ul>
 <section id="discussion-questions" class="level3">
