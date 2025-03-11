@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Experiment with hyperparameters – Nano Diffusion</title>
+<title>Our First Pareto Frontier Plot – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -107,6 +107,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 <script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -143,7 +172,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Experiment with hyperparameters</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Our First Pareto Frontier Plot</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -195,7 +224,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Experiment with hyperparameters</span></a>
+ <span class="menu-text">Our First Pareto Frontier Plot</span></a>
   </div>
 </li>
       </ul>
@@ -318,19 +347,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#define-the-grid-of-hyperparameters" id="toc-define-the-grid-of-hyperparameters" class="nav-link active" data-scroll-target="#define-the-grid-of-hyperparameters">Define the grid of hyperparameters</a></li>
+  <li><a href="#experiment-with-hyperparameters" id="toc-experiment-with-hyperparameters" class="nav-link active" data-scroll-target="#experiment-with-hyperparameters">Experiment with hyperparameters</a>
+  <ul class="collapse">
+  <li><a href="#define-the-grid-of-hyperparameters" id="toc-define-the-grid-of-hyperparameters" class="nav-link" data-scroll-target="#define-the-grid-of-hyperparameters">Define the grid of hyperparameters</a></li>
   <li><a href="#run-model-training-experiments" id="toc-run-model-training-experiments" class="nav-link" data-scroll-target="#run-model-training-experiments">Run model training experiments</a></li>
-  <li><a href="#analyze-the-results" id="toc-analyze-the-results" class="nav-link" data-scroll-target="#analyze-the-results">Analyze the results</a></li>
-  <li><a href="#discussion-questions" id="toc-discussion-questions" class="nav-link" data-scroll-target="#discussion-questions">Discussion questions</a></li>
+  </ul></li>
+  <li><a href="#analyze-the-results" id="toc-analyze-the-results" class="nav-link" data-scroll-target="#analyze-the-results">Analyze the results</a>
+  <ul class="collapse">
+  <li><a href="#discussion-questions" id="toc-discussion-questions" class="nav-link" data-scroll-target="#discussion-questions">Discussion Questions</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Experiment with hyperparameters</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Generating a 2D Point Cloud</li><li class="breadcrumb-item"><a href="./1_1_Diffusion 2D Toy.html">Diffusion</a></li><li class="breadcrumb-item"><a href="./1_1_b_Diffusion_2D_hyperparams.html">Our First Pareto Frontier Plot</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Experiment with hyperparameters</h1>
+<h1 class="title">Our First Pareto Frontier Plot</h1>
 </div>
 
 
@@ -347,6 +381,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>A defining characteristic of deep learning and the more recent LLM revolution is the existence of the scaling law, which states that the quality of AI improves predictively as a function of data, compute and model size. The power of this law is so strong that, across domains like vision and NLP, researchers learned the bitter lesson that: a smart algorithm design do not quite matter, unless it scales with data and compute.</p>
+<p>Reality is more nuanced. First, scaling laws shift. Every once in a while (roughly a decade), a breakthrough in model architecture or training methods unlocks more efficient use of data and compute. In the 2020s, Transformers dominate architecture choices, while diffusion is a break-through in training algorithms. Secondly, optimal hyperparameters need to be found, through time, money and sometimes tears. Poorly tuned runs fall off the Pareto frontier and are absent from the clean scaling law curves often presented.</p>
+<p>With this broader context in mind, let’s scale things down to a simple 2D toy example.</p>
+<p>We’ll plot quality vs.&nbsp;cost, where each data point represents a training run with a specific hyperparameter setting:</p>
+<p><span class="math display">\[\left( q(h_1), c(h_1) \right), \left( q(h_2), c(h_2) \right) \cdots\]</span></p>
+<p>Here <span class="math inline">\(h_1, h_2, \cdots\)</span> are different configurations of hyperparameters, <span class="math inline">\(q\)</span> measures quality and <span class="math inline">\(c\)</span> represents cost.</p>
+<p>As we collect more data points, a <strong>Pareto frontier</strong> will emerge, highlighting the best trade-offs between quality and cost. This small-scale experiment illustrates a core research strategy in modern generative modeling: optimizing for efficiency along the Pareto frontier.</p>
+<p>In practice, measuring the Pareto frontier for specific use cases is very valuable. It helps guide model and algorithm choices to achieve the highest possible quality within a given budget.</p>
+<section id="experiment-with-hyperparameters" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-with-hyperparameters">Experiment with hyperparameters</h2>
+<p>To generate our scaling law plot, we first need a series of training runs across different hyperparameter settings.</p>
 <section id="define-the-grid-of-hyperparameters" class="level3">
 <h3 class="anchored" data-anchor-id="define-the-grid-of-hyperparameters">Define the grid of hyperparameters</h3>
 <div id="cell-3" class="cell" data-execution_count="4">
@@ -385,7 +430,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="run-model-training-experiments" class="level3">
 <h3 class="anchored" data-anchor-id="run-model-training-experiments">Run model training experiments</h3>
-<p>This can take about 10 minutes to run.</p>
+<p>For quality metric, we use the Chamfer distance: the lower the better. For cost, we can use model size.</p>
+<p>This can take about 10 minutes to run. The output can be quite long. Feel free to skip to the next section using the side navigation.</p>
 <div id="cell-5" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>train_config <span class="op">=</span> TrainingConfig()</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>train_dataloader, _ <span class="op">=</span> load_data(train_config)</span>
@@ -1076,8 +1122,10 @@ loss: 0.2812938988208771</code></pre>
 </div>
 </div>
 </section>
-<section id="analyze-the-results" class="level3">
-<h3 class="anchored" data-anchor-id="analyze-the-results">Analyze the results</h3>
+</section>
+<section id="analyze-the-results" class="level2">
+<h2 class="anchored" data-anchor-id="analyze-the-results">Analyze the results</h2>
+<p>We can find the model with highest quality. It is the “model3” architecture with time modulated linear layers, a comparatively narrow and deep model with 5 layers</p>
 <div id="cell-7" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb114"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find the best model</span></span>
 <span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>best_model_idx <span class="op">=</span> np.argmin(chamfer_distances)</span>
@@ -1118,6 +1166,8 @@ loss: 0.2812938988208771</code></pre>
 </div>
 <section id="plot-quality-vs.-model-size" class="level4">
 <h4 class="anchored" data-anchor-id="plot-quality-vs.-model-size">Plot quality vs.&nbsp;model size</h4>
+<p>We can now plot quality against cost. Can you find the “Pareto frontier”?</p>
+<p>From the plot, most of model3 (green) points are on the frontier. There is also one orange (model2) point and one blue (model1) point on the frontier. Is model1 really on the frontier? Would the conclusion change if we vary the model size more widely and collect more data points?</p>
 <div id="cell-10" class="cell" data-execution_count="65">
 <div class="sourceCode cell-code" id="cb117"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># uses seaborn scatterplot to plot the scaling law</span></span>
 <span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="co"># only uses 10,000 timesteps for the scaling law</span></span>
@@ -1151,6 +1201,7 @@ loss: 0.2812938988208771</code></pre>
 </section>
 <section id="plot-quality-vs.-training-steps" class="level4">
 <h4 class="anchored" data-anchor-id="plot-quality-vs.-training-steps">Plot quality vs.&nbsp;training steps</h4>
+<p>Another measure of cost if the number of training steps. We can see more training steps generally helps, with a diminishing return. From the plot, do you think we have trained the model enough? Would you train the model some more time?</p>
 <div id="cell-12" class="cell" data-execution_count="64">
 <div class="sourceCode cell-code" id="cb118"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We only look at the 5 layer model</span></span>
@@ -1167,16 +1218,13 @@ loss: 0.2812938988208771</code></pre>
 </div>
 </div>
 </section>
-</section>
 <section id="discussion-questions" class="level3">
-<h3 class="anchored" data-anchor-id="discussion-questions">Discussion questions</h3>
-<ul>
-<li>Is it helpful to make the model wide or deep (e.g.&nbsp;[512, 512] vs.&nbsp;[256, 256, 256, 256, 256])?</li>
-<li>Is it helpful to train for more steps?</li>
-<li>What is the model architecture? Does model 3 dominate the other models?</li>
-</ul>
+<h3 class="anchored" data-anchor-id="discussion-questions">Discussion Questions</h3>
+<p>Analyzing the training runs can also help us with other design choices such as the shape of the model. For example, should the model be wider or deeper (e.g.&nbsp;[512, 512] vs.&nbsp;[256, 256, 256, 256, 256])?</p>
+<p>Collecting training runs can be costly if we always do a brute-force grid search of hyper-parameters. Are there strategies to priortize on certain sets of hyper-parameters?</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

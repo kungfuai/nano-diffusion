@@ -195,7 +195,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Experiment with hyperparameters</span></a>
+ <span class="menu-text">Our First Pareto Frontier Plot</span></a>
   </div>
 </li>
       </ul>
@@ -598,6 +598,7 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </section>
 <section id="generate-images-with-no-text-conditioning" class="level3">
 <h3 class="anchored" data-anchor-id="generate-images-with-no-text-conditioning">Generate images with no text conditioning</h3>
+<p>With a guidance scale of 0, we expect the text prompting to have no effect, because it will be equivalent to unconditional generation.</p>
 <div id="cell-11" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate samples</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
@@ -619,7 +620,10 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </section>
 <section id="generate-images-with-text-conditioning-guidance_scale7" class="level3">
 <h3 class="anchored" data-anchor-id="generate-images-with-text-conditioning-guidance_scale7">Generate images with text conditioning (guidance_scale=7)</h3>
-<div id="cell-13" class="cell" data-execution_count="7">
+<p>Now with a larger guidance scale of 7, we can see that both prompts “a black cat with a lot of fur” and “a male lion” produced satisfying images. Our small model (15M) worked!</p>
+<p>Interestingly, the null text embedding looks exactly the same as when guidance scale is 0. This means our learned null text embedding is behaving correctly: zero effect on image generation.</p>
+<p>The empty string “” (the top right image) is a wolf. Is it arbitrary or is there something special about wolves?</p>
+<div id="cell-14" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate samples</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">7</span>, seed<span class="op">=</span><span class="dv">10</span>,</span>
@@ -632,7 +636,7 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-8-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-9-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -640,7 +644,8 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </section>
 <section id="now-try-a-different-random-seed" class="level3">
 <h3 class="anchored" data-anchor-id="now-try-a-different-random-seed">Now try a different random seed</h3>
-<div id="cell-15" class="cell" data-execution_count="8">
+<p>With a different random seed 100, we will have a different starting noise image. We would expect all four images to be different from when the seed is 10. And this is indeed the case.</p>
+<div id="cell-16" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">0</span>, seed<span class="op">=</span><span class="dv">100</span>,</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -652,12 +657,14 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-9-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-10-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="cell-16" class="cell" data-execution_count="9">
+<p>With a guidance scale of 3, the text prompts are already quite effective for both the cat and the lion. Since the seed is different from before, their appearance also look different, which means the model learned about the diversity within each species.</p>
+<p>The empty string is still a wolf.</p>
+<div id="cell-18" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">3</span>, seed<span class="op">=</span><span class="dv">100</span>,</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -669,12 +676,13 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-10-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-11-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="cell-17" class="cell" data-execution_count="10">
+<p>Larger guidance scale makes the cat’s face bigger, perhaps due to the model correlating “lot of fur” with bigger face. The lion looks more stern with some over-saturated color.</p>
+<div id="cell-20" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">7</span>, seed<span class="op">=</span><span class="dv">100</span>,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -686,12 +694,13 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-11-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-12-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="cell-18" class="cell" data-execution_count="11">
+<p>With an even larger guidance scale of 10, we see more color saturation.</p>
+<div id="cell-22" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">10</span>, seed<span class="op">=</span><span class="dv">100</span>,</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -703,12 +712,13 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-12-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-13-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="cell-19" class="cell" data-execution_count="12">
+<p>Here is generating using yet another random seed. We can feel pretty sure about the model’s ability to follow instructures, and that the model takes empty text to mean wolf.</p>
+<div id="cell-24" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">7</span>, seed<span class="op">=</span><span class="dv">500</span>,</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -720,13 +730,13 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-13-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="4_1a_generate_t2i_ddpm_files/figure-html/cell-14-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>So the empty string is more like “wolf” than a random string. Is this an inherent property of the text encoder? For example, is the empty closer to “wolf” than “cat”?</p>
-<div id="cell-21" class="cell" data-execution_count="13">
+<p>Does the denoising model (the generator) have a bias that favors wolf? Is this an inherent property of the text encoder? For example, is the empty text closer to “wolf” than “cat” in the latent space?</p>
+<div id="cell-26" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>concepts <span class="op">=</span> [<span class="st">""</span>, <span class="st">"a wolf"</span>, <span class="st">"a cat"</span>, <span class="st">"a lion"</span>, <span class="st">"a dog"</span>]</span>

@@ -223,7 +223,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./1_1_b_Diffusion_2D_hyperparams.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Experiment with hyperparameters</span></a>
+ <span class="menu-text">Our First Pareto Frontier Plot</span></a>
   </div>
 </li>
       </ul>
@@ -348,12 +348,19 @@ window.Quarto = {
   <ul>
   <li><a href="#classifier-guidance" id="toc-classifier-guidance" class="nav-link active" data-scroll-target="#classifier-guidance">Classifier Guidance</a></li>
   <li><a href="#classifier-free-guidance" id="toc-classifier-free-guidance" class="nav-link" data-scroll-target="#classifier-free-guidance">Classifier-Free Guidance</a></li>
-  <li><a href="#model-architecture-design-choices-for-text-conditioning" id="toc-model-architecture-design-choices-for-text-conditioning" class="nav-link" data-scroll-target="#model-architecture-design-choices-for-text-conditioning">Model architecture design choices for text conditioning</a>
+  <li><a href="#model-architecture-design-choices-for-text-conditioning" id="toc-model-architecture-design-choices-for-text-conditioning" class="nav-link" data-scroll-target="#model-architecture-design-choices-for-text-conditioning">Model Architecture Design choices for Text Conditioning</a>
   <ul class="collapse">
   <li><a href="#text-embedding-dropout" id="toc-text-embedding-dropout" class="nav-link" data-scroll-target="#text-embedding-dropout">Text embedding “dropout”</a></li>
   </ul></li>
   <li><a href="#text-encoder" id="toc-text-encoder" class="nav-link" data-scroll-target="#text-encoder">Text Encoder</a></li>
-  <li><a href="#training-step" id="toc-training-step" class="nav-link" data-scroll-target="#training-step">Training step</a></li>
+  <li><a href="#training-step" id="toc-training-step" class="nav-link" data-scroll-target="#training-step">Training Step</a>
+  <ul class="collapse">
+  <li><a href="#classifier-free-guidance-in-training-text-dropout" id="toc-classifier-free-guidance-in-training-text-dropout" class="nav-link" data-scroll-target="#classifier-free-guidance-in-training-text-dropout">Classifier-Free Guidance in Training: Text Dropout</a></li>
+  <li><a href="#captioned-image-dataset-and-text-encoder" id="toc-captioned-image-dataset-and-text-encoder" class="nav-link" data-scroll-target="#captioned-image-dataset-and-text-encoder">Captioned Image Dataset and Text Encoder</a></li>
+  <li><a href="#a-quick-data-check" id="toc-a-quick-data-check" class="nav-link" data-scroll-target="#a-quick-data-check">A Quick Data Check</a></li>
+  <li><a href="#we-train" id="toc-we-train" class="nav-link" data-scroll-target="#we-train">We Train</a></li>
+  <li><a href="#save-the-model" id="toc-save-the-model" class="nav-link" data-scroll-target="#save-the-model">Save the Model</a></li>
+  </ul></li>
   <li><a href="#generate-images-with-text-conditioning" id="toc-generate-images-with-text-conditioning" class="nav-link" data-scroll-target="#generate-images-with-text-conditioning">Generate images with text conditioning</a></li>
   </ul>
 </nav>
@@ -380,14 +387,14 @@ window.Quarto = {
 </header>
 
 
-<p>Conditioning means prompting. So far, we have been doing unconditional image generation, or generation without prompting with any context information:</p>
+<p>Conditioning means prompting. So far, we have been doing unconditional image generation from pure noise, or generation without prompting as any context information:</p>
 <p><span class="math display">\[
-\textrm{empty prompt} \rightarrow \textrm{image}
+\textrm{noise} \rightarrow \textrm{image}
 \]</span></p>
-<p>Though it is cool to see the model generate interesting point clouds and images, it is not very useful yet as it lacks user control.</p>
+<p>Though it is cool to see the model generate interesting images like animal faces, it is not very useful yet as it lacks user control.</p>
 <p>In this tutorial, we will start to add text conditioning to the model:</p>
 <p><span class="math display">\[
-\textrm{text} \rightarrow \textrm{image}
+\textrm{text} + \textrm{noise} \rightarrow \textrm{image}
 \]</span></p>
 <p>so that a prompt like “a black cat with lots of fur” can actually trigger the model to follow the instruction and generate such an image.</p>
 <p>A popular approach to do text-to-Image generation is “classifier-free guidance”. Historically, the first major technique along these lines was “classifier guidance”, which relies on a separate classifier to steer image synthesis.</p>
@@ -432,11 +439,11 @@ p_{\theta}(x \mid y) \propto p_{\theta}(x) \cdot p_{\theta}(y \mid x)
 <li>Unconditional mode: Model receives a null or “empty” prompt.</li>
 </ul>
 <section id="during-training" class="level4">
-<h4 class="anchored" data-anchor-id="during-training">During training</h4>
+<h4 class="anchored" data-anchor-id="during-training">During Training</h4>
 <p>We train <strong>the same diffusion model</strong> to handle both modes by randomly “dropping out” the text prompt some fraction of the time during training. This is so that we have a model is able to output both the unconditional noise prediction <span class="math inline">\(\epsilon_{\theta}(x_t, t, \emptyset)\)</span> and the conditional noise prediction <span class="math inline">\(\epsilon_{\theta}(x_t, t, y)\)</span>, where <span class="math inline">\(y\)</span> is the text prompt and <span class="math inline">\(\emptyset\)</span> is the null text prompt.</p>
 </section>
 <section id="during-generation" class="level4">
-<h4 class="anchored" data-anchor-id="during-generation">During generation</h4>
+<h4 class="anchored" data-anchor-id="during-generation">During Generation</h4>
 <p>At each reverse diffusion step, we make two predictions:</p>
 <ol type="1">
 <li>Unconditional noise prediction <span class="math inline">\(\mathbf\epsilon_{\theta}(x_t, t, \emptyset)\)</span> using the null text prompt <span class="math inline">\(\emptyset\)</span>. <span class="math inline">\(t\)</span> is the denoising time step.</li>
@@ -450,7 +457,7 @@ p_{\theta}(x \mid y) \propto p_{\theta}(x) \cdot p_{\theta}(y \mid x)
 </section>
 </section>
 <section id="model-architecture-design-choices-for-text-conditioning" class="level2">
-<h2 class="anchored" data-anchor-id="model-architecture-design-choices-for-text-conditioning">Model architecture design choices for text conditioning</h2>
+<h2 class="anchored" data-anchor-id="model-architecture-design-choices-for-text-conditioning">Model Architecture Design choices for Text Conditioning</h2>
 <p>Similar to the 2D point clouds, we are interested to experiment with different model architectures. Specifically for text conditioning (combining information from text and image), 3 approaches are in consideration:</p>
 <ul>
 <li>Linear modulation
@@ -500,7 +507,7 @@ p_{\theta}(x \mid y) \propto p_{\theta}(x) \cdot p_{\theta}(y \mid x)
 <div class="sourceCode" id="cb4"><pre class="sourceCode diff code-with-copy"><code class="sourceCode diff"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a># In UNetModel.__init__():</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ self.text_embed_dim = text_embed_dim</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">+ self.null_text_embed = nn.Parameter(th.randn(1, text_embed_dim) * 0.02)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This way the model learns what the null text embedding means in the latent space.</p>
+<p>This way the model learns what the null text embedding means in the latent space. An alternative is simply setting <code>null_text_embed</code> to all zeros.</p>
 </section>
 </section>
 <section id="text-encoder" class="level2">
@@ -537,8 +544,11 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </div>
 </section>
 <section id="training-step" class="level2">
-<h2 class="anchored" data-anchor-id="training-step">Training step</h2>
+<h2 class="anchored" data-anchor-id="training-step">Training Step</h2>
 <p>Now that the denoising model can handle text embeddings as an additional input, we also need to modify the training step to pass in the text embeddings. The main logic remains the same.</p>
+<section id="classifier-free-guidance-in-training-text-dropout" class="level3">
+<h3 class="anchored" data-anchor-id="classifier-free-guidance-in-training-text-dropout">Classifier-Free Guidance in Training: Text Dropout</h3>
+<p>With 20% of chance, the text embedding will be set to an empty embedding. The actual logic of dropout happens inside the denoising model.</p>
 <div id="96fa1857" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:09.150110Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:09.149671Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:09.157619Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:09.157221Z&quot;}" data-papermill="{&quot;duration&quot;:0.01422,&quot;end_time&quot;:&quot;2024-12-30T22:02:09.158390&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:09.144170&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itertools</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
@@ -619,6 +629,12 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="captioned-image-dataset-and-text-encoder" class="level3">
+<h3 class="anchored" data-anchor-id="captioned-image-dataset-and-text-encoder">Captioned Image Dataset and Text Encoder</h3>
+<p>Let’s create the main components of the model. Its has under 15M parameters, rather small.</p>
+<p>For text encoder, we are using CLIP.</p>
+<p>For the dataset of image-text pairs, we will use the dataset <code>reese-green/afhq64_captions_64k</code> generated by running the <code>blip2-opt-2.7b</code> model on the animal face images. Here, we use a resolution of 32x32 pixels to make training faster.</p>
 <div id="54084219" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:09.168447Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:09.168140Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:11.836651Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:11.836221Z&quot;}" data-papermill="{&quot;duration&quot;:2.674574,&quot;end_time&quot;:&quot;2024-12-30T22:02:11.837530&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:09.162956&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> optim</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.data <span class="im">import</span> load_data</span>
@@ -636,6 +652,10 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 <pre><code>model params: 14.68 M</code></pre>
 </div>
 </div>
+</section>
+<section id="a-quick-data-check" class="level3">
+<h3 class="anchored" data-anchor-id="a-quick-data-check">A Quick Data Check</h3>
+<p>A quick check that the inputs and targets of a training example look good.</p>
 <div id="814eccc7" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:11.848593Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:11.848119Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:11.852282Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:11.851916Z&quot;}" data-papermill="{&quot;duration&quot;:0.010402,&quot;end_time&quot;:&quot;2024-12-30T22:02:11.853026&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:11.842624&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> train_ds:</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(x[<span class="dv">0</span>].shape)</span>
@@ -646,6 +666,7 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 {'label': 0, 'text': 'a large white dog with brown eyes sitting on the grass'}</code></pre>
 </div>
 </div>
+<p>Similarly, check to see if the mini-batch look good.</p>
 <div id="17bfbbcd" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:11.863504Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:11.863236Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:02:12.249841Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:02:12.249410Z&quot;}" data-papermill="{&quot;duration&quot;:0.392913,&quot;end_time&quot;:&quot;2024-12-30T22:02:12.250718&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:11.857805&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>train_dataloader <span class="op">=</span> DataLoader(train_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>val_dataloader <span class="op">=</span> DataLoader(val_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">False</span>)</span>
@@ -661,19 +682,24 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 torch.Size([16, 768])</code></pre>
 </div>
 </div>
+</section>
+<section id="we-train" class="level3">
+<h3 class="anchored" data-anchor-id="we-train">We Train</h3>
+<p>We train 20,000 steps. This can take 20~30 minutes on a A10 instance on Lambda Labs.</p>
 <div id="e286c632" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:02:12.261985Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:02:12.261585Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:41:37.430563Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:41:37.430152Z&quot;}" data-papermill="{&quot;duration&quot;:2365.175549,&quot;end_time&quot;:&quot;2024-12-30T22:41:37.431455&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:02:12.255906&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>train(</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>denoising_model,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    text_encoder<span class="op">=</span>text_encoder,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    train_dataloader<span class="op">=</span>train_dataloader,</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    val_dataloader<span class="op">=</span>val_dataloader,</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    noise_schedule<span class="op">=</span>noise_schedule,</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>optimizer,</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    steps<span class="op">=</span><span class="dv">20000</span>,</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    silent<span class="op">=</span><span class="va">False</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>train(</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>denoising_model,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    text_encoder<span class="op">=</span>text_encoder,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    train_dataloader<span class="op">=</span>train_dataloader,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    val_dataloader<span class="op">=</span>val_dataloader,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    noise_schedule<span class="op">=</span>noise_schedule,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>optimizer,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    steps<span class="op">=</span><span class="dv">20000</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    silent<span class="op">=</span><span class="va">False</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Training on device: cuda</code></pre>
 </div>
@@ -686,10 +712,15 @@ torch.Size([16, 768])</code></pre>
 <pre><code>tensor(0.0426, device='cuda:0', grad_fn=&lt;MseLossBackward0&gt;)</code></pre>
 </div>
 </div>
+</section>
+<section id="save-the-model" class="level3">
+<h3 class="anchored" data-anchor-id="save-the-model">Save the Model</h3>
+<p>The checkpoint will be useful in the next tutorial, where we see our model it in action.</p>
 <div id="7177d292" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2024-12-30T22:41:37.442799Z&quot;,&quot;iopub.status.busy&quot;:&quot;2024-12-30T22:41:37.442472Z&quot;,&quot;iopub.status.idle&quot;:&quot;2024-12-30T22:41:37.544670Z&quot;,&quot;shell.execute_reply&quot;:&quot;2024-12-30T22:41:37.544230Z&quot;}" data-papermill="{&quot;duration&quot;:0.109173,&quot;end_time&quot;:&quot;2024-12-30T22:41:37.545906&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2024-12-30T22:41:37.436733&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the model</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>torch.save(denoising_model.state_dict(), <span class="st">"denoising_model_4_1.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
 </section>
 <section id="generate-images-with-text-conditioning" class="level2">
 <h2 class="anchored" data-anchor-id="generate-images-with-text-conditioning">Generate images with text conditioning</h2>
