@@ -64,7 +64,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./4_2_text_conditioning_cfm.html" rel="next">
+<link href="./Image Captioning Lesson.html" rel="next">
 <link href="./4_1_text_conditioning_ddpm.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -273,6 +273,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./Image Captioning Lesson.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generating an Image Captions Dataset</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./4_2_text_conditioning_cfm.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Text conditioning for Flow Matching</span></a>
   </div>
@@ -325,6 +331,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#generate-images-with-no-text-conditioning" id="toc-generate-images-with-no-text-conditioning" class="nav-link" data-scroll-target="#generate-images-with-no-text-conditioning">Generate images with no text conditioning</a></li>
   <li><a href="#generate-images-with-text-conditioning-guidance_scale7" id="toc-generate-images-with-text-conditioning-guidance_scale7" class="nav-link" data-scroll-target="#generate-images-with-text-conditioning-guidance_scale7">Generate images with text conditioning (guidance_scale=7)</a></li>
   <li><a href="#now-try-a-different-random-seed" id="toc-now-try-a-different-random-seed" class="nav-link" data-scroll-target="#now-try-a-different-random-seed">Now try a different random seed</a></li>
+  <li><a href="#creating-a-captioned-image-dataset" id="toc-creating-a-captioned-image-dataset" class="nav-link" data-scroll-target="#creating-a-captioned-image-dataset">Creating a captioned image dataset</a></li>
   </ul>
 </nav>
     </div>
@@ -717,7 +724,7 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 </div>
 </div>
 </div>
-<p>Here is generating using yet another random seed. We can feel pretty sure about the model’s ability to follow instructures, and that the model takes empty text to mean wolf.</p>
+<p>Here is generating using yet another random seed. We can feel pretty sure about the model’s ability to follow instructions, and that the model takes empty text to mean wolf.</p>
 <div id="cell-24" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">7</span>, seed<span class="op">=</span><span class="dv">500</span>,</span>
@@ -758,6 +765,10 @@ tensor([2.7713e-05, 2.9616e+01, 2.7415e+01, 2.9365e+01, 2.6354e+01],
 </div>
 <p>Not really. So it remains a mystery.</p>
 <p>Since we will make sure to replace an empty string with the null embedding, we don’t need to worry about this in practice.</p>
+</section>
+<section id="creating-a-captioned-image-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-captioned-image-dataset">Creating a captioned image dataset</h2>
+<p>In the <a href="./Image Captioning Lesson.html">next tutorial</a>, we will walk through how to create a captioned image dataset using a pre-trained vision-language model (VLM).</p>
 
 
 </section>
@@ -1190,8 +1201,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./4_2_text_conditioning_cfm.html" class="pagination-link" aria-label="Text conditioning for Flow Matching">
-        <span class="nav-page-text">Text conditioning for Flow Matching</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./Image Captioning Lesson.html" class="pagination-link" aria-label="Generating an Image Captions Dataset">
+        <span class="nav-page-text">Generating an Image Captions Dataset</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

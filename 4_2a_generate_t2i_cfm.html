@@ -102,6 +102,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -268,6 +297,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./Image Captioning Lesson.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generating an Image Captions Dataset</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./4_2_text_conditioning_cfm.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Text conditioning for Flow Matching</span></a>
   </div>
@@ -314,8 +349,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#load-pretrained-model" id="toc-load-pretrained-model" class="nav-link active" data-scroll-target="#load-pretrained-model">Load pretrained model</a></li>
-  <li><a href="#text-prompts" id="toc-text-prompts" class="nav-link" data-scroll-target="#text-prompts">Text prompts</a></li>
+  <li><a href="#text-prompts" id="toc-text-prompts" class="nav-link" data-scroll-target="#text-prompts">Text prompts</a>
+  <ul class="collapse">
+  <li><a href="#classifier-free-guidance-in-generation" id="toc-classifier-free-guidance-in-generation" class="nav-link" data-scroll-target="#classifier-free-guidance-in-generation">Classifier-Free Guidance in Generation</a></li>
+  </ul></li>
   <li><a href="#generate-images-with-no-text-conditioning" id="toc-generate-images-with-no-text-conditioning" class="nav-link" data-scroll-target="#generate-images-with-no-text-conditioning">Generate images with no text conditioning</a></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion">Discussion</a>
+  <ul class="collapse">
+  <li><a href="#the-empty-string-mystery" id="toc-the-empty-string-mystery" class="nav-link" data-scroll-target="#the-empty-string-mystery">The empty string mystery</a></li>
+  <li><a href="#other-questions-to-explore" id="toc-other-questions-to-explore" class="nav-link" data-scroll-target="#other-questions-to-explore">Other Questions to Explore</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -430,6 +473,7 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </section>
 <section id="text-prompts" class="level2">
 <h2 class="anchored" data-anchor-id="text-prompts">Text prompts</h2>
+<p>Similar to the <a href="./4_1a_generate_t2i_ddpm.html">diffusion text2image example</a>, we will use the same text prompts to generate images.</p>
 <div id="cell-7" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>texts <span class="op">=</span> [<span class="st">"null"</span>, <span class="st">""</span>, <span class="st">"a black cat with a lot of fur"</span>, <span class="st">"a male lion"</span>]</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
@@ -445,7 +489,16 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <pre><code>torch.Size([4, 768])</code></pre>
 </div>
 </div>
-<div id="cell-8" class="cell" data-execution_count="5">
+<section id="classifier-free-guidance-in-generation" class="level3">
+<h3 class="anchored" data-anchor-id="classifier-free-guidance-in-generation">Classifier-Free Guidance in Generation</h3>
+<p>For flow matching, we use the denoising model to predict the velocity, with and without text conditioning. So we will have two predictions:</p>
+<ul>
+<li><span class="math inline">\(v_t(x)\)</span></li>
+<li><span class="math inline">\(v_t(x, \text{text})\)</span></li>
+</ul>
+<p>The classifier-free guidance means that we will use a weighted sum of the two predictions as the velocity:</p>
+<p><span class="math display">\[ v_t = (1 - g) \cdot v_t(x) + g \cdot v_t(x, \text{text}) \]</span></p>
+<div id="cell-9" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -566,9 +619,11 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
+</section>
 <section id="generate-images-with-no-text-conditioning" class="level2">
 <h2 class="anchored" data-anchor-id="generate-images-with-no-text-conditioning">Generate images with no text conditioning</h2>
-<div id="cell-10" class="cell" data-execution_count="6">
+<p>Setting the guidance scale to 0 means that we are doing unconditional generation. In this case, the text prompt is expected to have no effect on the generation.</p>
+<div id="cell-11" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">0</span>, seed<span class="op">=</span><span class="dv">10</span>,</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -583,7 +638,9 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-11" class="cell" data-execution_count="7">
+<p>Increasing the guidance scale to 5 does seem to produce a black cat and a male lion at the bottom row.</p>
+<p>This time, the empty string prompt produced a cat, rather than a wolf like in the <a href="./4_1a_generate_t2i_ddpm.html">diffusion example</a>.</p>
+<div id="cell-13" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">5</span>, seed<span class="op">=</span><span class="dv">10</span>,</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -598,7 +655,8 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-12" class="cell" data-execution_count="8">
+<p>Increasing the guidance scale to 7.5 produces a similar result to the guidance scale of 5.</p>
+<div id="cell-15" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="fl">7.5</span>, seed<span class="op">=</span><span class="dv">10</span>,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -613,7 +671,8 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-13" class="cell" data-execution_count="9">
+<p>Increase it to 10. Not much difference.</p>
+<div id="cell-17" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">10</span>, seed<span class="op">=</span><span class="dv">10</span>,</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -628,7 +687,8 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-14" class="cell" data-execution_count="10">
+<p>Here is a different random seed. We expect to see a different black cat and male lion in the bottom row.</p>
+<div id="cell-19" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">5</span>, seed<span class="op">=</span><span class="dv">100</span>,</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -643,7 +703,8 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-15" class="cell" data-execution_count="11">
+<p>Another seed.</p>
+<div id="cell-21" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">5</span>, seed<span class="op">=</span><span class="dv">200</span>,</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -658,7 +719,8 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 </div>
-<div id="cell-16" class="cell" data-execution_count="12">
+<p>Yet another seed. There seems to be a good amount diversity in the generated animal faces, while having good instruction following.</p>
+<div id="cell-23" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>generate_and_show(</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    guidance_scale<span class="op">=</span><span class="dv">5</span>, seed<span class="op">=</span><span class="dv">500</span>,</span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -674,8 +736,28 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 </div>
 </div>
 <p>We now have a flow matching model that follows our instructions.</p>
+</section>
+<section id="discussion" class="level2">
+<h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
+<section id="the-empty-string-mystery" class="level3">
+<h3 class="anchored" data-anchor-id="the-empty-string-mystery">The empty string mystery</h3>
+<p>Recall that in the <a href="./4_1a_generate_t2i_ddpm.html">diffusion example</a>, the empty string tends to produce a wolf. We had two hypotheses:</p>
+<ol type="1">
+<li>The <em>denoising model</em> is biased and tends to associate the empty string with a wolf.</li>
+<li>The <em>text encoder</em> is biased and the empty string is close to a wolf in the latent embedding space.</li>
+</ol>
+<p>Compare the results of the flow matching and the diffusion: the text encoder is the same, so the explanation is likely the first one.</p>
+<p>This is an interesting property of diffusion and flow matching models. When prompting it with an empty text or other texts that the model is not familiar with (it is quite different from any training examples), the model tends to arbitrarily associate with a certain class of images.</p>
+</section>
+<section id="other-questions-to-explore" class="level3">
+<h3 class="anchored" data-anchor-id="other-questions-to-explore">Other Questions to Explore</h3>
+<ul>
+<li>How does flow matching compare to diffusion in terms of quality and diversity?</li>
+<li>What is the impact of the conditioning methods (e.g.&nbsp;cross attention) on the model quality?</li>
+</ul>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

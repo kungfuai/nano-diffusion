@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./4_2a_generate_t2i_cfm.html" rel="next">
-<link href="./4_1a_generate_t2i_ddpm.html" rel="prev">
+<link href="./Image Captioning Lesson.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -273,6 +273,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./Image Captioning Lesson.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generating an Image Captions Dataset</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./4_2_text_conditioning_cfm.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Text conditioning for Flow Matching</span></a>
   </div>
@@ -318,7 +324,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#training-step" id="toc-training-step" class="nav-link active" data-scroll-target="#training-step">Training step</a></li>
+  <li><a href="#set-up-the-text-encoder" id="toc-set-up-the-text-encoder" class="nav-link active" data-scroll-target="#set-up-the-text-encoder">Set Up the Text Encoder</a></li>
+  <li><a href="#training" id="toc-training" class="nav-link" data-scroll-target="#training">Training</a>
+  <ul class="collapse">
+  <li><a href="#classifier-free-guidance-in-training-text-dropout" id="toc-classifier-free-guidance-in-training-text-dropout" class="nav-link" data-scroll-target="#classifier-free-guidance-in-training-text-dropout">Classifier-Free Guidance in Training: Text Dropout</a></li>
+  <li><a href="#captioned-image-dataset-text-encoder-and-the-main-denoising-model" id="toc-captioned-image-dataset-text-encoder-and-the-main-denoising-model" class="nav-link" data-scroll-target="#captioned-image-dataset-text-encoder-and-the-main-denoising-model">Captioned Image Dataset, Text Encoder and the Main Denoising Model</a></li>
+  <li><a href="#train-for-8000-steps" id="toc-train-for-8000-steps" class="nav-link" data-scroll-target="#train-for-8000-steps">Train for 8000 Steps</a></li>
+  <li><a href="#save-the-model" id="toc-save-the-model" class="nav-link" data-scroll-target="#save-the-model">Save the Model</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -344,7 +357,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Similarly, we can add text conditioning to the flow matching algorithm. The modification to the training loop is small. Most of the code change is already done inside the denoising model.</p>
+<p>Similar to <a href="./4_1_text_conditioning_ddpm.html">diffusion</a>, we can add text conditioning to the flow matching algorithm. The modification to the training loop is small. Most of the code change is already done inside the denoising model.</p>
+<section id="set-up-the-text-encoder" class="level2">
+<h2 class="anchored" data-anchor-id="set-up-the-text-encoder">Set Up the Text Encoder</h2>
 <div id="9371f9fc" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T03:50:17.174510Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T03:50:17.174230Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T03:50:17.180400Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T03:50:17.180164Z&quot;}" data-papermill="{&quot;duration&quot;:0.012017,&quot;end_time&quot;:&quot;2025-01-09T03:50:17.180486&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T03:50:17.168469&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>load_ext autoreload</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>autoreload <span class="dv">2</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -380,8 +395,11 @@ E0000 00:00:1736394619.446563 3747064 cuda_blas.cc:1418] Unable to register cuBL
 To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP16 AVX_VNNI, in other operations, rebuild TensorFlow with the appropriate compiler flags.</code></pre>
 </div>
 </div>
-<section id="training-step" class="level2">
-<h2 class="anchored" data-anchor-id="training-step">Training step</h2>
+</section>
+<section id="training" class="level2">
+<h2 class="anchored" data-anchor-id="training">Training</h2>
+<section id="classifier-free-guidance-in-training-text-dropout" class="level3">
+<h3 class="anchored" data-anchor-id="classifier-free-guidance-in-training-text-dropout">Classifier-Free Guidance in Training: Text Dropout</h3>
 <div id="64401d37" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T03:50:20.949495Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T03:50:20.949193Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T03:50:21.915650Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T03:50:21.915313Z&quot;}" data-papermill="{&quot;duration&quot;:0.996951,&quot;end_time&quot;:&quot;2025-01-09T03:50:21.915733&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T03:50:20.918782&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itertools</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
@@ -461,6 +479,9 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="captioned-image-dataset-text-encoder-and-the-main-denoising-model" class="level3">
+<h3 class="anchored" data-anchor-id="captioned-image-dataset-text-encoder-and-the-main-denoising-model">Captioned Image Dataset, Text Encoder and the Main Denoising Model</h3>
 <div id="e434d72b" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T03:50:21.924087Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T03:50:21.923723Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T03:50:24.836673Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T03:50:24.836458Z&quot;}" data-papermill="{&quot;duration&quot;:2.918639,&quot;end_time&quot;:&quot;2025-01-09T03:50:24.836741&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T03:50:21.918102&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> optim</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lib_4_1.data <span class="im">import</span> load_data</span>
@@ -480,6 +501,9 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>train_dataloader <span class="op">=</span> DataLoader(train_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>val_dataloader <span class="op">=</span> DataLoader(val_ds, batch_size<span class="op">=</span>config.batch_size, shuffle<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="train-for-8000-steps" class="level3">
+<h3 class="anchored" data-anchor-id="train-for-8000-steps">Train for 8000 Steps</h3>
 <div id="1b700f8a" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T03:50:24.889714Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T03:50:24.889453Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T04:00:08.353085Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T04:00:08.352806Z&quot;}" data-papermill="{&quot;duration&quot;:583.467841,&quot;end_time&quot;:&quot;2025-01-09T04:00:08.353183&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T03:50:24.885342&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>train(</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
@@ -503,12 +527,16 @@ To enable the following instructions: AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP1
 <pre><code>tensor(0.1608, device='cuda:0', grad_fn=&lt;MseLossBackward0&gt;)</code></pre>
 </div>
 </div>
+</section>
+<section id="save-the-model" class="level3">
+<h3 class="anchored" data-anchor-id="save-the-model">Save the Model</h3>
 <div id="99d5fdc3" class="cell" data-execution="{&quot;iopub.execute_input&quot;:&quot;2025-01-09T04:00:08.361243Z&quot;,&quot;iopub.status.busy&quot;:&quot;2025-01-09T04:00:08.360713Z&quot;,&quot;iopub.status.idle&quot;:&quot;2025-01-09T04:00:08.473120Z&quot;,&quot;shell.execute_reply&quot;:&quot;2025-01-09T04:00:08.472894Z&quot;}" data-papermill="{&quot;duration&quot;:0.116889,&quot;end_time&quot;:&quot;2025-01-09T04:00:08.473178&quot;,&quot;exception&quot;:false,&quot;start_time&quot;:&quot;2025-01-09T04:00:08.356289&quot;,&quot;status&quot;:&quot;completed&quot;}" data-tags="[]" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>torch.save(denoising_model.state_dict(), <span class="st">"denoising_model_4_2.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>In the next tutorial, we will use the trained flow matching model to generate images with text conditioning.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -937,8 +965,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./4_1a_generate_t2i_ddpm.html" class="pagination-link" aria-label="Generate images with text conditioning">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Generate images with text conditioning</span>
+      <a href="./Image Captioning Lesson.html" class="pagination-link" aria-label="Generating an Image Captions Dataset">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Generating an Image Captions Dataset</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
