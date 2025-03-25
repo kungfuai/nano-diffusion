@@ -14,6 +14,8 @@ def download_file_with_progress(url, output_path, overwrite=False):
 
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
+    # make sure the parent directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'wb') as f:
         downloaded_size = 0
         for chunk in tqdm(response.iter_content(chunk_size=1024), total=total_size, unit='B', unit_scale=True):
