@@ -6,9 +6,9 @@ import numpy as np
 from tqdm import tqdm
 import torch
 from torch import nn
-from .base import BaseDiffusionAlgorithm
-from ..bookkeeping.mini_batch import MiniBatch
-from ..config.diffusion_training_config import DiffusionTrainingConfig
+from diffusion import BaseDiffusionAlgorithm
+from mini_batch import MiniBatch
+from config import TrainingConfig
 
 
 class VDMForwardDiffusion:
@@ -209,7 +209,7 @@ class VDMSampler:
 
 class VDM(BaseDiffusionAlgorithm):  
     def __init__(self,
-            config: DiffusionTrainingConfig,
+            config: TrainingConfig,
             denoising_model: nn.Module = None,
             beta_a: float = 1.0,
             beta_b: float = 2.5,
