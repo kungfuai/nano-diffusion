@@ -133,12 +133,6 @@ def save_checkpoints(
         Path(config.checkpoint_dir) / f"model_checkpoint_step_{step}.pth",
         config.logger,
     )
-    if config.use_ema:
-        save_model(
-            model_components.ema_model,
-            Path(config.checkpoint_dir) / f"ema_model_checkpoint_step_{step}.pth",
-            config.logger,
-        )
 
 
 def save_final_models(
@@ -149,12 +143,6 @@ def save_final_models(
         Path(config.checkpoint_dir) / "final_model.pth",
         config.logger,
     )
-    if config.use_ema:
-        save_model(
-            model_components.ema_model,
-            Path(config.checkpoint_dir) / "final_ema_model.pth",
-            config.logger,
-        )
 
 
 def save_model(model: Module, path: Path, logger: str):
