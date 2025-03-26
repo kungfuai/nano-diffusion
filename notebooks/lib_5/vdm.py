@@ -181,8 +181,6 @@ class VDMSampler:
             sampled_decoded = self.decoder(sampled_x)
             sampled_images = sampled_decoded.sample if hasattr(sampled_decoded, "sample") else sampled_decoded
             sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)
-            # sampled_images = sampled_images - sampled_images.min()
-            # sampled_images = sampled_images / sampled_images.max()
         else:
             sampled_images = x0_pred
             sampled_images = (sampled_images / 2 + 0.5).clamp(0, 1)

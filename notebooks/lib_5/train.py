@@ -39,7 +39,7 @@ def parse_arguments():
     parser.add_argument(
         "--num_denoising_steps",
         type=int,
-        default=1000,
+        default=40,
         help="Number of timesteps in the diffusion process",
     )
     parser.add_argument(
@@ -76,7 +76,7 @@ def parse_arguments():
     parser.add_argument("--weight_decay", type=float, default=1e-6, help="Weight decay")
     parser.add_argument("--log_every", type=int, default=100, help="Log every N steps")
     parser.add_argument(
-        "--sample_every", type=int, default=1500, help="Sample every N steps"
+        "--sample_every", type=int, default=3000, help="Sample every N steps"
     )
     parser.add_argument(
         "--save_every", type=int, default=60000, help="Save model every N steps"
