@@ -53,7 +53,7 @@ website:
         contents:
           - href: "5_1_vae_and_latent_space.ipynb"
           - href: "5_2_mj_latents.ipynb"
-          # - href: "accelerator, mixed precision, model compilation"
+          # - href: "generating using the model we trained"
           # - href: "distributed training"
           # - href: "data recipe"
       - text: "---"
