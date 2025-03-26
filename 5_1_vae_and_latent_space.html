@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Scaling up – Nano Diffusion</title>
+<title>vae_and_latent_space – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,6 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./5_2_mj_latents.html" rel="next">
+<link href="./5_0_scale_up.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -138,7 +139,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Scaling up</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_0_scale_up.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Generating in the Latent Space</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -298,8 +299,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./5_1_vae_and_latent_space.html" class="sidebar-item-text sidebar-link active">
+  <a href="./5_0_scale_up.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Scaling up</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./5_1_vae_and_latent_space.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Generating in the Latent Space</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -356,32 +363,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Scaling up</a></li></ol></nav>
-<div class="quarto-title">
-<h1 class="title">Scaling up</h1>
-</div>
 
 
 
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<p>In the next set of tutorials, we’ll be scaling up our training recipes for diffusion and flow matching. There are several dimensions of scaling:</p>
-<ol type="1">
-<li>Data dimension: for images this means increasing the resolution.</li>
-<li>Model size: the number of parameters in the denoising model.</li>
-<li>Dataset size: the number of examples in the training set.</li>
-<li>Compute: the amount of compute (e.g.&nbsp;H100 hours) and the number of GPUs for parallel training.</li>
-</ol>
 <section id="generating-in-the-latent-space" class="level1">
 <h1>Generating in the Latent Space</h1>
 <p>To generate high resolution images, naively training a denoising model on 1024x1024 pixels requires a lot of time and may result in poor quality. To address this, we can compress the image into a latent space of lower dimension. As long as the compression does not lose too much information, the denoising model can be trained to generate in the latent space, and then we can decode the generated latent vectors back to the high resolution image space. <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a> pioneered this approach.</p>
@@ -397,7 +381,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Let’s load a pre-trained VAE and evaluate its reconstruction quality on the animal faces dataset.</p>
 <section id="load-the-stable-diffusion-sd-vae" class="level3">
 <h3 class="anchored" data-anchor-id="load-the-stable-diffusion-sd-vae">Load the Stable Diffusion (SD) VAE</h3>
-<div id="cell-2" class="cell" data-execution_count="3">
+<div id="cell-1" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> diffusers <span class="im">import</span> AutoencoderKL</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -633,7 +617,7 @@ Model size (number of parameters): 83.65M</code></pre>
 </section>
 <section id="animal-faces-dataset" class="level3">
 <h3 class="anchored" data-anchor-id="animal-faces-dataset">Animal faces dataset</h3>
-<div id="cell-4" class="cell" data-execution_count="34">
+<div id="cell-3" class="cell" data-execution_count="34">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the animal faces dataset</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datasets <span class="im">import</span> load_dataset</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
@@ -660,7 +644,7 @@ Model size (number of parameters): 83.65M</code></pre>
 <section id="encoding-the-image-into-the-latent-space" class="level3">
 <h3 class="anchored" data-anchor-id="encoding-the-image-into-the-latent-space">Encoding the Image into the Latent Space</h3>
 <p>Take the first image in the dataset and encode it into the latent space.</p>
-<div id="cell-6" class="cell" data-execution_count="18">
+<div id="cell-5" class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Fix the random seed for reproducibility</span></span>
@@ -686,7 +670,7 @@ avg value of the latents: tensor(0.6707)</code></pre>
 </div>
 <p>The latents are 4 x 8 x 8, which means there are 4 channels of 2D “latent images”, each of size 8 x 8. Since the original image is 64 x 64. The spatial compression ratio is 8. The compressed latent images are much smaller! Our hope is that it makes training the diffusion model easier in the smaller latent space.</p>
 <p>Now let’s visualize the 4 channels of the latents.</p>
-<div id="cell-8" class="cell">
+<div id="cell-7" class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the latents</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -717,7 +701,7 @@ avg value of the latents: tensor(0.6707)</code></pre>
 <section id="decoding-the-latent-vectors-back-to-the-image-space" class="level3">
 <h3 class="anchored" data-anchor-id="decoding-the-latent-vectors-back-to-the-image-space">Decoding the Latent Vectors back to the Image Space</h3>
 <p>Now let’s decode the latents back to the image space, and see if we can reconstruct the original image.</p>
-<div id="cell-10" class="cell" data-execution_count="33">
+<div id="cell-9" class="cell" data-execution_count="33">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    decoder_output <span class="op">=</span> vae.decode(latents)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    decoded_images <span class="op">=</span> decoder_output.sample.cpu().numpy().transpose(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
@@ -745,7 +729,7 @@ avg value of the latents: tensor(0.6707)</code></pre>
 </div>
 <p>The reconstruction is not perfect, and we can see some artifacts.</p>
 <p>Let’s make the image larger.</p>
-<div id="cell-12" class="cell" data-execution_count="45">
+<div id="cell-11" class="cell" data-execution_count="45">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>img <span class="op">=</span> dataset[<span class="dv">0</span>][<span class="st">"image"</span>].resize((<span class="dv">256</span>, <span class="dv">256</span>))</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>img <span class="op">=</span> np.array(img).astype(np.float32) <span class="op">/</span> <span class="fl">255.0</span></span>
@@ -1224,6 +1208,9 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="./5_0_scale_up.html" class="pagination-link" aria-label="Scaling up">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Scaling up</span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./5_2_mj_latents.html" class="pagination-link" aria-label="Training a Diffusion Model on Latent Representations">

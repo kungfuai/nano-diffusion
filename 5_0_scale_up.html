@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>cfm_afhq – Nano Diffusion</title>
+<title>Scaling up – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,6 +30,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./5_1_vae_and_latent_space.html" rel="next">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -103,7 +104,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_0_scale_up.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_0_scale_up.html">Scaling up</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -263,7 +264,7 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./5_0_scale_up.html" class="sidebar-item-text sidebar-link">
+  <a href="./5_0_scale_up.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Scaling up</span></a>
   </div>
 </li>
@@ -310,9 +311,32 @@ ul.task-list li input[type="checkbox"] {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_0_scale_up.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_0_scale_up.html">Scaling up</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Scaling up</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>In the next set of tutorials, we’ll be scaling up our training recipes for diffusion and flow matching. There are several dimensions of scaling:</p>
+<ol type="1">
+<li>Data dimension: for images this means increasing the resolution.</li>
+<li>Model size: the number of parameters in the denoising model.</li>
+<li>Dataset size: the number of examples in the training set.</li>
+<li>Compute: the amount of compute (e.g.&nbsp;H100 hours) and the number of GPUs for parallel training.</li>
+</ol>
 
 
 
@@ -737,6 +761,15 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./5_1_vae_and_latent_space.html" class="pagination-link" aria-label="Generating in the Latent Space">
+        <span class="nav-page-text">Generating in the Latent Space</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 
