@@ -1,0 +1,10 @@
+---
+title: "Scaling up"
+---
+
+In the next set of tutorials, we'll be scaling up our training recipes for diffusion and flow matching. There are several dimensions of scaling:
+
+1. Data dimension: for images this means increasing the resolution.
+2. Model size: the number of parameters in the denoising model.
+3. Dataset size: the number of examples in the training set.
+4. Compute: the amount of compute (e.g. H100 hours) and the number of GPUs for parallel training.
