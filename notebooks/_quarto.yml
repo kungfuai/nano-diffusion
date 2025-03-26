@@ -51,6 +51,7 @@ website:
       - text: "---"
       - section: "Scaling up: generate bigger and more diverse images"
         contents:
+          - href: "5_0_scale_up.qmd"
           - href: "5_1_vae_and_latent_space.ipynb"
           - href: "5_2_mj_latents.ipynb"
           # - href: "generating using the model we trained"
