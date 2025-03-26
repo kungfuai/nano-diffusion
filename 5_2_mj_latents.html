@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Time to move off of the notebook – Nano Diffusion</title>
+<title>mj_latents – Nano Diffusion</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -64,8 +64,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./2_2_fid.html" rel="next">
-<link href="./2_1_diffusion_afhq.html" rel="prev">
+<link href="./5_1_vae_and_latent_space.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -103,6 +102,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -139,7 +167,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./5_1_vae_and_latent_space.html">Scaling up: generate bigger and more diverse images</a></li><li class="breadcrumb-item"><a href="./5_2_mj_latents.html">Training a Diffusion Model on Latent Representations</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -233,7 +261,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link active">
+  <a href="./2_1_a_move_off_notebook.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Time to move off of the notebook</span></a>
   </div>
 </li>
@@ -305,7 +333,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./5_2_mj_latents.html" class="sidebar-item-text sidebar-link">
+  <a href="./5_2_mj_latents.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Training a Diffusion Model on Latent Representations</span></a>
   </div>
 </li>
@@ -339,16 +367,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#running-the-training-job" id="toc-running-the-training-job" class="nav-link active" data-scroll-target="#running-the-training-job">Running the training job</a></li>
-  <li><a href="#the-refactoring" id="toc-the-refactoring" class="nav-link" data-scroll-target="#the-refactoring">The refactoring</a>
+  <li><a href="#training-a-diffusion-model-on-latent-representations" id="toc-training-a-diffusion-model-on-latent-representations" class="nav-link active" data-scroll-target="#training-a-diffusion-model-on-latent-representations">Training a Diffusion Model on Latent Representations</a>
   <ul class="collapse">
-  <li><a href="#code-in-the-notebook" id="toc-code-in-the-notebook" class="nav-link" data-scroll-target="#code-in-the-notebook">Code in the notebook</a></li>
-  <li><a href="#the-refactored-code" id="toc-the-refactored-code" class="nav-link" data-scroll-target="#the-refactored-code">The refactored code</a></li>
-  <li><a href="#adding-scripts-to-manage-the-training-job" id="toc-adding-scripts-to-manage-the-training-job" class="nav-link" data-scroll-target="#adding-scripts-to-manage-the-training-job">Adding scripts to manage the training job</a>
+  <li><a href="#hardware-requirements-and-considerations" id="toc-hardware-requirements-and-considerations" class="nav-link" data-scroll-target="#hardware-requirements-and-considerations">Hardware Requirements and Considerations</a></li>
+  <li><a href="#inpsecting-the-dataset-the-latents-from-midjourney-images" id="toc-inpsecting-the-dataset-the-latents-from-midjourney-images" class="nav-link" data-scroll-target="#inpsecting-the-dataset-the-latents-from-midjourney-images">Inpsecting the Dataset: the Latents from MidJourney Images</a></li>
+  <li><a href="#an-improved-diffusion-algorithm-vdm" id="toc-an-improved-diffusion-algorithm-vdm" class="nav-link" data-scroll-target="#an-improved-diffusion-algorithm-vdm">An Improved Diffusion Algorithm: VDM</a>
   <ul class="collapse">
-  <li><a href="#the-dockerfile" id="toc-the-dockerfile" class="nav-link" data-scroll-target="#the-dockerfile">The <code>Dockerfile</code></a></li>
-  <li><a href="#the-train.py-script" id="toc-the-train.py-script" class="nav-link" data-scroll-target="#the-train.py-script">The <code>train.py</code> script</a></li>
+  <li><a href="#forward-diffusion" id="toc-forward-diffusion" class="nav-link" data-scroll-target="#forward-diffusion">Forward Diffusion</a></li>
+  <li><a href="#reverse-diffusion-generation-using-ddpm" id="toc-reverse-diffusion-generation-using-ddpm" class="nav-link" data-scroll-target="#reverse-diffusion-generation-using-ddpm">Reverse Diffusion (Generation using DDPM)</a></li>
+  <li><a href="#ddpm" id="toc-ddpm" class="nav-link" data-scroll-target="#ddpm">DDPM+</a></li>
+  <li><a href="#conditional-generation" id="toc-conditional-generation" class="nav-link" data-scroll-target="#conditional-generation">Conditional Generation</a></li>
   </ul></li>
+  <li><a href="#transformer-based-denoising-model" id="toc-transformer-based-denoising-model" class="nav-link" data-scroll-target="#transformer-based-denoising-model">Transformer based denoising model</a></li>
+  <li><a href="#codebase-improvements" id="toc-codebase-improvements" class="nav-link" data-scroll-target="#codebase-improvements">Codebase Improvements</a>
+  <ul class="collapse">
+  <li><a href="#basediffusionalgorithm-class" id="toc-basediffusionalgorithm-class" class="nav-link" data-scroll-target="#basediffusionalgorithm-class">1. <code>BaseDiffusionAlgorithm</code> class</a></li>
+  <li><a href="#fp16-training" id="toc-fp16-training" class="nav-link" data-scroll-target="#fp16-training">2. <code>fp16</code> training</a></li>
+  <li><a href="#minibatch-class" id="toc-minibatch-class" class="nav-link" data-scroll-target="#minibatch-class">3. <code>MiniBatch</code> class</a></li>
+  </ul></li>
+  <li><a href="#training-in-docker" id="toc-training-in-docker" class="nav-link" data-scroll-target="#training-in-docker">Training in Docker</a></li>
+  <li><a href="#learning-progress" id="toc-learning-progress" class="nav-link" data-scroll-target="#learning-progress">Learning Progress</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -356,190 +394,259 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./2_1_diffusion_afhq.html">Generating Animal Face Images</a></li><li class="breadcrumb-item"><a href="./2_1_a_move_off_notebook.html">Time to move off of the notebook</a></li></ol></nav>
-<div class="quarto-title">
-<h1 class="title">Time to move off of the notebook</h1>
+
+
+
+<section id="training-a-diffusion-model-on-latent-representations" class="level1">
+<h1>Training a Diffusion Model on Latent Representations</h1>
+<p>In previous tutorials, we trained diffusion models to generate small, domain-specific images like animal faces. While this was a good starting point, real-world applications often require generating larger, more diverse images.</p>
+<p>This tutorial explores a more scalable approach by training on latent representations rather than raw pixels. We’ll follow the <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a> approach and build upon the <a href="https://github.com/apapiu/transformer_latent_diffusion">Transformer Latent Diffusion</a> project by Alexandru Papiu, which efficiently handles high-resolution, diverse image generation by operating in a compressed latent space.</p>
+<section id="hardware-requirements-and-considerations" class="level2">
+<h2 class="anchored" data-anchor-id="hardware-requirements-and-considerations">Hardware Requirements and Considerations</h2>
+<p>Training large diffusion models requires significant computational resources. Let’s examine some common GPU options available in cloud computing platforms.</p>
+<p>The NVIDIA A10, A100, and H100 GPUs represent different performance tiers:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GPU Model</th>
+<th>VRAM Options</th>
+<th>Performance Comparison</th>
+<th>Cost (per hour)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A10</td>
+<td>24GB</td>
+<td>Baseline</td>
+<td>$0.75</td>
+</tr>
+<tr class="even">
+<td>A100</td>
+<td>40GB, 80GB</td>
+<td>~3x faster than A10</td>
+<td>$1.79</td>
+</tr>
+<tr class="odd">
+<td>H100</td>
+<td>40GB, 80GB</td>
+<td>~2x faster than A100</td>
+<td>$2.99</td>
+</tr>
+</tbody>
+</table>
+<p>The A10 offers a cost-effective entry point with 24GB VRAM. The A100 and H100 both come in 40GB and 80GB variants, providing substantially more memory and computing power. The A100 performs about 3 times faster than the A10, while the H100 delivers roughly twice the performance of an A100.</p>
+<p>These prices reflect <a href="https://lambda.ai/service/gpu-cloud#pricing">Lambda Cloud</a>’s on-demand pricing for instances (as of Feb 2025). While the H100 has the highest hourly cost, its superior performance makes it the most efficient choice when considering total compute cost needed for training.</p>
+</section>
+<section id="inpsecting-the-dataset-the-latents-from-midjourney-images" class="level2">
+<h2 class="anchored" data-anchor-id="inpsecting-the-dataset-the-latents-from-midjourney-images">Inpsecting the Dataset: the Latents from MidJourney Images</h2>
+<div id="cell-1" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the Latents</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Run this only once.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>cd ..</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nanodiffusion.datasets <span class="im">import</span> MJLatentsDataset</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> MJLatentsDataset()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/home/ubuntu/.local/lib/python3.11/site-packages/IPython/core/magics/osm.py:417: UserWarning: This is now an optional IPython functionality, setting dhist requires you to install the `pickleshare` library.
+  self.shell.db['dhist'] = compress_dhist(dhist)[-100:]</code></pre>
 </div>
-
-
-
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<p>As our model training becomes more complex, we need to transition from notebooks to production scripts for several reasons:</p>
-<ol type="1">
-<li>Training times are now in hours, making experimentation in notebooks impractical</li>
-<li>We need robust experiment tracking and reproducibility</li>
-<li>We want to run many experiments and would like each experiment to be a clean, separate run</li>
-</ol>
-<p>To make training jobs robust, some extra work is needed: dependency management, monitoring, logging, and checkpointing.</p>
-<p>The <code>lib_2_1</code> directory contains the complete setup for a training job inside a Docker container. To run it, you need to have the following:</p>
+<div class="cell-output cell-output-stdout">
+<pre><code>/home/ubuntu/zz/nano-diffusion
+File data/raw/mj_latents.npy already exists. Skipping download.
+File data/raw/mj_text_emb.npy already exists. Skipping download.</code></pre>
+</div>
+</div>
+<div id="cell-2" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Print out the first example</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, v <span class="kw">in</span> ds[<span class="dv">0</span>].items():</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(k, v.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>image_emb (4, 32, 32)
+text_emb (768,)</code></pre>
+</div>
+</div>
+<p>Each training example has one latent image <code>image_emb</code> that has 4 channels and 32x32 resolution, and a text embedding <code>text_emb</code> which is a 768 dimensional vector.</p>
+<p>What does the actual image look like? Let’s decode <code>image_emb</code> back to the image space.</p>
+<div id="cell-4" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load VAE</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> diffusers <span class="im">import</span> AutoencoderKL</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> torch.device(<span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>vae <span class="op">=</span> AutoencoderKL.from_pretrained(<span class="st">"madebyollin/sdxl-vae-fp16-fix"</span>, torch_dtype<span class="op">=</span>torch.float32).to(device)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> vae.<span class="bu">eval</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    latent <span class="op">=</span> torch.asarray(ds[<span class="dv">2</span>][<span class="st">"image_emb"</span>]).unsqueeze(<span class="dv">0</span>).<span class="bu">float</span>().to(device)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"latent vector:"</span>, latent.shape)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    img <span class="op">=</span> vae.decode(latent).sample</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    img <span class="op">=</span> img.to(device).cpu().permute(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>).numpy()</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"image:"</span>, img.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>latent vector: torch.Size([1, 4, 32, 32])
+image: (1, 256, 256, 3)</code></pre>
+</div>
+</div>
+<div id="cell-6" class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>img <span class="op">=</span> (img <span class="op">-</span> img.<span class="bu">min</span>()) <span class="op">/</span> (img.<span class="bu">max</span>() <span class="op">-</span> img.<span class="bu">min</span>()) <span class="op">*</span> <span class="dv">255</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>img <span class="op">=</span> img.astype(np.uint8)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>plt.imshow(img[<span class="dv">0</span>])</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="5_2_mj_latents_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>What a cute gathering of cartoon dinos.</p>
+<p>During training, we only need the latents. So don’t need to directly use these images.</p>
+</section>
+<section id="an-improved-diffusion-algorithm-vdm" class="level2">
+<h2 class="anchored" data-anchor-id="an-improved-diffusion-algorithm-vdm">An Improved Diffusion Algorithm: VDM</h2>
+<p>We are going to create a <a href="https://github.com/apapiu/transformer_latent_diffusion">variant</a> of the standard diffusion algorithm.</p>
+<section id="forward-diffusion" class="level3">
+<h3 class="anchored" data-anchor-id="forward-diffusion">Forward Diffusion</h3>
+<p>In forward diffusion, a simpler formula is used (notice the absence square root):</p>
+<p><span class="math display">\[\mathbf{x}_t = (1-\sigma_t) \cdot \mathbf{x}_0 + \sigma_t \mathbf{\epsilon}
+\]</span></p>
+</section>
+<section id="reverse-diffusion-generation-using-ddpm" class="level3">
+<h3 class="anchored" data-anchor-id="reverse-diffusion-generation-using-ddpm">Reverse Diffusion (Generation using DDPM)</h3>
+<p>In reverse diffusion,</p>
+<p><span class="math display">\[\mathbf{x}_{t} = (1 - \frac{\sigma_{t}}{\sigma_{t+1}}) \cdot \mathbf{\hat{x}}_0 + \frac{\sigma_{t}}{\sigma_{t+1}} \cdot \mathbf{x}_{t+1}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{\hat{x}}_0\)</span> is the predicted clean image from the denoising model <span class="math inline">\(f_\theta(x_t, t)\)</span>. Here the denoising model no longer predicts the noise, but the clean image. This simplifies the parameterization.</p>
+</section>
+<section id="ddpm" class="level3">
+<h3 class="anchored" data-anchor-id="ddpm">DDPM+</h3>
+<p>An improved version, DDPM+, uses a combination of the current and previous predictions to get better estimates:</p>
+<p><span class="math display">\[
+D_t = (1 + \frac{1}{2r_t}) f_\theta(x_t, t) - \frac{1}{2r_t} f_\theta(x_{t+1}, t+1)
+\]</span></p>
+<p><span class="math display">\[
+x_{t-1} = \frac{(\sigma_t - \sigma_{t-1})}{\sigma_t} D_t + \frac{\sigma_{t-1}}{\sigma_t} x_t
+\]</span></p>
+<p>where <span class="math inline">\(r_t\)</span> is the ratio of consecutive step sizes in log-SNR space:</p>
+<p><span class="math display">\[
+r_t = \frac{h_t}{h_{t+1}} = \frac{\log(\sigma_t/\sigma_{t-1})}{\log(\sigma_{t+1}/\sigma_t)}
+\]</span></p>
+<p>This is essentially a form of multistep method that uses information from multiple timesteps to get better estimates, similar to how higher-order numerical methods work.</p>
+<p><strong>With above improvements, much fewer steps (e.g.&nbsp;40 instead of 1000) are needed to generate high-quality images.</strong></p>
+</section>
+<section id="conditional-generation" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-generation">Conditional Generation</h3>
+<p>For conditional generation, the classifier-free guidance is applied on the predicted clean image <span class="math inline">\(\mathbf{\hat{x}}_0\)</span>:</p>
+<p><span class="math display">\[
+\mathbf{\hat{x}}_0 = s \cdot \mathbf{\hat{x}}_0^{\textrm{cond}} + (1-s) \cdot \mathbf{\hat{x}}_0^{\textrm{uncond}}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{\hat{x}}_0^{\textrm{cond}}\)</span> is the predicted clean image from the denoising model with the text prompt, and <span class="math inline">\(\mathbf{\hat{x}}_0^{\textrm{uncond}}\)</span> is the predicted clean image from the denoising model without the text prompt, and <span class="math inline">\(s\)</span> is the guidance scale.</p>
+</section>
+</section>
+<section id="transformer-based-denoising-model" class="level2">
+<h2 class="anchored" data-anchor-id="transformer-based-denoising-model">Transformer based denoising model</h2>
+<p>Transformer architecture is an increasingly popular architecture for denoising models. Its benefits include:</p>
 <ul>
-<li>A GPU machine (e.g.&nbsp;A10 on <a href="https://lambdalabs.com/">Lambda Labs</a>)</li>
-<li><a href="https://www.docker.com/">Docker</a></li>
-<li><a href="https://github.com/NVIDIA/nvidia-container-toolkit">NVIDIA Container Toolkit</a></li>
+<li>Flexibility Across Modalities: The inherent design of transformers allows them to be adapted across various data types with minimal modifications. This flexibility is advantageous in denoising applications that may involve different modalities, such as images, text, or audio. U-Net architectures, being convolution-based, are primarily tailored for spatial data and may require significant adjustments to handle other modalities effectively.</li>
+<li>Global Context Modeling: Transformers use self-attention to capture long-range dependencies across the entire input, providing better understanding of global image context for denoising. U-Nets, being convolutional, primarily focus on local features and may struggle with distant relationships.</li>
+<li>Scalability: Transformers process all elements simultaneously, enabling efficient parallel computation and better scaling for high-resolution images. Although the quadratic complexity of attention layers increases memory usage and compute time. U-Nets may face scaling limitations due to their hierarchical convolutional structure.</li>
 </ul>
-<section id="running-the-training-job" class="level2">
-<h2 class="anchored" data-anchor-id="running-the-training-job">Running the training job</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> notebooks/lib_2_1</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> build.sh</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> train.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>By default, the results will be saved in the <code>checkpoints</code> directory. If you like to use a hosted experiment tracking service like <a href="https://wandb.ai/">Weights &amp; Biases</a>, you can set the <code>WANB_API_KEY</code> and <code>WANDB_PROJECT</code> environment variables, and the results will be logged to Weights &amp; Biases.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">WANB_API_KEY</span><span class="op">=</span>...</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">WANDB_PROJECT</span><span class="op">=</span>...</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> train.sh <span class="at">--logger</span> wandb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="the-refactoring" class="level1">
-<h1>The refactoring</h1>
-<section id="code-in-the-notebook" class="level2">
-<h2 class="anchored" data-anchor-id="code-in-the-notebook">Code in the notebook</h2>
-<p>Similar to the <a href="./1_1_a_refactor.html">refactoring for the 2D point clouds</a>, the notebook is a mix of stable and experimental code.</p>
-<section id="stable-library-code" class="level4">
-<h4 class="anchored" data-anchor-id="stable-library-code">Stable (library) code</h4>
-<ol type="1">
-<li>Main components of the diffusion model training pipeline:
+<p>We use a model architecture from the <a href="https://github.com/apapiu/transformer_latent_diffusion">tld</a> project. It is inspired by DiT and Pixart-Alpha. To address the “patchy” outputs common with Transformers processing spatial data, the model incorporates a depth-wise convolution in the FFN layer (borrowed from the Local ViT paper).</p>
+<p>For encoding, the model:</p>
 <ul>
-<li>Data and model setup:
-<ul>
-<li>DataLoader setup (<code>load_data</code>)</li>
-<li><strong>Model architectures (<code>UnetModel</code>)</strong></li>
-<li>The training loop (<code>train</code>)</li>
-</ul></li>
-<li>Diffusion specific components:
-<ul>
-<li>Forward diffusion (<code>forward_diffusion</code>)</li>
-<li>Denoising step (<code>denoising_step</code>)</li>
-<li>Noise schedule creation (<code>create_noise_schedule</code>)</li>
-<li>Sample generation (<code>generate_samples_by_denoising</code>)</li>
-</ul></li>
-</ul></li>
-<li>Evaluation and visualization tools:
-<ul>
-<li><strong>Visualization utilities (<code>visualize_sampled_images</code>)</strong></li>
-</ul></li>
-</ol>
-<p>The bolded parts are different from the 2D point clouds notebook.</p>
-</section>
-<section id="experimental-code" class="level4">
-<h4 class="anchored" data-anchor-id="experimental-code">Experimental code</h4>
-<ul>
-<li>Custom and flexible visualization of intermediate results</li>
-<li>Hyperparameter choices and training configurations</li>
-</ul>
-<p>We will also be adding code for bookkeeping: setting up logging, checkpointing, monitoring, and evaluation. Bookkeeping code is not part of the training recipe, and it does not impact how the model is trained. However, it is essential for producing the experiments data that helps us understand the behavior of the training process, and identify the winning ingredients of a good training recipe. For evaluation, we need to add FID score calculation (more about this in the <a href="3_1_fid_score">next section</a>).</p>
-</section>
-</section>
-<section id="the-refactored-code" class="level2">
-<h2 class="anchored" data-anchor-id="the-refactored-code">The refactored code</h2>
-<p>First, let’s make a copy of <code>lib_1_1</code>. The diffusion part of the logic remains almost the same. The function <code>denoising_step</code> is updated to allow for clipping the denoised sample.</p>
-<p>A new file <code>unets.py</code> is added to hold the UNet models. And <code>model.py</code> is updated to use the new models.</p>
-<p><code>data.py</code> is updated with a new class <code>HuggingFaceDataset</code> as a convenience class to load image datasets from HuggingFace.</p>
-<p><code>training_loop.py</code> remains very similar.</p>
-<p><code>config.py</code> is updated to add some new hyperparameters.</p>
-<p><code>bookkeeping.py</code> is added to handle the bookkeeping logic. A <code>Bookkeeping</code> class is implemented with the following interface:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Bookkeeping:</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config: TrainingConfig, denoising_model: nn.Module, noise_schedule: Dict):</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> set_up_logger(<span class="va">self</span>):</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> run_callbacks(<span class="va">self</span>, config: TrainingConfig, step: <span class="bu">int</span>, loss: <span class="bu">float</span>, optimizer: torch.optim.Optimizer, val_dataloader: DataLoader):</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="adding-scripts-to-manage-the-training-job" class="level2">
-<h2 class="anchored" data-anchor-id="adding-scripts-to-manage-the-training-job">Adding scripts to manage the training job</h2>
-<p>Several files are added to manage the environment and run the training job in a Docker container:</p>
-<ul>
-<li><code>build.sh</code>: Builds the Docker image.</li>
-<li><code>train.sh</code>: Runs the training job.</li>
-<li><code>Dockerfile</code>: Defines the Docker image.</li>
-<li><code>train.py</code>: The training script.</li>
-</ul>
-<section id="the-dockerfile" class="level3">
-<h3 class="anchored" data-anchor-id="the-dockerfile">The <code>Dockerfile</code></h3>
-<p>We use the <code>Dockerfile</code> to define the environment for the training job. When we run the <code>build.sh</code> script, it will build the Docker image that has all the dependencies installed.</p>
-<p>It is minimal but complete:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Non-root user</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">useradd</span> <span class="at">-m</span> <span class="at">-s</span> /bin/bash <span class="at">-G</span> sudo <span class="at">-u</span> 1000 nanodiffusion</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> nanodiffusion</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 <span class="dt">\</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Let’s break down the Dockerfile:</p>
-<section id="base-image" class="level4">
-<h4 class="anchored" data-anchor-id="base-image">Base image</h4>
-<ul>
-<li><code>FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime</code>: This is the base image. It is a PyTorch image with CUDA 12.1 and cuDNN 8.0 installed.</li>
+<li>Processes 4×32×32 image latent inputs using a patch size of 2, creating 256 flattened 16-dimensional “pixels”</li>
+<li>Uses simple conditioning by concatenating a 768-dimensional pooled CLIP text embedding (ViT/L14) with sinusoidal noise embedding</li>
+<li>Feeds this combined conditioning through cross-attention layers in each transformer block</li>
 </ul>
 </section>
-<section id="user-management" class="level4">
-<h4 class="anchored" data-anchor-id="user-management">User management</h4>
-<ul>
-<li><code>RUN useradd -m -s /bin/bash -G sudo -u 1000 nanodiffusion</code>: This creates a non-root user named <code>nanodiffusion</code>. It is a good practice to run the training job as a non-root user.</li>
-<li><code>USER nanodiffusion</code>: This switches to the <code>nanodiffusion</code> user.</li>
-</ul>
+<section id="codebase-improvements" class="level2">
+<h2 class="anchored" data-anchor-id="codebase-improvements">Codebase Improvements</h2>
+<p>We will add some readability improvements to the codebase. In <code>notebooks/lib_5</code>, you can find the improved codebase. Here are some notable changes:</p>
+<section id="basediffusionalgorithm-class" class="level3">
+<h3 class="anchored" data-anchor-id="basediffusionalgorithm-class">1. <code>BaseDiffusionAlgorithm</code> class</h3>
+<p>To consolidate the different diffusion algorithms, we introduce a <code>BaseDiffusionAlgorithm</code> class that contains the common logic for all diffusion algorithms. This abstraction exposes 2 methods: - <code>prepare_training_examples</code>: Prepare a training example for the denoising model by adding noise to the input data. This is the forward diffusion process, i.e.&nbsp;the teaching. - <code>sample</code>: Sample from the denoising model. For diffusion, this is the reverse diffusion process. This is the generation process using a learned denoising model.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> BaseDiffusionAlgorithm:</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">    A common interface for diffusion algorithms.</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> prepare_training_examples(<span class="va">self</span>, batch: MiniBatch, <span class="op">**</span>kwargs) <span class="op">-&gt;</span> Tuple[Dict[<span class="bu">str</span>, torch.Tensor], torch.Tensor]:</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">        Prepare a training example for the denoising model by adding noise to the input data.</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">        This is used in the training step.</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">        For diffusion, this is the forward diffusion process.</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        ...</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> sample(<span class="va">self</span>, x_T, y <span class="op">=</span> <span class="va">None</span>, guidance_scale: <span class="bu">float</span> <span class="op">=</span> <span class="va">None</span>, seed: <span class="bu">int</span> <span class="op">=</span> <span class="va">None</span>, <span class="op">**</span>kwargs):</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">        Sample from the denoising model. For diffusion, this is the reverse diffusion process.</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>        ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Different diffusion algorithms implements variants of noise scheduling, forward diffusion as well as sampling. These are encapsulated as helper classes. For example, in the improved diffusion algorithm in <code>vdm.py</code>, we have <code>VDMForwardDiffusion</code> and <code>VDMTrainingExampleGenerator</code> to handle generating training examples. <code>VDMSampler</code> handles the sampling process.</p>
+<p>When a model is trained and you are ready to distribute it for inference, you may only need to distribute the <code>Sampler</code> class to go with your model.</p>
 </section>
-<section id="dependencies" class="level4">
-<h4 class="anchored" data-anchor-id="dependencies">Dependencies</h4>
-<ul>
-<li><code>RUN pip install torchvision==0.19.1 numpy==2.1.2 scipy==1.14.1 \     clean-fid==0.1.35 wandb==0.18.3 datasets==3.0.2</code>: This installs the dependencies.</li>
-</ul>
+<section id="fp16-training" class="level3">
+<h3 class="anchored" data-anchor-id="fp16-training">2. <code>fp16</code> training</h3>
+<p>To reduce the memory usage, we use <code>fp16</code> training with the help of <code>accelerator</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>accelerator <span class="op">=</span> Accelerator(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    mixed_precision<span class="op">=</span><span class="st">"fp16"</span> <span class="cf">if</span> config.fp16 <span class="cf">else</span> <span class="st">"no"</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>denoising_model, train_dataloader, optimizer <span class="op">=</span> accelerator.prepare(denoising_model, train_dataloader, optimizer)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="minibatch-class" class="level3">
+<h3 class="anchored" data-anchor-id="minibatch-class">3. <code>MiniBatch</code> class</h3>
+<p>A utility class <code>MiniBatch</code> is added to translate raw mini batch from the dataloader into a stronger typed object.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MiniBatch:</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    x: torch.Tensor  <span class="co"># latent or pixel space input</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    text_emb: Optional[torch.Tensor] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    cond_emb_dict: Optional[Dict[<span class="bu">str</span>, torch.Tensor]] <span class="op">=</span> <span class="va">None</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>With this definition, we can use <code>.x</code> to access the latent or pixel space input, <code>.text_emb</code> to access the text embedding, and <code>.cond_emb_dict</code> to access the conditional embeddings.</p>
 </section>
 </section>
-<section id="the-train.py-script" class="level3">
-<h3 class="anchored" data-anchor-id="the-train.py-script">The <code>train.py</code> script</h3>
-<p>The <code>train.py</code> script is the main script for the training job. It is a simple script that loads the model, sets the hyperparameters, and starts the training.</p>
-<p>We use a <code>TrainingPipeline</code> class to represent the logical flow of model training.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TrainingPipeline:</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config: TrainingConfig):</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.config <span class="op">=</span> config</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, dataset_builder: DatasetBuilder, train_steps: <span class="bu">int</span><span class="op">=</span><span class="dv">10000</span>):</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        train_dataloader, val_dataloader <span class="op">=</span> <span class="va">self</span>._create_dataloaders(dataset_builder)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.noise_schedule <span class="op">=</span> create_noise_schedule(n_T<span class="op">=</span><span class="va">self</span>.config.num_denoising_steps, device<span class="op">=</span><span class="va">self</span>.config.device)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.denoising_model <span class="op">=</span> <span class="va">self</span>._create_model(device<span class="op">=</span><span class="va">self</span>.config.device)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.optimizer <span class="op">=</span> <span class="va">self</span>._create_optimizer(<span class="va">self</span>.denoising_model)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        bookkeeping <span class="op">=</span> Bookkeeping(config<span class="op">=</span><span class="va">self</span>.config, denoising_model<span class="op">=</span><span class="va">self</span>.denoising_model, noise_schedule<span class="op">=</span><span class="va">self</span>.noise_schedule)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        bookkeeping.set_up_logger()</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        train(</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span><span class="va">self</span>.config,</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="va">self</span>.denoising_model,</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>            train_dataloader<span class="op">=</span>train_dataloader,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>            val_dataloader<span class="op">=</span>val_dataloader,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            noise_schedule<span class="op">=</span><span class="va">self</span>.noise_schedule,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            optimizer<span class="op">=</span><span class="va">self</span>.optimizer,</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>            steps<span class="op">=</span>train_steps,</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>            silent<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            bookkeeping<span class="op">=</span>bookkeeping,</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.denoising_model</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> generate_samples(<span class="va">self</span>, num_samples: <span class="bu">int</span>):</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_model(<span class="va">self</span>, device: <span class="bu">str</span>):</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_optimizer(<span class="va">self</span>, denoising_model: nn.Module):</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        ...</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _create_dataloaders(<span class="va">self</span>, dataset_builder: DatasetBuilder):</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>        ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="training-in-docker" class="level2">
+<h2 class="anchored" data-anchor-id="training-in-docker">Training in Docker</h2>
+<p>On the GPU instance, run the following commands to start training:</p>
+<pre><code>cd notebooks/lib_5
+bash build.sh
+bash train.sh --fp16</code></pre>
+<p>To see the command line arguments, run <code>bash train.sh --help</code>. By default, we train a small variant (3 layers) of the model with the batch size of 128 for about 1000000 steps. We generate 8 sampled images every 1500 steps. You should begin to see generated images every few minutes. To use a larger model, you can edit the <code>model.py</code> file to increase the number of layers to 12 (roughly 100M parameters).</p>
+</section>
+<section id="learning-progress" class="level2">
+<h2 class="anchored" data-anchor-id="learning-progress">Learning Progress</h2>
+<p>Let’s examine how the model’s image generation capabilities evolve during training. In the beginning, the model generates random image latents which decode to random “blocky” images with no discernible patterns:</p>
+<p><img src="assets/lib_5_results/test_samples_0_6cfb603d120140dfa927.jpg" class="img-fluid"></p>
+<p>As training progresses to around 5000 steps, the images start showing distinct global patterns and textures, though the content remains unrecognizable:</p>
+<p><img src="assets/lib_5_results/media_images_test_samples_4999_bfc5c6deb6cb8827f4c6.jpg" class="img-fluid"></p>
+<p>By 30000 steps, rough object shapes and forms begin emerging in the generated images:</p>
+<p><img src="assets/lib_5_results/media_images_test_samples_29999_3672d880f3e96a586695.jpg" class="img-fluid"></p>
+<p>At 265000 steps (approximately 14 hours of training on an H100 GPU), the model produces clearly recognizable objects like purple dinosaurs, mermaids, and cute cartoon dogs. However, noticeable distortions remain, particularly in facial features where human perception is especially sensitive:</p>
+<p><img src="assets/lib_5_results/media_images_test_samples_264999_edd8b42c896131b3ed86.jpg" class="img-fluid"></p>
+<p>After extensive training of 1,155,000 steps (roughly 3 days on an H100), the image quality continues improving gradually. While some distortions persist and quality varies between samples, the results are quite impressive. The full training log is track in this <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/7hmcm6lg?nw=nwuserzzsi_kungfu">wandb run</a>.</p>
+<p><img src="assets/lib_5_results/media_images_test_samples_1154999_776bb35cde85f5309d86.jpg" class="img-fluid"></p>
+<p>For more examples of training runs, see <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/uu1beq47/overview">another VDM example</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/38mf1qp2/workspace?nw=nwuserzzsi_kungfu">adding ema</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/pgrb4csb">trained using fp32</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/qcizsk4n/overview">changing the model architecture to dit_b2</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/u30xta7j/workspace?nw=nwuserzzsi_kungfu">using flow matching and dit_b2</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/co2p9vec?nw=nwuserzzsi_kungfu">baseline DDPM training</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/j4duh9j5/overview">baseline DDPM training with dit_b2</a>, <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/f11d5vd5/overview">baseline DDPM training with unet_big</a>.</p>
+<!-- cfm dit_b2: https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/u30xta7j/workspace?nw=nwuserzzsi_kungfu
+
+ddpm with tld_b2 (bad): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/co2p9vec?nw=nwuserzzsi_kungfu
+
+ddpm, dit_b2, continued (ok): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/j4duh9j5/overview
+
+ddpm, unet_big continued (ok): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/f11d5vd5/overview
+
+cfm, unet_big: https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/23gvpltp?nw=nwuserzzsi_kungfu -->
+<p>Remarkably, with just one day of training and approximately $50 in compute costs, you can build a model that demonstrates the “vibe”, the capabilities reminiscent of state-of-the-art image generation systems.</p>
 
 
-</section>
 </section>
 </section>
 
@@ -966,14 +1073,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./2_1_diffusion_afhq.html" class="pagination-link" aria-label="Training a Diffusion Model for Animal Face Images">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Training a Diffusion Model for Animal Face Images</span>
+      <a href="./5_1_vae_and_latent_space.html" class="pagination-link" aria-label="Scaling up">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Scaling up</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./2_2_fid.html" class="pagination-link" aria-label="Quality evaluation of an image generation model">
-        <span class="nav-page-text">Quality evaluation of an image generation model</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->
