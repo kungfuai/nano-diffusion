@@ -649,70 +649,62 @@ bash train.sh --fp16</code></pre>
 <p><img src="assets/lib_5_results/media_images_test_samples_4999_bfc5c6deb6cb8827f4c6.jpg" class="img-fluid"></p>
 <p>By 30000 steps, rough object shapes and forms begin emerging in the generated images:</p>
 <p><img src="assets/lib_5_results/media_images_test_samples_29999_3672d880f3e96a586695.jpg" class="img-fluid"></p>
-<p>At 265000 steps (approximately 14 hours of training on an H100 GPU), the model produces clearly recognizable objects like purple dinosaurs, mermaids, and cute cartoon dogs. However, noticeable distortions remain, particularly in facial features where human perception is especially sensitive:</p>
+<p>At 265000 steps (approximately 14 hours of training on an H100 GPU, or $50 using Lambda Cloud’s on-demand instance), the model produces clearly recognizable objects like purple dinosaurs, mermaids, and cute cartoon dogs. However, noticeable distortions remain, particularly in facial features where human perception is especially sensitive:</p>
 <p><img src="assets/lib_5_results/media_images_test_samples_264999_edd8b42c896131b3ed86.jpg" class="img-fluid"></p>
 <p>After extensive training of 1,155,000 steps (roughly 3 days on an H100), the image quality continues improving gradually. While some distortions persist and quality varies between samples, the results are quite impressive. The full training log is track in this <a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/7hmcm6lg?nw=nwuserzzsi_kungfu">wandb run</a>.</p>
 <p><img src="assets/lib_5_results/media_images_test_samples_1154999_776bb35cde85f5309d86.jpg" class="img-fluid"></p>
+<p>For more examples of training runs, see the table below.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th style="text-align: left;">Experiment</th>
-<th style="text-align: left;">Link</th>
-<th style="text-align: right;">Sample Images</th>
+<th>Experiment</th>
+<th>Link</th>
+<th>Sample Images</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Another VDM example</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/uu1beq47/overview">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Another VDM example</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/uu1beq47/overview">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/uu1beq47/media/images/test_samples_99001_e0d75730a64c289fe3d8.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Adding EMA</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/38mf1qp2/workspace?nw=nwuserzzsi_kungfu">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Adding EMA</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/38mf1qp2/workspace?nw=nwuserzzsi_kungfu">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/38mf1qp2/media/images/test_samples_1029900_1c9853a381955876c273.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Trained using FP32</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/pgrb4csb">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Trained using FP32</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/pgrb4csb">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/pgrb4csb/media/images/test_samples_99001_0b8cd2d710ab407d1955.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Changed model architecture to DiT-B2</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/qcizsk4n/overview">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Changed model architecture to DiT-B2</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/qcizsk4n/overview">wandb</a></td>
+<td><img src=".png" class="img-fluid" width="128"></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Using flow matching and DiT-B2</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/u30xta7j/workspace?nw=nwuserzzsi_kungfu">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Using flow matching and DiT-B2</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/u30xta7j/workspace?nw=nwuserzzsi_kungfu">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/u30xta7j/media/images/test_samples_1123_24d26eaa2d72cffeb90d.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Baseline DDPM training</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/co2p9vec?nw=nwuserzzsi_kungfu">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Baseline DDPM training with TLD-B2</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/co2p9vec?nw=nwuserzzsi_kungfu">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/co2p9vec/media/images/test_samples_99001_64c658738f40be6f0138.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Baseline DDPM training with DiT-B2</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/j4duh9j5/overview">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Baseline DDPM training with DiT-B2</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/j4duh9j5/overview">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/j4duh9j5/media/images/test_samples_1123_d1da5017303b119d8651.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Baseline DDPM training with UNet-Big</td>
-<td style="text-align: left;"><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/f11d5vd5/overview">wandb</a></td>
-<td style="text-align: right;"></td>
+<td>Baseline DDPM training with UNet-Big</td>
+<td><a href="https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/f11d5vd5/overview">wandb</a></td>
+<td><img src="https://api.wandb.ai/files/zzsi_kungfu/nano-diffusion/f11d5vd5/media/images/test_samples_1123_e288ea8bc1ed6f3089b3.png?height=312" class="img-fluid" width="128"></td>
 </tr>
 </tbody>
 </table>
-<!-- cfm dit_b2: https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/u30xta7j/workspace?nw=nwuserzzsi_kungfu
-
-ddpm with tld_b2 (bad): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/co2p9vec?nw=nwuserzzsi_kungfu
-
-ddpm, dit_b2, continued (ok): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/j4duh9j5/overview
-
-ddpm, unet_big continued (ok): https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/f11d5vd5/overview
-
-cfm, unet_big: https://wandb.ai/zzsi_kungfu/nano-diffusion/runs/23gvpltp?nw=nwuserzzsi_kungfu -->
 <p>Remarkably, with just one day of training and approximately $50 in compute costs, you can build a model that demonstrates the “vibe”, the capabilities reminiscent of state-of-the-art image generation systems.</p>
 
 
