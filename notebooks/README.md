@@ -1,5 +1,7 @@
 ## Overview
 
+Diffusion and flow matching models are behind many of today’s most advanced image and video generation systems. The math in research papers can be dense, but the core ideas and algorithms are actually quite intuitive. We created this course and an open-source library to make these technologies more accessible, helping more people understand, implement, and adapt them for their own needs. As these models continue to shape the future of AI, it’s essential to stay informed and equipped to use them—rather than being left behind.
+
 This folder holds the educational notebooks to learn practical recipes for training image / video generation models under limited resource (under 72 A10 hours of training). Diffusion is a main method. Other adjacent models are also explored. 
 
 ## Outline
