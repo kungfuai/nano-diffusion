@@ -56,16 +56,24 @@ def parse_batch(batch) -> MiniBatch:
         text_emb = None
         cond_emb_dict = None
         if len(batch) == 2:
-            text_emb = batch[1]
+            if isinstance(batch[1], dict):
+                text_emb = batch[1].get("text_emb")
+            else:
+                text_emb = batch[1]
             # print(text_emb[0], type(text_emb))
             text_emb = text_emb.float().reshape(text_emb.shape[0], -1)
             cond_emb_dict = {"text_emb": text_emb}
 
     elif isinstance(batch, dict):
-        x = batch["image_emb"].float()
+        if "image_emb" in batch:
+            # This means the image embeddings in the latent space are already provided.
+            x = batch["image_emb"].float()
+        else:
+            x = batch["image"].float()
         text_emb = batch.get("text_emb")
         if text_emb is not None:
             text_emb = text_emb.float().reshape(text_emb.shape[0], -1)
+            
         # Optional: collect conditional embeddings
         cond_emb_dict = {}
         for key in batch:
@@ -88,7 +96,13 @@ def parse_batch(batch) -> MiniBatch:
 
 
 def collate_fn_for_latents(batch):
-    assert "image_emb" in batch[0], f"Data must be a dict that contains 'image_emb'. Got {type(batch[0])}"
+    if isinstance(batch[0], dict):
+        assert "image_emb" in batch[0], f"Data must be a list of dicts that contains 'image_emb'. Got {type(batch[0])}. {batch}"
+    elif isinstance(batch[0], tuple):
+        # Expecting a tuple (image_emb, text_emb)
+        batch = [
+            {"image_emb": x[0], "text_emb": x[1]} for x in batch
+        ]
     # print(batch[0]['image_emb'])
     # assert np.array(batch[0]['image_emb']).shape == (4, 8, 8), f"Image emb shape is {np.array(batch[0]['image_emb']).shape}. Expected (4, 8, 8)."
     data = {

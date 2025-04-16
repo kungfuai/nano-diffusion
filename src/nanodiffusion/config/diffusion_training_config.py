@@ -32,6 +32,8 @@ class DiffusionTrainingConfig:
     vae_scale_multiplier: float = 0.18215  # scale multiplier for the VAE encoding outputs (so that the std is close to 1)
 
     # Conditioning
+    caption_column: str = "text"
+    text_encoder: str = "openai/clip-vit-large-patch14"  # text encoder name
     conditional: bool = False  # whether to use conditional training
     cond_embed_dim: int = 768  # dimension of the conditioning embedding (before the projection layer)
     cond_drop_prob: float = 0.2  # probability of dropping conditioning during training
@@ -73,7 +75,7 @@ class DiffusionTrainingConfig:
     device: str = "cuda:0"  # device to use for training
 
     # Logging
-    logger: str = "wandb"  # logging method
+    logger: str = None  # logging method: "wandb" or None
     cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
     checkpoint_dir: str = "logs/train"  # checkpoint directory
     min_steps_for_final_save: int = 100  # minimum steps for final save

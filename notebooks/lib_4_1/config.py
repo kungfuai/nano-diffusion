@@ -15,6 +15,7 @@ class TrainingConfig:
     device: str = "cuda"  # device
     resolution: int = 64  # resolution
     text_embed_dim: int = 768  # text embedding dimension
+    text_drop_prob: float = 0.2  # text drop probability
     random_flip: bool = False  # random flip
 
     # Bookkeeping

@@ -35,25 +35,6 @@ class Bookkeeping:
             run_params["model_parameters"] = params
             wandb.init(project=project_name, config=run_params)
         
-    def set_up_logger(self):
-        # create directory for checkpoints
-        print(f"Creating checkpoint directory: {self.config.checkpoint_dir}")
-        Path(self.config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-        
-        print(f"Setting up logger: {self.config.logger}")
-        params = sum(p.numel() for p in self.model_components.denoising_model.parameters())
-        if self.config.logger == "wandb":
-            import wandb
-
-            project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
-            print(f"Logging to Weights & Biases project: {project_name}")
-            run_params = asdict(self.config)
-            run_params["model_parameters"] = params
-            wandb.init(project=project_name, config=run_params)
-            if self.config.watch_model:
-                print("  Watching model gradients (can be slow)")
-                wandb.watch(self.model_components.denoising_model)
-        
     def run_callbacks(self, config: TrainingConfig, step: int, loss: float, optimizer: torch.optim.Optimizer, train_dataloader: DataLoader, val_dataloader: DataLoader, grad_norm: float = None):
         self.num_examples_trained += config.batch_size
         model_components = self.model_components

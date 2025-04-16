@@ -9,6 +9,7 @@ from typing import Dict
 from .diffusion import forward_diffusion
 from .bookkeeping import Bookkeeping
 from .config import TrainingConfig
+from .text_encoder import TextEncoder
 
 def train(
     config: TrainingConfig,
@@ -33,16 +34,21 @@ def train(
   progress_bar = tqdm(itertools.cycle(train_dataloader), total=max_train_steps, disable=silent)
   step = 0
   criterion = MSELoss()
+  text_encoder = TextEncoder("openai/clip-vit-large-patch14", device=device)
+  text_encoder.eval()
   for batch in progress_bar:
     x_0 = batch[0]
     x_0 = x_0.float().to(device)  # x_0 is the clean data to teach the model to generate
+    # get the text embeddings
+    with torch.no_grad():
+      text_embeddings = text_encoder(batch[1])
     optimizer.zero_grad()
 
     true_noise = common_noise = torch.randn(x_0.shape).to(device)
     t = torch.randint(0, num_denoising_steps, (x_0.shape[0],), device=device).long()
     x_t, _ = forward_diffusion(x_0, t, noise_schedule, noise=common_noise)
 
-    predicted_noise = model(t=t, x=x_t)
+    predicted_noise = model(t=t, x=x_t, text_embeddings=text_embeddings, p_uncond=config.text_drop_prob)
 
     loss = criterion(predicted_noise, true_noise)
     loss.backward()

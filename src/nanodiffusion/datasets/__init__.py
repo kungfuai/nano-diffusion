@@ -43,7 +43,7 @@ def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> 
         full_dataset = MJLatentsDataset()
     else:
         print(f"Loading dataset from Hugging Face: {config.dataset}")
-        full_dataset = HuggingFaceDataset(config.dataset, transform=None if config.data_is_latent else transform)
+        full_dataset = HuggingFaceDataset(config.dataset, transform=None if config.data_is_latent else transform, data_is_latent=config.data_is_latent)
 
     train_size = int((1 - config.val_split) * len(full_dataset))
     val_size = len(full_dataset) - train_size
