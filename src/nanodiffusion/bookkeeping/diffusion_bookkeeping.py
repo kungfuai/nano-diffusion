@@ -155,10 +155,11 @@ def generate_and_log_samples(
         assert not config.conditional, "Conditional model requires val_dataloader. In generate_and_log_samples()."
 
     # Sample using the main model
-    print(f"Sampling a {x.shape} array in {config.num_denoising_steps} steps with guidance scale {config.guidance_scale}. Initial avg: {x.mean().item()}")
+    print(f"Sampling a {x.shape} array in {config.num_denoising_steps} steps. Initial avg: {x.mean().item()}")
     if y is not None:
         print(f"y shape: {y.shape}, y avg: {y.mean().item()}")
     if y is not None and config.conditional:
+        print(f"Sampling with guidance scale {config.guidance_scale}")
         sampled_x = model_components.diffusion.sample(x, y, guidance_scale=config.guidance_scale, seed=seed)
     else:
         sampled_x = model_components.diffusion.sample(x, seed=seed)

@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import Module
 from tqdm.auto import tqdm
+from ..bookkeeping.mini_batch import MiniBatch, parse_batch
 
 try:
     from cleanfid import fid
@@ -130,7 +131,14 @@ def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: Trainin
         print(f"FID stats already exist for {config.dataset} at {existing_fid_stats_path}")
         return
     count = 0
-    for images, _ in dataloader:
+    for raw_batch in dataloader:
+        # if isinstance(raw_batch, tuple):
+        #     assert len(raw_batch) == 2, f"Expected tuple of (images, _), got {raw_batch}"
+        #     images = raw_batch[0]
+        # elif isinstance(raw_batch, dict):
+        #     images = raw_batch["image"]
+        batch = MiniBatch.from_dataloader_batch(raw_batch)
+        images = batch.x
         # save individual images as npy files
         for i, img in enumerate(images):
             np_img = img.cpu().numpy().transpose(1, 2, 0)
