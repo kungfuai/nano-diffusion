@@ -23,9 +23,15 @@ Starting with small datasets and toy examples, we will evolve a minimal code bas
 
 ## Tutorials
 
-Please use the sidebar to navigate through the tutorials. Checkout [a visual story of diffusion and flow matching](https://kungfuai.github.io/nano-diffusion/visual_story.html), and start with [Training a Diffusion Model on 2D Points](https://kungfuai.github.io/nano-diffusion/1_1_Diffusion%202D%20Toy.html).
+Please use the sidebar to navigate through the tutorials. Checkout [a visual story of diffusion and flow matching](https://kungfuai.github.io/nano-diffusion/visual_story.html), and start with [Training a Diffusion Model on 2D Points](https://kungfuai.github.io/nano-diffusion/1_1_Diffusion%202D%20Toy.html). You can go through the tutorials in order or skip around to the sections that interest you.
 
 ## Hardware for learning: start small
+
+::: {.callout-note}
+## Compute Resources Sponsored by Lambda Labs
+
+This project's compute resources are generously sponsored by [Lambda Labs](https://lambdalabs.com/), providing access to their powerful and cost effective GPU infrastructure including A10 and H100 instances.
+:::
 
 The 2D examples do not require GPU. You can use your laptop. The cost is almost zero.
 
@@ -41,6 +47,8 @@ A larger dataset like with 600k 256x256 images can be run on A10 but a faster GP
 With 15 H100 hours ($50) you can train a decent Text2Image model from scratch that begins to show the vibe of frontier image generation models.
 
 ![](assets/mj_latents_0.png){fig-align="center"}
+
+
 
 ## References
 
