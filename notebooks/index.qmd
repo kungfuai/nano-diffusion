@@ -56,6 +56,7 @@ There are many great resources for the theoretical foundation, large scale train
 
 
 - [DDPM paper](https://arxiv.org/abs/2006.11239)
+- [Interview with Yang Song](https://x.com/slaterstich/status/1911817486439461009)
 - [Lillian Weng's blog](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)
 - [CVPR'22 tutorial](https://cvpr2022-tutorial-diffusion-models.github.io/)
 - [Flow matching paper](https://arxiv.org/abs/2210.02747)
