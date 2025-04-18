@@ -1317,7 +1317,7 @@
     "href": "index.html#references",
     "title": "Nano Diffusion: Diffusion and Flow Matching from Scratch",
     "section": "References",
-    "text": "References\nThere are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:\n\nDDPM paper\nLillian Weng’s blog\nCVPR’22 tutorial\nFlow matching paper\nDiT paper\nDiffusion course from KAIST, Fall 2024\nLatent diffusion with transformers\nFAIR’s flow matching guide\nSony’s MicroDiffusion\nDistributed training guide from Lambda Labs"
+    "text": "References\nThere are many great resources for the theoretical foundation, large scale training and applications of diffusion and flow matching models:\n\nDDPM paper\nInterview with Yang Song\nLillian Weng’s blog\nCVPR’22 tutorial\nFlow matching paper\nDiT paper\nDiffusion course from KAIST, Fall 2024\nLatent diffusion with transformers\nFAIR’s flow matching guide\nSony’s MicroDiffusion\nDistributed training guide from Lambda Labs"
   },
   {
     "objectID": "slurm.html",
