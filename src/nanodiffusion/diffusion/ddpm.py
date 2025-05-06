@@ -50,7 +50,7 @@ class TrainingExampleGenerator:
             targets = x_0
         else:
             raise ValueError("Unsupported target_type.")
-        inputs = {"x": x_t, "t": t / self.num_denoising_steps}
+        inputs = {"x": x_t, "t": t}
         if y is not None:
             inputs["y"] = y
             inputs["p_uncond"] = p_uncond
@@ -105,6 +105,7 @@ class DDPMSampler:
         # TODO: Consolidate the logic for inpainting and non-inpainting.
         #       Currently, the code is duplicated.
         if mask is not None:
+            # Note the impainting is experimental. It may not work well.
             sampled_x = generate_samples_by_denoising_impainting(
                 denoising_model=self.denoising_model,
                 x_T=x_T,

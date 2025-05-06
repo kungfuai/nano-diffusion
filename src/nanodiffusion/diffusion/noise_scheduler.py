@@ -148,13 +148,10 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
 
     Implements classifier-free guidance by conditioning on both conditional (e.g. text prompt) embeddings and unconditional (null) embeddings.
     """
-    num_denoising_steps = noise_schedule["num_denoising_steps"]
-    
     if isinstance(t, int):
         t_tensor = torch.full((x_t.shape[0],), t, device=x_t.device)
     else:
         t_tensor = t
-
 
     # Create unconditional embeddings (zeros) and concatenate with text embeddings
     if y is not None:
@@ -164,7 +161,7 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
         uncond_embeddings = denoising_model.get_null_cond_embed(batch_size=x_t.shape[0])
         embeddings_cat = torch.cat([uncond_embeddings.to(y.device), y])
         with torch.no_grad():
-            model_output = denoising_model(t=t_twice / num_denoising_steps, x=x_twice, y=embeddings_cat)
+            model_output = denoising_model(t=t_twice, x=x_twice, y=embeddings_cat)
         # Split predictions and perform guidance
         noise_pred_uncond, noise_pred_text = model_output.chunk(2)
         adjustment = guidance_scale * (noise_pred_text - noise_pred_uncond)
@@ -172,7 +169,7 @@ def denoising_step(denoising_model, x_t, y, t, noise_schedule, clip_sample=True,
     else:
         # unconditional denoising
         with torch.no_grad():
-            model_output = denoising_model(t=t_tensor / num_denoising_steps, x=x_t)
+            model_output = denoising_model(t=t_tensor, x=x_t)
     
     if hasattr(model_output, "sample"):
         model_output = model_output.sample
