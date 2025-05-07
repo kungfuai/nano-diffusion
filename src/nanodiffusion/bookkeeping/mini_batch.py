@@ -6,7 +6,7 @@ import numpy as np
 
 @dataclass
 class MiniBatch:
-    x: torch.Tensor  # latent or pixel space input
+    x: torch.Tensor  # latent or pixel space input, or audio waveform
     text_emb: Optional[torch.Tensor] = None
     cond_emb_dict: Optional[Dict[str, torch.Tensor]] = None
     

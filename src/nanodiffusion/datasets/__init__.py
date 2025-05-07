@@ -43,7 +43,15 @@ def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> 
         full_dataset = MJLatentsDataset()
     else:
         print(f"Loading dataset from Hugging Face: {config.dataset}")
-        full_dataset = HuggingFaceDataset(config.dataset, transform=None if config.data_is_latent else transform, data_is_latent=config.data_is_latent)
+        full_dataset = HuggingFaceDataset(
+            config.dataset, 
+            transform=None if config.data_is_latent else transform, 
+            data_is_latent=config.data_is_latent,
+            caption_column=config.caption_column,
+            conditional=config.conditional,
+            text_encoder=config.text_encoder if config.conditional else None,
+            device=config.device, # This is used to compute the text embeddings
+        )
 
     train_size = int((1 - config.val_split) * len(full_dataset))
     val_size = len(full_dataset) - train_size

@@ -50,6 +50,12 @@ def parse_arguments():
         action="store_true",
         help="Whether the model is conditional",
     )
+    parser.add_argument(
+        "--caption_column",
+        type=str,
+        default="text",
+        help="Column name of the caption in the dataset",
+    )
     parser.add_argument("--in_channels", type=int, default=3, help="Number of input channels")
     parser.add_argument("--resolution", type=int, default=32, help="Resolution of the image. Only used for unet.")
     parser.add_argument(
