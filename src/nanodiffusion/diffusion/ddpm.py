@@ -1,6 +1,7 @@
 """
 DDPM is a diffusion training and sampling algorithm.
 """
+import warnings
 from typing import Dict, Callable
 import torch
 from torch import nn
@@ -106,6 +107,7 @@ class DDPMSampler:
         #       Currently, the code is duplicated.
         if mask is not None:
             # Note the impainting is experimental. It may not work well.
+            warnings.warn("Inpainting is experimental. It may not work well.")
             sampled_x = generate_samples_by_denoising_impainting(
                 denoising_model=self.denoising_model,
                 x_T=x_T,
@@ -197,7 +199,7 @@ class DDPM(BaseDiffusionAlgorithm):
 
         return self.training_example_generator.generate(x_0, self.forward_diffusion, y, p_uncond)
 
-    def sample(self, x_T, y=None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
+    def sample(self, x_T, y=None, mask=None, guidance_scale: float = None, seed: int = None, quiet: bool = False):
         """
         Generate samples from the denoising model.
 
@@ -210,4 +212,4 @@ class DDPM(BaseDiffusionAlgorithm):
             seed: The seed for the random number generator.
             quiet: Whether to suppress the progress bar.
         """
-        return self.sampler.sample(x_T, y, guidance_scale, seed, quiet)
+        return self.sampler.sample(x_T=x_T, y=y, mask=mask, guidance_scale=guidance_scale, seed=seed, quiet=quiet)
