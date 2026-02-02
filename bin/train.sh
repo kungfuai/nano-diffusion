@@ -32,6 +32,8 @@ docker run --runtime nvidia -it --rm $DOCKER_ARGS \
 ### For diagnostic run, do one of the following:
 #
 # bin/train.sh --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61 --num_samples_for_fid 100
+# or (with text conditioning, generating image pixels)
+# bin/train.sh -d reese-green/afhq64_captions_64k --data_shape 3,64,64 --conditional --net unet --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61 --num_samples_for_fid 100
 # or (with latents)
 # bin/train.sh -d zzsi/afhq64_16k_latents_sdxl_blip2 --data_shape 4,8,8 --data_is_latent --net unet_small --validate_every 20 --sample_every 30 --num_denoising_steps 2 --fid_every 50 --save_every 60 --total_steps 61 --num_samples_for_fid 100
 # or (with text conditioning)
