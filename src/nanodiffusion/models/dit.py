@@ -179,6 +179,8 @@ class DiT(nn.Module):
         mlp_ratio=4.0,
         learn_sigma=True,
         cond_embed_dim=None,
+        patch_mixer_depth=0,
+        patch_mixer_dim=None,
     ):
         """
         # Load the processor and model
@@ -207,6 +209,30 @@ class DiT(nn.Module):
         # self.y_embedder = TextEncoder(model_name="zer0int/CLIP-GmP-ViT-L-14", hidden_dim=hidden_size)
         num_patches = self.x_embedder.num_patches
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
+
+        # Patch-mixer for deferred masking (Micro-Diffusion)
+        self.use_patch_mixer = patch_mixer_depth > 0
+        if self.use_patch_mixer:
+            mixer_dim = patch_mixer_dim or hidden_size // 2
+            self.patch_mixer_in = nn.Sequential(
+                nn.LayerNorm(hidden_size, eps=1e-6),
+                nn.Linear(hidden_size, mixer_dim),
+            )
+            self.patch_mixer_out = nn.Sequential(
+                nn.LayerNorm(mixer_dim, eps=1e-6),
+                nn.Linear(mixer_dim, hidden_size),
+            )
+            self.patch_mixer = nn.ModuleList([
+                DiTBlock(mixer_dim, max(1, num_heads // 2), mlp_ratio=mlp_ratio)
+                for _ in range(patch_mixer_depth)
+            ])
+            self.mixer_t_proj = nn.Linear(hidden_size, mixer_dim)
+
+        # Mask token for unmasking (output space)
+        self.register_buffer(
+            "mask_token_out",
+            torch.zeros(1, 1, patch_size * patch_size * self.out_channels),
+        )
 
         self.blocks = nn.ModuleList([
             DiTBlock(hidden_size, num_heads, mlp_ratio=mlp_ratio) for _ in range(depth)
@@ -277,13 +303,14 @@ class DiT(nn.Module):
     def get_null_cond_embed(self, batch_size: int=1):
         return self.null_cond_embed.repeat(batch_size, 1)
 
-    def forward(self, t, x, y=None, p_uncond=None, *args, **kwargs):
+    def forward(self, t, x, y=None, p_uncond=None, mask_ratio=0.0, *args, **kwargs):
         """
         Forward pass of DiT.
         t: (N,) tensor of diffusion timesteps
         x: (N, C, H, W) tensor of spatial inputs
         y: (N, D) tensor of conditioning embeddings
         p_uncond: probability of using null conditioning (classifier-free guidance)
+        mask_ratio: fraction of patches to mask (0.0 = no masking, 0.75 = mask 75%)
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
@@ -298,11 +325,41 @@ class DiT(nn.Module):
             c = t + self.cond_proj(y)
         else:
             c = t
-            
+
+        mask = None
+        ids_restore = None
+
+        # Patch-mixer: process ALL patches before masking (deferred masking)
+        if self.use_patch_mixer:
+            x = self.patch_mixer_in(x)
+            c_mixer = self.mixer_t_proj(c)
+            for block in self.patch_mixer:
+                x = block(x, c_mixer)
+
+        # Apply patch masking
+        if mask_ratio > 0:
+            from nanodiffusion.models.patch_masking import get_mask, mask_out_tokens
+            mask_dict = get_mask(x.shape[0], x.shape[1], mask_ratio, x.device)
+            ids_restore = mask_dict["ids_restore"]
+            mask = mask_dict["mask"]
+            x = mask_out_tokens(x, mask_dict["ids_keep"])
+
+        # Project back to backbone dim after masking (saves compute)
+        if self.use_patch_mixer:
+            x = self.patch_mixer_out(x)
+
         for block in self.blocks:
-            x = block(x, c)                      # (N, T, D)
-        x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
+            x = block(x, c)                      # (N, T', D)
+        x = self.final_layer(x, c)                # (N, T', patch_size ** 2 * out_channels)
+
+        # Unmask: restore full sequence
+        if mask_ratio > 0:
+            from nanodiffusion.models.patch_masking import unmask_tokens
+            x = unmask_tokens(x, ids_restore, self.mask_token_out)
+
         x = self.unpatchify(x)                   # (N, out_channels, H, W)
+        if mask_ratio > 0:
+            return x, mask
         return x
         # return SimpleNamespace(sample=x)  # this is to make it compatible with `diffusers`
 
