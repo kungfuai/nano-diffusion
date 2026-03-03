@@ -85,6 +85,12 @@ class DiffusionTrainingConfig:
     )
     init_from_wandb_file: str = None  # resume model from a wandb file "path/to/file"
 
+    # Patch masking (Micro-Diffusion)
+    mask_ratio: float = 0.0  # fraction of patches to mask during training (0.0 = no masking, 0.75 = mask 75%)
+    patch_mixer_depth: int = 0  # depth of lightweight patch-mixer for deferred masking (0 = no mixer)
+    progressive_unmasking: bool = False  # linearly decrease mask_ratio from mask_ratio to 0 over training
+    unmask_start_ratio: float = 0.5  # fraction of training at which progressive unmasking begins (only if progressive_unmasking=True)
+
     # Data augmentation
     random_flip: bool = False  # randomly flip images horizontally
 

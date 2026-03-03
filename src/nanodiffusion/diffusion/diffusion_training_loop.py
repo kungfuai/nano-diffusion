@@ -50,6 +50,11 @@ def training_loop(
     num_examples_trained = 0
     criterion = MSELoss()
 
+    if config.mask_ratio > 0:
+        print(f"Patch masking enabled: mask_ratio={config.mask_ratio}, patch_mixer_depth={config.patch_mixer_depth}")
+        if config.progressive_unmasking:
+            print(f"Progressive unmasking: will decrease mask_ratio from {config.mask_ratio} to 0 starting at step {int(config.total_steps * config.unmask_start_ratio)}")
+
     while step < config.total_steps:
         for batch in train_dataloader:
             if step >= config.total_steps:
@@ -60,7 +65,7 @@ def training_loop(
 
             denoising_model.train()
             loss = train_step(
-                batch, denoising_model, model_components.diffusion, optimizer, config, criterion, accelerator
+                batch, denoising_model, model_components.diffusion, optimizer, config, criterion, accelerator, step=step,
             )
             if config.log_grad_norm:
                 grad_norm = torch.norm(torch.stack([torch.norm(p.grad) for p in denoising_model.parameters() if p.grad is not None]), 2)
@@ -95,6 +100,20 @@ def training_loop(
     return num_examples_trained
 
 
+def get_effective_mask_ratio(config: TrainingConfig, step: int) -> float:
+    """Compute the effective mask ratio, accounting for progressive unmasking."""
+    if config.mask_ratio <= 0:
+        return 0.0
+    if not config.progressive_unmasking:
+        return config.mask_ratio
+    # Linear ramp-down from mask_ratio to 0 starting at unmask_start_ratio * total_steps
+    unmask_start = int(config.total_steps * config.unmask_start_ratio)
+    if step < unmask_start:
+        return config.mask_ratio
+    progress = (step - unmask_start) / max(1, config.total_steps - unmask_start)
+    return config.mask_ratio * (1.0 - progress)
+
+
 def train_step(
     batch: MiniBatch,  # data
     denoising_model: Module,  # model
@@ -103,6 +122,7 @@ def train_step(
     config: TrainingConfig,  # config
     criterion: Module,  # loss function
     accelerator = None,  # accelerator utility
+    step: int = 0,  # current training step (for progressive unmasking)
 ) -> torch.Tensor:
     context = accelerator.accumulate() if accelerator else nullcontext()
 
@@ -110,6 +130,12 @@ def train_step(
         optimizer.zero_grad()
         inputs, targets = diffusion.prepare_training_examples(batch)
         assert str(inputs["x"].device) == str(config.device), f"Inputs are on {inputs['x'].device}, but config is on {config.device}"
+
+        # Add mask_ratio to inputs if masking is enabled
+        mask_ratio = get_effective_mask_ratio(config, step)
+        if mask_ratio > 0:
+            inputs["mask_ratio"] = mask_ratio
+
         try:
             predictions = denoising_model(**inputs)
         except Exception as e:
@@ -117,14 +143,25 @@ def train_step(
                 if hasattr(v, "shape"):
                     print("------ ", k, v.shape)
             raise e
+
+        # Handle masked output: model returns (predictions, mask) when masking
+        mask = None
+        if isinstance(predictions, tuple):
+            predictions, mask = predictions
         predictions = predictions.sample if hasattr(predictions, "sample") else predictions
 
-        loss = criterion(predictions, targets)
+        # Compute loss: masked loss if masking is active, otherwise standard MSE
+        if mask is not None and hasattr(denoising_model, "patch_size"):
+            from ..models.patch_masking import compute_masked_loss
+            loss = compute_masked_loss(predictions, targets, mask, denoising_model.patch_size)
+        else:
+            loss = criterion(predictions, targets)
+
         if accelerator:
             accelerator.backward(loss)
         else:
             loss.backward()
-        
+
         if config.max_grad_norm > 0:
             torch.nn.utils.clip_grad_norm_(
                 denoising_model.parameters(), config.max_grad_norm
