@@ -251,10 +251,18 @@ def compute_and_log_fid(components, config):
         generated.append(batch)
 
     generated = torch.cat(generated, dim=0)
-    fid_score = compute_fid(None, generated, device, config.dataset, config.resolution)
-    print(f"FID Score: {fid_score:.4f}")
 
-    log_dict = {"fid": fid_score}
+    try:
+        # clean-fid uses DataParallel which requires cuda:0; move images to CPU for safety
+        fid_score = compute_fid(None, generated, "cuda:0", config.dataset, config.resolution)
+        print(f"FID Score: {fid_score:.4f}")
+    except Exception as e:
+        print(f"FID computation failed: {e}")
+        fid_score = None
+
+    log_dict = {}
+    if fid_score is not None:
+        log_dict["fid"] = fid_score
 
     if config.use_ema and components.ema_model is not None:
         ema_generated = []
@@ -269,9 +277,12 @@ def compute_and_log_fid(components, config):
             )
             ema_generated.append(batch)
         ema_generated = torch.cat(ema_generated, dim=0)
-        ema_fid = compute_fid(None, ema_generated, device, config.dataset, config.resolution)
-        print(f"EMA FID Score: {ema_fid:.4f}")
-        log_dict["ema_fid"] = ema_fid
+        try:
+            ema_fid = compute_fid(None, ema_generated, "cuda:0", config.dataset, config.resolution)
+            print(f"EMA FID Score: {ema_fid:.4f}")
+            log_dict["ema_fid"] = ema_fid
+        except Exception as e:
+            print(f"EMA FID computation failed: {e}")
 
     if config.logger == "wandb":
         wandb.log(log_dict)
