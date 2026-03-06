@@ -18,7 +18,9 @@ Usage:
 
 import argparse
 import copy
+import math
 import os
+import time
 from pathlib import Path
 
 import torch
@@ -157,6 +159,15 @@ def update_ema(ema_model, model, beta):
         ema_param.data.mul_(beta).add_(param.data, alpha=1 - beta)
 
 
+def _compute_grad_norm(model):
+    """Compute total gradient norm."""
+    total = 0.0
+    for p in model.parameters():
+        if p.grad is not None:
+            total += p.grad.data.norm(2).item() ** 2
+    return total ** 0.5
+
+
 @torch.no_grad()
 def generate_and_log_samples(
     mdlm: MDLM, tokenizer, config: MDLMTrainingConfig, step: int, logger: str = None
@@ -188,7 +199,13 @@ def generate_and_log_samples(
         table = wandb.Table(columns=["step", "sample_id", "text"])
         for i, text in enumerate(texts):
             table.add_data(step, i, text[:500])
-        wandb.log({"generated_samples": table, "step": step})
+        # Log avg length of generated text as a quality proxy
+        avg_len = sum(len(t.split()) for t in texts) / max(len(texts), 1)
+        wandb.log({
+            "samples/generated_text": table,
+            "samples/avg_word_count": avg_len,
+            "step": step,
+        })
 
 
 @torch.no_grad()
@@ -257,11 +274,20 @@ def train(config: MDLMTrainingConfig):
     )
 
     # Set up logging
+    num_params = sum(p.numel() for p in model.parameters())
     if config.logger == "wandb":
         import wandb
+        run_name = f"{config.net}_lr{config.learning_rate}_bs{config.batch_size}_seq{config.seq_length}"
+        if config.use_ema:
+            run_name += "_ema"
+        wandb_config = vars(config).copy()
+        wandb_config["num_params"] = num_params
+        wandb_config["num_params_M"] = num_params / 1e6
+        wandb_config["vocab_size"] = vocab_size
         wandb.init(
             project="nano-diffusion-mdlm",
-            config=vars(config),
+            name=run_name,
+            config=wandb_config,
         )
 
     # Create checkpoint directory
@@ -275,6 +301,8 @@ def train(config: MDLMTrainingConfig):
     print(f"\nStarting MDLM training for {config.total_steps} steps...")
     step = 0
     num_examples = 0
+    t_start = time.time()
+    tokens_since_last_log = 0
 
     while step < config.total_steps:
         for batch in train_loader:
@@ -284,7 +312,9 @@ def train(config: MDLMTrainingConfig):
             model.train()
             x_0 = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
+            batch_tokens = x_0.numel()
             num_examples += x_0.shape[0]
+            tokens_since_last_log += batch_tokens
 
             optimizer.zero_grad()
 
@@ -295,13 +325,17 @@ def train(config: MDLMTrainingConfig):
                 scaler.scale(loss).backward()
                 if config.max_grad_norm > 0:
                     scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
+                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm).item()
+                else:
+                    grad_norm = _compute_grad_norm(model)
                 scaler.step(optimizer)
                 scaler.update()
             else:
                 loss.backward()
                 if config.max_grad_norm > 0:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
+                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm).item()
+                else:
+                    grad_norm = _compute_grad_norm(model)
                 optimizer.step()
 
             lr_scheduler.step()
@@ -316,23 +350,34 @@ def train(config: MDLMTrainingConfig):
             # Logging
             if step % config.log_every == 0:
                 lr = optimizer.param_groups[0]["lr"]
-                print(f"Step {step}/{config.total_steps} | Loss: {loss.item():.4f} | LR: {lr:.6f} | Examples: {num_examples}")
+                loss_val = loss.item()
+                ppl = math.exp(min(loss_val, 20))  # cap to avoid overflow
+                elapsed = time.time() - t_start
+                tokens_per_sec = tokens_since_last_log / max(elapsed, 1e-6) if step > 0 else 0
+                t_start = time.time()
+                tokens_since_last_log = 0
+
+                print(f"Step {step}/{config.total_steps} | Loss: {loss_val:.4f} | PPL: {ppl:.1f} | GradNorm: {grad_norm:.3f} | LR: {lr:.6f} | tok/s: {tokens_per_sec:.0f}")
                 if config.logger == "wandb":
                     import wandb
                     wandb.log({
-                        "loss": loss.item(),
-                        "learning_rate": lr,
+                        "train/loss": loss_val,
+                        "train/perplexity": ppl,
+                        "train/grad_norm": grad_norm,
+                        "train/learning_rate": lr,
+                        "train/tokens_per_sec": tokens_per_sec,
+                        "train/num_examples": num_examples,
                         "step": step,
-                        "num_examples": num_examples,
                     })
 
             # Validation
             if step > 0 and step % config.validate_every == 0:
                 val_loss = compute_val_loss(mdlm, val_loader, device)
-                print(f"  Val loss: {val_loss:.4f}")
+                val_ppl = math.exp(min(val_loss, 20))
+                print(f"  Val loss: {val_loss:.4f} | Val PPL: {val_ppl:.1f}")
                 if config.logger == "wandb":
                     import wandb
-                    wandb.log({"val_loss": val_loss, "step": step})
+                    wandb.log({"val/loss": val_loss, "val/perplexity": val_ppl, "step": step})
 
             # Sample generation
             if step > 0 and step % config.sample_every == 0:
