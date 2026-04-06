@@ -179,6 +179,23 @@ def parse_arguments():
     parser.add_argument(
         "--random_flip", action="store_true", help="Randomly flip images horizontally"
     )
+    # Patch masking (Micro-Diffusion)
+    parser.add_argument(
+        "--mask_ratio", type=float, default=0.0,
+        help="Fraction of patches to mask during DiT training (0.0 = no masking, 0.75 = mask 75%%)",
+    )
+    parser.add_argument(
+        "--patch_mixer_depth", type=int, default=0,
+        help="Depth of lightweight patch-mixer for deferred masking (0 = no mixer)",
+    )
+    parser.add_argument(
+        "--progressive_unmasking", action="store_true",
+        help="Linearly decrease mask_ratio to 0 over training",
+    )
+    parser.add_argument(
+        "--unmask_start_ratio", type=float, default=0.5,
+        help="Fraction of training at which progressive unmasking begins",
+    )
     parser.add_argument(
         "--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory"
     )

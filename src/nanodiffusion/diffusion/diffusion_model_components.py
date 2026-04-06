@@ -44,7 +44,8 @@ def create_diffusion_model_components(
     device = torch.device(config.device)
     if denoising_model is None:  # if no denoising model is provided, create one based on config.net
         denoising_model = create_model(
-            net=config.net, in_channels=config.in_channels, resolution=config.resolution, cond_embed_dim=config.cond_embed_dim
+            net=config.net, in_channels=config.in_channels, resolution=config.resolution,
+            cond_embed_dim=config.cond_embed_dim, patch_mixer_depth=config.patch_mixer_depth,
         )
     else:
         config.net = denoising_model.name if hasattr(denoising_model, "name") else denoising_model.__class__.__name__
