@@ -9,8 +9,14 @@ def choices():
         "unet_small", "unet", "unet_big", "unet_diffusers"
     ]
 
-def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, cond_embed_dim: int = None):
+def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, cond_embed_dim: int = None, patch_mixer_depth: int = 0):
     print(f"Creating model {net} with resolution {resolution} and in_channels {in_channels} and cond_embed_dim {cond_embed_dim}")
+
+    # Common kwargs for DiT models
+    dit_extra = {}
+    if patch_mixer_depth > 0:
+        dit_extra["patch_mixer_depth"] = patch_mixer_depth
+
     if net == "tld_t2":
         return TLD(
             image_size=resolution,
@@ -48,7 +54,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             cond_embed_dim=cond_embed_dim,
         )
     elif net == "dit_t0":
-        return DiT(
+        model = DiT(
             input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
@@ -58,9 +64,10 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             depth=3,
             num_heads=1,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_t1":
-        return DiT(
+        model = DiT(
             input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
@@ -70,9 +77,10 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             depth=3,
             num_heads=6,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_t2":
-        return DiT(
+        model = DiT(
             input_size=resolution,
             patch_size=2,
             in_channels=in_channels,
@@ -82,6 +90,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             depth=12,
             num_heads=1,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_t3":
         model = DiT(
@@ -94,6 +103,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
                 depth=12,
                 num_heads=6,
                 cond_embed_dim=cond_embed_dim,
+                **dit_extra,
             )
     elif net == "dit_s2":
         model = DiT(
@@ -105,6 +115,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             num_heads=6,
             learn_sigma=False,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_b2":
         model = DiT(
@@ -116,6 +127,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             num_heads=12,
             learn_sigma=False,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_b4":
         model = DiT(
@@ -127,6 +139,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             num_heads=12,
             learn_sigma=False,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_l2":
         model = DiT(
@@ -138,6 +151,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             num_heads=16,
             learn_sigma=False,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "dit_l4":
         model = DiT(
@@ -149,6 +163,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
             num_heads=16,
             learn_sigma=False,
             cond_embed_dim=cond_embed_dim,
+            **dit_extra,
         )
     elif net == "unet_small":
         model = UNetSmall(
@@ -174,7 +189,7 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
     elif net == "unet_diffusers":
         if cond_embed_dim is not None:
             raise ValueError("diffusers UNet does not support conditional models")
-        
+
         from diffusers import UNet2DModel
 
         model = UNet2DModel(
@@ -202,6 +217,6 @@ def create_model(net: str = "unet", resolution: int = 32, in_channels: int = 3, 
         )
     else:
         raise ValueError(f"Unsupported network architecture: {net}")
-    
+
     print(f"model params: {sum(p.numel() for p in model.parameters()) / 1e6:.2f} M")
     return model
