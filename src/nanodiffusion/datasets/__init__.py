@@ -1,4 +1,5 @@
 from typing import Tuple, Optional, Callable
+from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
@@ -8,10 +9,10 @@ from .celeb_dataset import CelebDataset
 from .pokemon_dataset import PokemonDataset
 from .hugging_face_dataset import HuggingFaceDataset
 from .mj_latents import MJLatentsDataset
-from ..config.diffusion_training_config import DiffusionTrainingConfig as TrainingConfig
+from ..config.image_training_config import SupportsImageDataConfig
 
 
-def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
+def load_data(config: SupportsImageDataConfig, collate_fn: Optional[Callable] = None) -> Tuple[DataLoader, DataLoader]:
     # TODO: consider expanding the args from config to be a more explicit list of args
     resolution = config.resolution
     transforms_list = [
@@ -26,8 +27,9 @@ def load_data(config: TrainingConfig, collate_fn: Optional[Callable] = None) -> 
 
     if config.dataset == "cifar10":
         print("Loading CIFAR10 dataset")
+        cifar_root = Path(config.cache_dir) / "torchvision" / "cifar10"
         full_dataset = CIFAR10(
-            root="./data/cifar10", train=True, download=True, transform=transform
+            root=str(cifar_root), train=True, download=True, transform=transform
         )  # list of tuples (image, label)
     elif config.dataset == "flowers":
         print("Loading Flowers dataset")

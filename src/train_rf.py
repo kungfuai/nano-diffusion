@@ -182,6 +182,7 @@ def parse_arguments():
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train_rf")
     parser.add_argument("--random_flip", action="store_true")
+    parser.add_argument("--data_is_latent", action="store_true")
     parser.add_argument("--watch_model", action="store_true")
     parser.add_argument("--init_from_wandb_run_path", type=str, default=None)
     parser.add_argument("--init_from_wandb_file", type=str, default=None)

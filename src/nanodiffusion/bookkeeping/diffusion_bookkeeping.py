@@ -1,7 +1,5 @@
-from dataclasses import asdict
 from pathlib import Path
 from typing import Callable, Dict, Iterator
-import os
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -12,6 +10,7 @@ from ..diffusion import compute_validation_loss
 from ..diffusion.diffusion_model_components import DiffusionModelComponents
 from ..eval.fid import compute_fid
 from ..bookkeeping.mini_batch import MiniBatch
+from ..bookkeeping.training_run import setup_training_run
 
 
 class DiffusionBookkeeping:
@@ -21,23 +20,9 @@ class DiffusionBookkeeping:
         self.num_examples_trained = 0
 
     def set_up_logger(self):
-        # create directory for checkpoints
         print(f"Creating checkpoint directory: {self.config.checkpoint_dir}")
-        Path(self.config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-        
         print(f"Setting up logger: {self.config.logger}")
-        params = sum(p.numel() for p in self.model_components.denoising_model.parameters())
-        if self.config.logger == "wandb":
-            import wandb
-
-            project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
-            print(f"Logging to Weights & Biases project: {project_name}")
-            run_params = asdict(self.config)
-            run_params["model_parameters"] = params
-            wandb.init(project=project_name, config=run_params)
-            if self.config.watch_model:
-                print("  Watching model gradients (can be slow)")
-                wandb.watch(self.model_components.denoising_model)
+        setup_training_run(self.config, self.model_components.denoising_model)
         
     def run_callbacks(self, config: DiffusionTrainingConfig, step: int, loss: float, optimizer: torch.optim.Optimizer, train_dataloader: DataLoader, val_dataloader: DataLoader, grad_norm: float = None):
         # TODO: instead of passing in the optimizer, only pass in lr=optimizer.param_groups[0]["lr"].
@@ -291,7 +276,7 @@ def compute_and_log_fid(
     generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
     real_images = None
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
@@ -313,7 +298,7 @@ def compute_and_log_fid(
             count += current_batch_size
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
         ema_generated_images = torch.cat(ema_generated_images, dim=0) # [:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
 
     if config.logger == "wandb":

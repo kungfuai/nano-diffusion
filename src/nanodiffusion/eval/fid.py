@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import tempfile
 from pathlib import Path
 import numpy as np
@@ -22,6 +23,7 @@ def compute_fid(
     dataset_name: str = "cifar10",
     resolution: int = 32,
     batch_size: int = 2,
+    cache_dir: str | Path | None = None,
 ) -> float:
     print(f"Computing FID for {dataset_name} with resolution {resolution}")
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -37,31 +39,62 @@ def compute_fid(
             img_np = (img_np * 255).astype(np.uint8).transpose(1, 2, 0)
             np.save(gen_path / f"{i}.npy", img_np)
 
-        if dataset_name in ["cifar10"]:
-            score = fid.compute_fid(
-                str(gen_path),
-                dataset_name=dataset_name,
-                dataset_res=resolution,
-                device=device,
-                mode="clean",
-                batch_size=batch_size,
-                num_workers=0,
-            )
-        else:
-            # Use precomputed stats for custom datasets.
-            dataset_name_safe = make_dataset_name_safe_for_cleanfid(dataset_name)
-            score = fid.compute_fid(
-                str(gen_path),
-                dataset_name=dataset_name_safe,
-                dataset_res=resolution,
-                device=device,
-                mode="clean",
-                dataset_split="custom",
-                batch_size=batch_size,
-                num_workers=0,
-            )
+        with cleanfid_cache_dir(cache_dir):
+            if dataset_name in ["cifar10"]:
+                score = fid.compute_fid(
+                    str(gen_path),
+                    dataset_name=dataset_name,
+                    dataset_res=resolution,
+                    device=device,
+                    mode="clean",
+                    batch_size=batch_size,
+                    num_workers=0,
+                )
+            else:
+                # Use precomputed stats for custom datasets.
+                dataset_name_safe = make_dataset_name_safe_for_cleanfid(dataset_name)
+                score = fid.compute_fid(
+                    str(gen_path),
+                    dataset_name=dataset_name_safe,
+                    dataset_res=resolution,
+                    device=device,
+                    mode="clean",
+                    dataset_split="custom",
+                    batch_size=batch_size,
+                    num_workers=0,
+                )
 
     return score
+
+
+def get_cleanfid_stats_dir(cache_dir: str | Path | None = None) -> Path:
+    if cache_dir is None:
+        import cleanfid
+
+        return Path(cleanfid.__file__).resolve().parent / "stats"
+
+    cleanfid_root = Path(cache_dir) / "cleanfid"
+    cleanfid_root.mkdir(parents=True, exist_ok=True)
+    init_file = cleanfid_root / "__init__.py"
+    init_file.touch(exist_ok=True)
+    return cleanfid_root / "stats"
+
+
+@contextmanager
+def cleanfid_cache_dir(cache_dir: str | Path | None = None):
+    if cache_dir is None:
+        yield
+        return
+
+    import cleanfid
+
+    cleanfid_root = get_cleanfid_stats_dir(cache_dir).parent
+    original_file = cleanfid.__file__
+    cleanfid.__file__ = str(cleanfid_root / "__init__.py")
+    try:
+        yield
+    finally:
+        cleanfid.__file__ = original_file
 
 
 def _build_stats_filename(dataset_name: str, resolution: int = None, model_name: str = "inception_v3") -> str:
@@ -85,9 +118,9 @@ def _build_stats_filename(dataset_name: str, resolution: int = None, model_name:
 
 
 def fid_stats_exists(dataset_name: str, resolution: int, config: TrainingConfig, real_images_dir: Path):
-    import cleanfid, os, shutil
+    import os, shutil
 
-    stats_folder = os.path.join(os.path.dirname(cleanfid.__file__), "stats")
+    stats_folder = get_cleanfid_stats_dir(config.cache_dir)
     stats_filename = _build_stats_filename(dataset_name, resolution)
     
     # Check in cache dir
@@ -109,11 +142,10 @@ def fid_stats_exists(dataset_name: str, resolution: int, config: TrainingConfig,
     return outf if os.path.exists(outf) else None
 
 
-def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, resolution: int = None):
+def copy_stats_to_real_images_dir(real_images_dir: Path, dataset_name: str, resolution: int = None, cache_dir: str | Path | None = None):
     import shutil, os
-    import cleanfid
     
-    stats_folder = os.path.join(os.path.dirname(cleanfid.__file__), "stats")
+    stats_folder = get_cleanfid_stats_dir(cache_dir)
     stats_filename = _build_stats_filename(dataset_name, resolution)
     outf = os.path.join(stats_folder, stats_filename)
     shutil.copy(outf, real_images_dir)
@@ -151,9 +183,10 @@ def precompute_fid_stats_for_real_images(dataloader: DataLoader, config: Trainin
             break
     
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
-    fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
+    with cleanfid_cache_dir(config.cache_dir):
+        fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
     # also copy the stats to the real_images_dir
-    copy_stats_to_real_images_dir(real_images_dir, config.dataset)
+    copy_stats_to_real_images_dir(real_images_dir, config.dataset, cache_dir=config.cache_dir)
 
 
 def precompute_fid_stats_for_real_image_latents(
@@ -198,9 +231,10 @@ def precompute_fid_stats_for_real_image_latents(
             break
     
     dataset_name_safe = make_dataset_name_safe_for_cleanfid(config.dataset)
-    fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
+    with cleanfid_cache_dir(config.cache_dir):
+        fid.make_custom_stats(dataset_name_safe, str(real_images_dir), mode="clean")
     # also copy the stats to the real_images_dir
-    copy_stats_to_real_images_dir(real_images_dir, config.dataset)
+    copy_stats_to_real_images_dir(real_images_dir, config.dataset, cache_dir=config.cache_dir)
 
 
 

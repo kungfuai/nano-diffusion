@@ -20,9 +20,7 @@ References:
 
 import argparse
 import copy
-import os
-from dataclasses import dataclass, asdict
-from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any
 
@@ -33,21 +31,12 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
 
-try:
-    import wandb
-except ImportError:
-    print("wandb not installed, skipping")
-
-try:
-    from cleanfid import fid
-except ImportError:
-    print("clean-fid not installed, skipping")
-
 from nanodiffusion.meanflow import (
     MeanFlowModelWrapper,
     compute_meanflow_loss,
     generate_samples_meanflow,
 )
+from nanodiffusion.config.image_training_config import ImageTrainingConfig
 from nanodiffusion.models.factory import create_model, choices
 from nanodiffusion.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from nanodiffusion.datasets import load_data
@@ -56,23 +45,21 @@ from nanodiffusion.bookkeeping.cfm_bookkeeping import (
     compute_fid,
     save_model,
 )
+from nanodiffusion.bookkeeping.training_run import setup_training_run
 from nanodiffusion.cfm.cfm_training_loop import (
     update_ema_model,
     save_final_models,
     save_model,
     precompute_fid_stats_for_real_images,
 )
-from nanodiffusion.bookkeeping.wandb_utils import load_model_from_wandb
+from nanodiffusion.bookkeeping.wandb_utils import (
+    get_wandb_module,
+    load_model_from_wandb,
+)
 
 
 @dataclass
-class MeanFlowTrainingConfig:
-    # Dataset
-    dataset: str
-    resolution: int
-    val_split: float = 0.1
-    in_channels: int = 3
-
+class MeanFlowTrainingConfig(ImageTrainingConfig):
     # Model architecture
     net: str = "dit_t1"
 
@@ -108,20 +95,7 @@ class MeanFlowTrainingConfig:
     num_real_samples_for_fid: int = 10000
 
     # Infrastructure
-    device: str = "cuda"
-    logger: str = "wandb"
-    cache_dir: str = f"{os.path.expanduser('~')}/.cache"
     checkpoint_dir: str = "logs/train_meanflow"
-    min_steps_for_final_save: int = 100
-    watch_model: bool = False
-    init_from_wandb_run_path: str = None
-    init_from_wandb_file: str = None
-    random_flip: bool = False
-
-    def __post_init__(self):
-        self.checkpoint_dir = (
-            f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-        )
 
 
 @dataclass
@@ -194,6 +168,7 @@ def generate_and_log_samples(components, config, step=None, seed=0):
     device = torch.device(config.device)
     model = components.model
     n = config.num_samples_for_logging
+    wandb = get_wandb_module() if config.logger == "wandb" else None
 
     sampled = generate_samples_meanflow(
         model, device, n,
@@ -238,6 +213,7 @@ def compute_and_log_fid(components, config):
     batch_size = config.batch_size * 2
     num_batches = (config.num_samples_for_fid + batch_size - 1) // batch_size
     generated = []
+    wandb = get_wandb_module() if config.logger == "wandb" else None
 
     for i in range(num_batches):
         n = min(batch_size, config.num_samples_for_fid - len(generated))
@@ -251,7 +227,7 @@ def compute_and_log_fid(components, config):
         generated.append(batch)
 
     generated = torch.cat(generated, dim=0)
-    fid_score = compute_fid(None, generated, device, config.dataset, config.resolution)
+    fid_score = compute_fid(None, generated, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
     print(f"FID Score: {fid_score:.4f}")
 
     log_dict = {"fid": fid_score}
@@ -269,7 +245,7 @@ def compute_and_log_fid(components, config):
             )
             ema_generated.append(batch)
         ema_generated = torch.cat(ema_generated, dim=0)
-        ema_fid = compute_fid(None, ema_generated, device, config.dataset, config.resolution)
+        ema_fid = compute_fid(None, ema_generated, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
         print(f"EMA FID Score: {ema_fid:.4f}")
         log_dict["ema_fid"] = ema_fid
 
@@ -282,6 +258,7 @@ def training_loop(components, train_dataloader, val_dataloader, config):
     device = torch.device(config.device)
     model = components.model.to(device)
     ema_model = components.ema_model
+    wandb = get_wandb_module() if config.logger == "wandb" else None
 
     if config.dataset not in ["cifar10"]:
         precompute_fid_stats_for_real_images(
@@ -289,17 +266,12 @@ def training_loop(components, train_dataloader, val_dataloader, config):
             Path(config.cache_dir) / "real_images_for_fid",
         )
 
-    if config.logger == "wandb":
-        project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
-        print(f"Logging to W&B project: {project_name}")
-        params = sum(p.numel() for p in model.parameters())
-        run_params = asdict(config)
-        run_params["model_parameters"] = params
-        run_params["algorithm"] = "meanflow"
-        wandb.init(project=project_name, config=run_params)
-
-    checkpoint_dir = Path(config.checkpoint_dir)
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    run_state = setup_training_run(
+        config,
+        model,
+        extra_run_config={"algorithm": "meanflow"},
+    )
+    checkpoint_dir = run_state.checkpoint_dir
 
     step = 0
     num_examples = 0
@@ -391,6 +363,7 @@ def parse_arguments():
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train_meanflow")
     parser.add_argument("--random_flip", action="store_true")
+    parser.add_argument("--data_is_latent", action="store_true")
     parser.add_argument("--watch_model", action="store_true")
     parser.add_argument("--init_from_wandb_run_path", type=str, default=None)
     parser.add_argument("--init_from_wandb_file", type=str, default=None)

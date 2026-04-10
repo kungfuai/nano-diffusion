@@ -26,15 +26,13 @@ The CFM implementation is based on https://github.com/atong01/conditional-flow-m
 
 import argparse
 import copy
-from datetime import datetime
 from typing import Callable, Union
-import os
 from pathlib import Path
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image, make_grid
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Optional, Dict, Any
 from torch.nn import Module
 from torch.optim import Optimizer
@@ -53,6 +51,7 @@ except ImportError:
 
 
 from nanodiffusion.plan.ot import OTPlanSampler
+from nanodiffusion.config.image_training_config import ImageTrainingConfig
 from nanodiffusion.models.factory import create_model, choices
 from nanodiffusion.optimizers.lr_schedule import get_cosine_schedule_with_warmup
 from nanodiffusion.models.factory import create_model
@@ -60,7 +59,8 @@ from nanodiffusion.datasets import load_data
 from nanodiffusion.bookkeeping.cfm_bookkeeping import log_training_step, \
     compute_fid, save_model, \
     save_checkpoints
-from nanodiffusion.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, get_real_images, precompute_fid_stats_for_real_images
+from nanodiffusion.bookkeeping.training_run import setup_training_run
+from nanodiffusion.cfm.cfm_training_loop import update_ema_model, save_final_models, save_model, precompute_fid_stats_for_real_images
 from nanodiffusion.bookkeeping.wandb_utils import load_model_from_wandb
 
 def pad_t_like_x(t, x):
@@ -418,14 +418,8 @@ def compute_validation_loss(model: Module, val_dataloader: DataLoader, device: t
     return total_loss / num_batches
 
 @dataclass
-class TrainingConfig:
-    # Dataset
-    dataset: str # dataset name
-    resolution: int # resolution of the image
-    val_split: float = 0.1 # validation split
-    
+class TrainingConfig(ImageTrainingConfig):
     # Model architecture
-    in_channels: int = 3 # number of input channels
     net: str = "unet_small" # network architecture
     num_denoising_steps: int = 100 # number of timesteps
     
@@ -456,27 +450,7 @@ class TrainingConfig:
     use_ema: bool = False # use EMA for the model
     ema_beta: float = 0.9999 # EMA decay factor
 
-    # Accelerator
-    device: str = "cuda" # device to use for training
-
-    # Logging
-    logger: str = "wandb" # logging method
-    cache_dir: str = f"{os.path.expanduser('~')}/.cache" # cache directory in the home directory, same across runs
     checkpoint_dir: str = "logs/train" # checkpoint directory, different for each run
-    min_steps_for_final_save: int = 100 # minimum steps for final save
-    watch_model: bool = False # watch the model with wandb
-    init_from_wandb_run_path: str = None # initialize model from a wandb run path
-    init_from_wandb_file: str = None # initialize model from a wandb file
-
-    # Data augmentation
-    random_flip: bool = False # randomly flip images horizontally
-
-    def update_checkpoint_dir(self):
-        # Update the checkpoint directory use a timestamp
-        self.checkpoint_dir = f"{self.checkpoint_dir}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-    
-    def __post_init__(self):
-        self.update_checkpoint_dir()
 
 
 @dataclass
@@ -505,21 +479,8 @@ def training_loop(
     if config.dataset not in ["cifar10"]:
         precompute_fid_stats_for_real_images(train_dataloader, config, Path(config.cache_dir) / "real_images_for_fid")
 
-    if config.logger == "wandb":
-        project_name = os.getenv("WANDB_PROJECT") or "nano-diffusion"
-        print(f"Logging to Weights & Biases project: {project_name}")
-        params = sum(p.numel() for p in model_components.denoising_model.parameters())
-        run_params = asdict(config)
-        run_params["model_parameters"] = params
-        wandb.init(project=project_name, config=run_params)
-    
-
-    if config.logger == "wandb" and config.watch_model:
-        print("  Watching model gradients (can be slow)")
-        wandb.watch(model_components.denoising_model)
-    
-    checkpoint_dir = Path(config.checkpoint_dir)
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    run_state = setup_training_run(config, model_components.denoising_model)
+    checkpoint_dir = run_state.checkpoint_dir
 
     step = 0
     num_examples_trained = 0
@@ -667,7 +628,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
     generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
     real_images = None
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
@@ -683,7 +644,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
         
         ema_generated_images = torch.cat(ema_generated_images, dim=0) # [:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution, cache_dir=config.cache_dir)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
     if config.logger == "wandb":
@@ -770,6 +731,7 @@ def parse_arguments():
     parser.add_argument("--use_ema", action="store_true", help="Use Exponential Moving Average (EMA) for the model")
     parser.add_argument("--ema_beta", type=float, default=0.999, help="EMA decay factor")
     parser.add_argument("--random_flip", action="store_true", help="Randomly flip images horizontally")
+    parser.add_argument("--data_is_latent", action="store_true", help="Whether the Hugging Face dataset is already in latent space")
     parser.add_argument("--checkpoint_dir", type=str, default="logs/train", help="Checkpoint directory")
     parser.add_argument("--init_from_wandb_run_path", type=str, default=None, help="Initialize model from a wandb run path")
     parser.add_argument("--init_from_wandb_file", type=str, default=None, help="Initialize model from a wandb file")

@@ -769,7 +769,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
     generated_images = torch.cat(generated_images, dim=0) # [:config.num_samples_for_fid]
     
     real_images = None
-    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution)
+    fid_score = compute_fid(real_images, generated_images, device, config.dataset, config.resolution, cache_dir=config.cache_dir)
     print(f"FID Score: {fid_score:.4f}")
 
     if config.use_ema:
@@ -795,7 +795,7 @@ def compute_and_log_fid(model_components: FlowMatchingModelComponents, config: T
             print(f"EMA Generated {count} out of {config.num_samples_for_fid} images")
         
         ema_generated_images = torch.cat(ema_generated_images, dim=0) # [:config.num_samples_for_fid]
-        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution)
+        ema_fid_score = compute_fid(real_images, ema_generated_images, device, config.dataset, resolution=config.resolution, cache_dir=config.cache_dir)
         print(f"EMA FID Score: {ema_fid_score:.4f}")
     
     if config.logger == "wandb":

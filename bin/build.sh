@@ -2,4 +2,4 @@
 #
 # Build Docker service image(s)
 
-docker build -t nanodiffusion .
+docker build --pull -t nanodiffusion .
