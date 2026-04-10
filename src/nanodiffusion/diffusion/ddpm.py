@@ -40,6 +40,9 @@ class TrainingExampleGenerator:
         self.device = device
 
     def generate(self, x_0, forward_diffusion, y, p_uncond) -> tuple[Dict[str, torch.Tensor], torch.Tensor]:
+        # Convert the final target sample x_0 into a one-turn denoising problem.
+        # We sample a denoising step t, build the model input x_t for that step,
+        # and return the corresponding supervision target for that same step.
         num_examples = x_0.shape[0]
         noise = torch.randn_like(x_0)
         t = torch.randint(0, self.num_denoising_steps, (num_examples,), device=self.device).long()
@@ -177,9 +180,10 @@ class DDPM(BaseDiffusionAlgorithm):
 
     def prepare_training_examples(self, batch: MiniBatch):
         """
-        Prepare a training example for the denoising model.
+        Prepare a one-step denoising example from a full target batch.
 
-        This is used in the training step or a validation step.
+        The diffusion model is trained on one generation turn at a time rather
+        than on the whole reverse process at once.
         """
         device = self.config.device
         config = self.config
