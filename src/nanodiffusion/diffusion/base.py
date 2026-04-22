@@ -7,7 +7,7 @@ class BaseDiffusionAlgorithm:
     """
     A common interface for diffusion algorithms.
     """
-    def prepare_training_examples(self, batch: MiniBatch, **kwargs) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
+    def prepare_step_supervision(self, batch: MiniBatch, **kwargs) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
         """
         Prepare the per-step supervised training problem for the denoising model.
 

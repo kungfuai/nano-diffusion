@@ -230,7 +230,7 @@ class VDM(BaseDiffusionAlgorithm):
             vae_scale_multiplier=config.vae_scale_multiplier,
         )
 
-    def prepare_training_examples(self, batch: MiniBatch):
+    def prepare_step_supervision(self, batch: MiniBatch):
         """
         Prepare a training example for the denoising model.
 

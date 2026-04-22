@@ -401,7 +401,7 @@ class MDLM(BaseDiffusionAlgorithm):
 
         return loss
 
-    def prepare_training_examples(self, batch, **kwargs):
+    def prepare_step_supervision(self, batch, **kwargs):
         """
         Interface for compatibility with the existing training loop.
 

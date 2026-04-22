@@ -23,6 +23,8 @@ The Docker wrapper scripts mount the repo into the container and reuse the host 
 
 See [docs/roadmap.md](docs/roadmap.md) for the repo direction and planned workflows.
 See [docs/diffusion-training-architecture.md](docs/diffusion-training-architecture.md) for the high-level diffusion training structure.
+See [docs/training-algorithms.md](docs/training-algorithms.md) for a comparison of the major training algorithms in this repo.
+See [docs/global-to-local-supervision.md](docs/global-to-local-supervision.md) for a note on deriving local stepwise supervision from global objectives, including the connection to RL.
 
 ## Conditional flow matching
 

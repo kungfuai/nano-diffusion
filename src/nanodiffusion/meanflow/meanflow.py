@@ -208,6 +208,14 @@ def compute_meanflow_loss(model, x, device, flow_ratio=0.5, time_dist="lognorm",
             fn, (z, t, r), tangents, create_graph=True,
         )
 
+    # Rearranging the MeanFlow identity gives:
+    #   u + (t-r) * du/dt = v
+    # so the composite quantity on the left approximates the instantaneous
+    # velocity v, even though u itself is an interval-conditioned average
+    # velocity rather than an instantaneous field. We detach the target branch
+    # during optimization, but that stop-gradient does not change the forward
+    # interpretation of the identity.
+    #
     # MeanFlow target: u_tgt = v - (t-r) * dudt
     u_tgt = v - (t_ - r_) * dudt
 

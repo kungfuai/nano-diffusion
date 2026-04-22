@@ -130,7 +130,7 @@ def generate_and_log_samples(
         it = iter(val_dataloader)
         batch = next(it)
         batch = MiniBatch.from_dataloader_batch(batch)
-        inputs, _ = model_components.diffusion.prepare_training_examples(batch)
+        inputs, _ = model_components.diffusion.prepare_step_supervision(batch)
         y = inputs.get("y")
         if config.conditional:
             assert y is not None, "Conditional model requires y"
@@ -258,7 +258,7 @@ def compute_and_log_fid(
     batch_gen = batch_generator()
     for i in range(num_batches):
         data_batch = next(batch_gen)
-        inputs, _ = diffusion.prepare_training_examples(data_batch)
+        inputs, _ = diffusion.prepare_step_supervision(data_batch)
         torch.manual_seed(i)
         x_T = torch.randn(batch_size, *config.input_shape).to(device)
         y = inputs.get("y")
@@ -286,7 +286,7 @@ def compute_and_log_fid(
         for i in range(num_batches):
             current_batch_size = min(batch_size, config.num_samples_for_fid - len(ema_generated_images))
             data_batch = next(batch_gen)
-            inputs, _ = diffusion.prepare_training_examples(data_batch)
+            inputs, _ = diffusion.prepare_step_supervision(data_batch)
             x_T = torch.randn(batch_size, *config.input_shape).to(device)
             y = inputs.get("y")
             if y is not None and config.conditional:

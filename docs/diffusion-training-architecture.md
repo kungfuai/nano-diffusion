@@ -17,7 +17,7 @@ flowchart TD
     C --> H[train_dataloader / val_dataloader]
     D --> I[diffusion_training_loop.training_loop]
     H --> I
-    I --> J[diffusion.prepare_training_examples]
+    I --> J[diffusion.prepare_step_supervision]
     J --> K[model forward]
     K --> L[loss + optimizer step]
     I --> M[DiffusionBookkeeping]
@@ -62,7 +62,7 @@ flowchart TD
 - [`BaseDiffusionAlgorithm`](/home/zsi/projects/nano-diffusion/src/nanodiffusion/diffusion/base.py#L5)
   - the main abstraction boundary for diffusion algorithms in this repo
   - important methods:
-    - `prepare_training_examples(...)`
+    - `prepare_step_supervision(...)`
     - `sample(...)`
 
 ### Concrete algorithm
@@ -96,11 +96,11 @@ flowchart TD
     - FID
     - checkpointing
 
-## The Key Abstraction: `prepare_training_examples`
+## The Key Abstraction In Current Diffusion Code: `prepare_step_supervision`
 
 The most important conceptual abstraction in diffusion training here is:
 
-- [`BaseDiffusionAlgorithm.prepare_training_examples()`](/home/zsi/projects/nano-diffusion/src/nanodiffusion/diffusion/base.py#L9)
+- [`BaseDiffusionAlgorithm.prepare_step_supervision()`](/home/zsi/projects/nano-diffusion/src/nanodiffusion/diffusion/base.py#L9)
 
 This function takes a full target sample and converts it into the supervised problem for one generation turn.
 
@@ -123,7 +123,7 @@ This is similar in spirit to autoregressive training:
 3. Build the stack with [`create_diffusion_model_components()`](/home/zsi/projects/nano-diffusion/src/nanodiffusion/diffusion/diffusion_model_components.py#L35)
 4. Enter [`training_loop()`](/home/zsi/projects/nano-diffusion/src/nanodiffusion/diffusion/diffusion_training_loop.py#L15)
 5. At each step:
-   - call `diffusion.prepare_training_examples(...)`
+   - call `diffusion.prepare_step_supervision(...)`
    - run the model
    - compute loss
    - step optimizer and LR schedule
@@ -140,3 +140,27 @@ The outer loop does not need to know the exact noising math. It only needs an ob
 - sample from the learned model
 
 That is the main architectural seam for diffusion training here.
+
+## Relation To A Broader Training Interface
+
+For diffusion specifically, `prepare_step_supervision(...)` is the cleanest internal seam.
+
+More generally, across generative training algorithms, a broader abstraction is:
+
+- `prepare_step_supervision(...)`
+- `compute_training_loss(model, step_supervision, config)`
+
+That broader view can encompass diffusion as:
+
+1. `prepare_step_supervision(...)`
+2. internally applies the forward noising process
+3. returns the per-step inputs, targets, and any other supervision metadata
+4. `compute_training_loss(...)` compares the model output to that supervision
+
+So:
+
+- `prepare_step_supervision(...)` is the name now used in the diffusion code
+- `prepare_step_supervision(...)` is also a better general name across diffusion and flow-style methods
+- `compute_training_loss(...)` is the broader abstraction that consumes that supervision
+
+This distinction matters when comparing diffusion training to the separate flow-style training scripts in this repo.

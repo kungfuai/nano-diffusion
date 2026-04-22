@@ -128,7 +128,7 @@ def train_step(
 
     with context:
         optimizer.zero_grad()
-        inputs, targets = diffusion.prepare_training_examples(batch)
+        inputs, targets = diffusion.prepare_step_supervision(batch)
         assert str(inputs["x"].device) == str(config.device), f"Inputs are on {inputs['x'].device}, but config is on {config.device}"
 
         # Add mask_ratio to inputs if masking is enabled

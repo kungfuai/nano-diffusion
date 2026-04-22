@@ -356,7 +356,7 @@ def compute_validation_loss(
     with torch.no_grad():
         for batch in val_dataloader:
             batch = MiniBatch.from_dataloader_batch(batch).to(config.device)
-            inputs, targets = diffusion.prepare_training_examples(batch)
+            inputs, targets = diffusion.prepare_step_supervision(batch)
             predictions = denoising_model(**inputs)
             predictions = predictions.sample if hasattr(predictions, "sample") else predictions
 
